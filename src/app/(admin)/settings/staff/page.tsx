@@ -179,7 +179,7 @@ export default function StaffPage() {
               <summary className="cursor-pointer text-sm font-medium text-gray-900">
                 {r.label} <span className="font-normal text-gray-500">— {r.description}</span>
               </summary>
-              <p className="mt-2 text-xs text-gray-600 break-words">{r.permissions.join(' · ')}</p>
+              <p className="mt-2 text-xs text-gray-600 wrap-break-word">{r.permissions.join(' · ')}</p>
             </details>
           ))}
         </div>

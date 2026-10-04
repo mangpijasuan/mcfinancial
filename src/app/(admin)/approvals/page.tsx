@@ -82,7 +82,7 @@ export default function ApprovalsPage() {
                   <Badge variant={statusVariant[r.status] ?? 'gray'}>{r.status}</Badge>
                   <span className="text-xs text-gray-500">{r.label}</span>
                 </div>
-                <p className="mt-1 font-medium text-gray-900 break-words">{r.summary}</p>
+                <p className="mt-1 font-medium text-gray-900 wrap-break-word">{r.summary}</p>
                 {r.amountCents !== null && <p className="text-sm text-gray-700">{formatUSD(r.amountCents as Cents)}</p>}
                 <p className="mt-1 text-xs text-gray-500">
                   Proposed by {r.requestedBy.name} · {new Date(r.requestedAt).toLocaleString()}

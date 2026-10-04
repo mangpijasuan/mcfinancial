@@ -39,7 +39,7 @@ export default function PortalLoginPage() {
             <input
               id="memberId" type="text" autoComplete="username" value={memberId} onChange={e => setMemberId(e.target.value)} required
               placeholder="e.g. MC-10001"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 uppercase"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 uppercase"
             />
           </div>
           <div>
@@ -47,7 +47,7 @@ export default function PortalLoginPage() {
             <input
               id="password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required
               placeholder="••••••••"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
           </div>
           {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}

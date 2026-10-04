@@ -1,39 +1,73 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
 
-html {
-	color-scheme: light;
-	background: #f8fafc;
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+
+  /* Tailwind v4 also dropped two v3 defaults the screens rely on: the
+     pointer over buttons, and light gray placeholders. */
+  button:not(:disabled),
+  [role='button']:not(:disabled) {
+    cursor: pointer;
+  }
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
 }
 
-body {
-	margin: 0;
-	min-height: 100vh;
-	background:
-		radial-gradient(circle at top, rgba(27, 42, 74, 0.08), transparent 32%),
-		linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
-	color: #0f172a;
-	font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+/* Our own base styles, in the base layer: Tailwind v4 puts its styles in
+   cascade layers, and a style outside any layer would beat every utility
+   (a { color: inherit } would override text-* on every link). */
+@layer base {
+  html {
+    color-scheme: light;
+    background: #f8fafc;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(circle at top, rgba(27, 42, 74, 0.08), transparent 32%),
+      linear-gradient(180deg, #f8fafc 0%, #eef2ff 100%);
+    color: #0f172a;
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+
+  a {
+    color: inherit;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
 }
 
-a {
-	color: inherit;
-}
-
-* {
-	box-sizing: border-box;
-}
-
-/* Shows a soft shadow on whichever edge still has more content to scroll to,
-   and hides it once you've scrolled past it — no JS needed. */
-.scroll-shadow-x {
-	background:
-		linear-gradient(to right, white 30%, rgba(255, 255, 255, 0)) 0 0,
-		linear-gradient(to left, white 30%, rgba(255, 255, 255, 0)) 100% 0,
-		linear-gradient(to right, rgba(15, 23, 42, 0.12), rgba(255, 255, 255, 0)) 0 0,
-		linear-gradient(to left, rgba(15, 23, 42, 0.12), rgba(255, 255, 255, 0)) 100% 0;
-	background-repeat: no-repeat;
-	background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
-	background-attachment: local, local, scroll, scroll;
+@layer components {
+  /* Shows a soft shadow on whichever edge still has more content to scroll to,
+     and hides it once you've scrolled past it — no JS needed. */
+  .scroll-shadow-x {
+    background:
+      linear-gradient(to right, white 30%, rgba(255, 255, 255, 0)) 0 0,
+      linear-gradient(to left, white 30%, rgba(255, 255, 255, 0)) 100% 0,
+      linear-gradient(to right, rgba(15, 23, 42, 0.12), rgba(255, 255, 255, 0)) 0 0,
+      linear-gradient(to left, rgba(15, 23, 42, 0.12), rgba(255, 255, 255, 0)) 100% 0;
+    background-repeat: no-repeat;
+    background-size: 32px 100%, 32px 100%, 12px 100%, 12px 100%;
+    background-attachment: local, local, scroll, scroll;
+  }
 }

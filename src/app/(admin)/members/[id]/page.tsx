@@ -335,13 +335,13 @@ function PortalModal({ open, onClose, member, onSaved }: any) {
             <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{isEnabled ? 'Set new password (leave blank to keep current)' : 'Set password to enable access'}</label>
             <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New password"
               required={!isEnabled}
-              className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Confirm password</label>
             <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm password"
               required={!isEnabled || !!password}
-              className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+              className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
           </div>
           {error && <p className="text-sm text-red-600">{error}</p>}
           <div className="flex items-center justify-between pt-2">

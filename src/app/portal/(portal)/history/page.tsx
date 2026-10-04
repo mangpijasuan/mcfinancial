@@ -45,7 +45,7 @@ export default function PortalHistory() {
       </div>
 
       {/* Year grid */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200 p-5">
         <h2 className="text-sm font-semibold text-gray-700 mb-4">Annual contributions</h2>
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
           {allYears.map((y) => (
@@ -91,14 +91,14 @@ export default function PortalHistory() {
 
         {/* Legend */}
         <div className="flex items-center gap-4 mt-3 text-xs text-gray-500">
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-green-500 inline-block" /> Archive (2014–2025)</span>
-          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-blue-400 inline-block" /> Live (2026)</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-xs bg-green-500 inline-block" /> Archive (2014–2025)</span>
+          <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-xs bg-blue-400 inline-block" /> Live (2026)</span>
         </div>
       </div>
 
       {/* 2026 transaction detail */}
       {contributions2026.length > 0 && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white rounded-xl shadow-xs border border-gray-200">
           <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">2026 — individual payments</h2>
           </div>
@@ -128,7 +128,7 @@ export default function PortalHistory() {
 
       {/* Historical loans */}
       {(historicalBorrower.length > 0 || historicalCosigner.length > 0) && (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white rounded-xl shadow-xs border border-gray-200">
           <div className="px-5 py-4 border-b border-gray-100">
             <h2 className="text-sm font-semibold text-gray-700">Historical loans (2024–2025)</h2>
           </div>

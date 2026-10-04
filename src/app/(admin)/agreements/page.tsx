@@ -174,9 +174,9 @@ function AgreementModal({ agreement: initial, onClose, onSaved }: any) {
   return (
     <Modal open title={`Agreement ${a.agreementId}`} onClose={onClose} width="max-w-2xl">
       {/* Agreement document */}
-      <div className="bg-[#fffdf7] border border-amber-200 rounded-2xl mb-5 overflow-hidden shadow-sm">
+      <div className="bg-[#fffdf7] border border-amber-200 rounded-2xl mb-5 overflow-hidden shadow-xs">
         {/* Header */}
-        <div className="text-center space-y-1 border-b border-amber-200 bg-gradient-to-b from-amber-50 to-transparent px-6 py-5">
+        <div className="text-center space-y-1 border-b border-amber-200 bg-linear-to-b from-amber-50 to-transparent px-6 py-5">
           <p className="text-lg font-bold font-serif tracking-wide text-gray-900">LOAN AGREEMENT</p>
           <p className="font-sans text-xs uppercase tracking-[0.2em] text-gray-500">Millionaires Club Financial Services</p>
         </div>
@@ -275,7 +275,7 @@ function AgreementModal({ agreement: initial, onClose, onSaved }: any) {
             <input
               value={sig} onChange={e => setSig(e.target.value)}
               placeholder="Type your full name to sign…" aria-label="Your full name"
-              className="flex-1 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+              className="flex-1 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             />
             <Button onClick={sign} disabled={saving || !sig.trim()}>
               {saving ? 'Signing…' : 'Sign'}

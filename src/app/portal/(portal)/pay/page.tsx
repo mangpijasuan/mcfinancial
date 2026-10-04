@@ -85,7 +85,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, onDone }: {
           <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
           <input
             id={amountId} type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
-            className="w-full pl-6 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full pl-6 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           />
         </div>
         {maxAmount !== undefined && <p className="text-xs text-gray-400 mt-1">Remaining balance: {fmt$(maxAmount)}</p>}
@@ -119,7 +119,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, onDone }: {
             value={zelleReference} onChange={e => setZelleReference(e.target.value)}
             placeholder="Optional: confirmation number or note"
             aria-label="Zelle confirmation number or note"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
           />
         </div>
       )}
@@ -158,7 +158,7 @@ export default function PortalPayPage() {
 
   useEffect(() => { load() }, [])
 
-  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded w-48 animate-pulse" /></div>
+  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded-sm w-48 animate-pulse" /></div>
 
   const activeLoan = member?.loansAsBorrower?.[0]
   const hasActiveLoan = activeLoan && activeLoan.status === 'Active' && activeLoan.balanceRemaining > 0
@@ -203,7 +203,7 @@ export default function PortalPayPage() {
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Your payment requests</h2>
         </div>

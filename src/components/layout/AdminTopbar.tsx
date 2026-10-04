@@ -51,7 +51,7 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur supports-[backdrop-filter]:bg-white/75">
+    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm supports-backdrop-filter:bg-white/75">
       <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="min-w-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -81,7 +81,7 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Quick search members by name or ID"
-              className="w-full bg-transparent text-sm text-slate-700 outline-none placeholder:text-slate-400"
+              className="w-full bg-transparent text-sm text-slate-700 outline-hidden placeholder:text-slate-400"
             />
           </label>
         </form>}

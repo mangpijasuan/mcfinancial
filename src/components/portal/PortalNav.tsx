@@ -18,7 +18,7 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
   ]
 
   return (
-    <header className="bg-[#1B2A4A] shadow-sm relative z-40">
+    <header className="bg-[#1B2A4A] shadow-xs relative z-40">
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6 min-w-0">
           <div className="flex items-center gap-2.5 min-w-0">

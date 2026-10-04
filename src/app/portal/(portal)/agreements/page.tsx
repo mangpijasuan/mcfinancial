@@ -41,7 +41,7 @@ export default function PortalAgreements() {
     })()
   }, [])
 
-  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded w-48 animate-pulse"/></div>
+  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded-sm w-48 animate-pulse"/></div>
 
   if (error) {
     return <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
@@ -141,8 +141,8 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
     <Modal open onClose={onClose} title={`Loan Agreement — ${a.agreementId}`} width="max-w-2xl">
         <div className="space-y-5">
           {/* Document */}
-          <div className="bg-[#fffdf7] border border-amber-200 rounded-2xl overflow-hidden shadow-sm">
-            <div className="text-center border-b border-amber-200 bg-gradient-to-b from-amber-50 to-transparent px-5 py-4">
+          <div className="bg-[#fffdf7] border border-amber-200 rounded-2xl overflow-hidden shadow-xs">
+            <div className="text-center border-b border-amber-200 bg-linear-to-b from-amber-50 to-transparent px-5 py-4">
               <p className="text-lg font-bold font-serif tracking-wide">LOAN AGREEMENT</p>
               <p className="font-sans text-xs uppercase tracking-[0.2em] text-gray-500">{APP_NAME} Financial Services</p>
             </div>
@@ -195,13 +195,13 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
               </p>
               {isBorrower && (
                 <div className="grid grid-cols-3 gap-3">
-                  <input value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                  <input value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                  <input value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
                 </div>
               )}
               <input value={sig} onChange={e => setSig(e.target.value)} placeholder="Type your full legal name to sign…" aria-label="Your full legal name"
-                className="w-full px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                className="w-full px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex items-center justify-between">
                 <p className="text-xs text-indigo-600">By typing your name you are electronically signing this agreement.</p>

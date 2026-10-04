@@ -192,7 +192,7 @@ export default function AuditLogView() {
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
                       <Badge variant={actorVariant[e.actorType]}>{e.actorType}</Badge>
-                      <span className="text-xs text-gray-700 break-words min-w-[10rem]">{e.actorLabel || e.actorId || '—'}</span>
+                      <span className="text-xs text-gray-700 wrap-break-word min-w-40">{e.actorLabel || e.actorId || '—'}</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 font-mono text-xs text-gray-900 whitespace-nowrap">{e.action}</td>

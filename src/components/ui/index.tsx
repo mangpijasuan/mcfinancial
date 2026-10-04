@@ -76,7 +76,7 @@ export function Button({
 
 /* ── Card ───────────────────────────────────────────────── */
 export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('bg-white rounded-xl border border-gray-200 shadow-sm', className)}>{children}</div>
+  return <div className={cn('bg-white rounded-xl border border-gray-200 shadow-xs', className)}>{children}</div>
 }
 
 /* ── Input ──────────────────────────────────────────────── */
@@ -89,7 +89,7 @@ export function Input({ label, error, className, id, ...props }: React.InputHTML
       {label && <label htmlFor={inputId} className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
       <input
         id={inputId}
-        className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white', error && 'border-red-400', className)}
+        className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white', error && 'border-red-400', className)}
         {...props}
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -106,7 +106,7 @@ export function Select({ label, error, children, className, id, ...props }: Reac
       {label && <label htmlFor={selectId} className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
       <select
         id={selectId}
-        className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white', error && 'border-red-400', className)}
+        className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white', error && 'border-red-400', className)}
         {...props}
       >
         {children}
@@ -126,7 +126,7 @@ export function Textarea({ label, error, className, id, ...props }: React.Textar
       <textarea
         id={textareaId}
         rows={3}
-        className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none', error && 'border-red-400', className)}
+        className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white resize-none', error && 'border-red-400', className)}
         {...props}
       />
       {error && <p className="text-xs text-red-600">{error}</p>}
@@ -208,7 +208,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-xs" onClick={onClose} />
       <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={cn('relative bg-white rounded-2xl shadow-2xl w-full mx-auto max-h-[90vh] flex flex-col', width)}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <h3 id={titleId} className="text-base font-semibold text-gray-900">{title}</h3>
@@ -303,7 +303,7 @@ export function SearchInput({ value, onChange, placeholder = 'Search…' }: { va
       placeholder={placeholder}
       autoComplete="off"
       spellCheck={false}
-      className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white w-56"
+      className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white w-56"
     />
   )
 }
