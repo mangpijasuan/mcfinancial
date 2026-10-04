@@ -8,6 +8,7 @@ import { submitOrExecute } from '@/modules/approvals'
 import { checkLoan, type LoanInput } from '@/modules/loans/create'
 import { checkLendingCapacity } from '@/modules/treasury'
 import { badRequest, parseDate, readJsonObject, requiredString } from '@/lib/http'
+import { withLoanBalances } from '@/modules/accounting/reads'
 
 export async function GET(req: NextRequest) {
   const auth = await requirePermission('loans.read')
@@ -32,7 +33,7 @@ export async function GET(req: NextRequest) {
       agreement: { select: { agreementId: true, status: true } },
     },
   })
-  return NextResponse.json(loans)
+  return NextResponse.json(await withLoanBalances(prisma, loans))
 }
 
 export async function POST(req: NextRequest) {

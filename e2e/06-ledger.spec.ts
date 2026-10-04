@@ -1,7 +1,7 @@
 // The ledger: the accountant's chart approval is recorded, the treasurer
 // proposes opening balances and the Board approves them, the nightly
-// comparison runs clean, and December 2025 is reconciled with the bank and
-// closed.
+// comparison runs clean, December 2025 is reconciled with the bank and
+// closed, and the ledger and the records agree on every figure screens show.
 import { expect, test } from '@playwright/test'
 import { signedIn } from './helpers'
 
@@ -61,6 +61,12 @@ test('opening balances, approval, comparison and month-end close', async ({ brow
   await december.getByRole('button', { name: 'Close month' }).click()
   await expect(page.getByText('December 2025 is closed.')).toBeVisible()
   await expect(december).toContainText('Closed')
+
+  // 6. Before switching screens to the ledger (M6): every figure agrees with the records.
+  await page.goto('/ledger/reads')
+  await expect(page.getByText('The records', { exact: true })).toBeVisible()
+  await expect(page.getByText("Every member's contributions and withdrawals agree.")).toBeVisible()
+  await expect(page.getByText("Every paid-out loan's balance agrees.")).toBeVisible()
   expect(treasurer.errors).toEqual([])
   await treasurer.close()
 })

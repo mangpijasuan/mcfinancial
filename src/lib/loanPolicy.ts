@@ -34,6 +34,8 @@ export function checkLoanPolicy(
     monthsActive: number
     archiveLifetime: number
     contributions2026: number
+    /** Contributions from the ledger, when screens read from it (M6); otherwise archive + tracked. */
+    contributions?: number
     activeAsBorrower: number
     activeAsCosigner: number
     eligible: string
@@ -64,7 +66,7 @@ export function checkLoanPolicy(
   }
 
   // 4. Max loan amount = 4× contributions (cap $5,000)
-  const totalContribs = (member.archiveLifetime || 0) + (member.contributions2026 || 0)
+  const totalContribs = member.contributions ?? (member.archiveLifetime || 0) + (member.contributions2026 || 0)
   const maxByContrib  = Math.min(totalContribs * POLICY.LOAN_MULTIPLE, POLICY.MAX_LOAN_AMOUNT)
   if (requestedAmount > maxByContrib) {
     errors.push(`Requested amount ($${requestedAmount.toLocaleString()}) exceeds maximum ($${maxByContrib.toLocaleString()}) based on contributions × ${POLICY.LOAN_MULTIPLE}.`)

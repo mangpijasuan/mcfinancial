@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { sendEmail, contributionReminderEmail, loanOverdueEmail, adminSummaryEmail } from '@/lib/email'
 import { requirePermission } from '@/modules/auth'
 import { auditContext, recordAudit } from '@/modules/audit'
+import { outstandingDollars } from '@/modules/accounting/reads'
 
 export async function GET() {
   const auth = await requirePermission('notifications.read')
@@ -89,7 +90,7 @@ export async function POST(req: NextRequest) {
       prisma.member.count({ where: { status: 'Active', thisMonth: 'NOT PAID' } }),
       prisma.loan.count({ where: { overdue: true } }),
       prisma.contribution.aggregate({ where: { reversedAt: null }, _sum: { amount: true } }),
-      prisma.loan.aggregate({ where: { status: 'Active' }, _sum: { balanceRemaining: true } }),
+      prisma.loan.count({ where: { status: 'Active' } }),
       prisma.contribution.findMany({ where: { reversedAt: null }, orderBy: { paymentDate: 'desc' }, take: 8, select: { memberName: true, amount: true, monthYear: true } }),
     ])
 
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
     const { subject, html } = adminSummaryEmail({
       activeMembers, activeLoans, unpaidThisMonth: unpaidCount, overdueLoans: overdueCount,
       totalContributions: contribAgg._sum.amount ?? 0,
-      outstandingBalance: loanAgg._sum.balanceRemaining ?? 0,
+      outstandingBalance: await outstandingDollars(prisma),
       month, recentContribs,
     })
 

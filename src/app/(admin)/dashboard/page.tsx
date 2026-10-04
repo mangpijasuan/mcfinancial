@@ -71,7 +71,9 @@ export default function DashboardPage() {
     <div className="p-4 sm:p-8">
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-0.5">{APP_NAME} - overview</p>
+        <p className="text-sm text-gray-500 mt-0.5">
+          {APP_NAME} - overview{data.balanceSource === 'ledger' ? ' · balances from the ledger' : ''}
+        </p>
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">

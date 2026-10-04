@@ -8,6 +8,7 @@ import { todayIso } from '@/lib/dates'
 import { isEngineLoan, loadLoan, loanState } from '@/modules/loans/state'
 import { cancellationBlocker, lateFeesEnabled } from '@/modules/loans/lifecycle'
 import { repaymentBlocker } from '@/lib/paymentActions'
+import { withLoanBalances } from '@/modules/accounting/reads'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermission('loans.read')
@@ -22,7 +23,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     },
   })
   if (!loan) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-  return NextResponse.json({ ...loan, servicing: await servicingView(id) })
+  const [shown] = await withLoanBalances(prisma, [loan])
+  return NextResponse.json({ ...shown, servicing: await servicingView(id) })
 }
 
 /** Schedule, fees and what can happen next, for loans on the loan engine (cents). */

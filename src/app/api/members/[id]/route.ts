@@ -7,6 +7,7 @@ import { auditContext, recordAudit } from '@/modules/audit'
 import { onMemberStatusChange } from '@/modules/contributions'
 import { badRequest, notFound, parseDate, readJsonObject } from '@/lib/http'
 import { HISTORY_FIELDS } from '@/modules/loans/history'
+import { withLoanBalances, withMemberFigures } from '@/modules/accounting/reads'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermission('members.read')
@@ -17,8 +18,9 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
     where: { id },
     include: {
       contributions: { orderBy: { paymentDate: 'desc' }, take: 24 },
+      // Loans made before agreements existed (and older loans moved in by M9) have none.
       loansAsBorrower: {
-        where: { agreement: { is: { status: { not: 'cancelled' } } } },
+        where: { OR: [{ agreement: { is: null } }, { agreement: { is: { status: { not: 'cancelled' } } } }] },
         include: { payments: { orderBy: { paymentDate: 'desc' } } },
       },
       yearlyTotals: { orderBy: { year: 'asc' } },
@@ -43,8 +45,10 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   const historicalLoansAsBorrower = historical.filter((loan) => loan.borrowerId === id)
   const historicalLoansAsCosigner = historical.filter((loan) => loan.cosignerId === id)
 
+  const [figures] = await withMemberFigures(prisma, [member])
+  const loansAsBorrower = await withLoanBalances(prisma, member.loansAsBorrower)
   return NextResponse.json({
-    ...sanitizeMember(member),
+    ...sanitizeMember({ ...member, overallContributions: figures.overallContributions, loansAsBorrower }),
     linkedAdmin: linkedAdmin
       ? {
           id: linkedAdmin.id,

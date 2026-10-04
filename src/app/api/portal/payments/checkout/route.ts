@@ -6,6 +6,7 @@ import { nextPublicId } from '@/lib/publicIds'
 import { getStripe } from '@/lib/stripe'
 import { badRequest, readJsonObject } from '@/lib/http'
 import { auditContext, recordAudit } from '@/modules/audit'
+import { withLoanBalances } from '@/modules/accounting/reads'
 
 export async function POST(req: NextRequest) {
   const auth = await requireMember()
@@ -35,7 +36,8 @@ export async function POST(req: NextRequest) {
     if (loan.status !== 'Active' || repaymentBlocker(loan)) {
       return NextResponse.json({ error: repaymentBlocker(loan) ?? 'This loan is not active.' }, { status: 409 })
     }
-    if (amount > loan.balanceRemaining) {
+    const [owed] = await withLoanBalances(prisma, [loan])
+    if (amount > owed.balanceRemaining) {
       return NextResponse.json({ error: 'Amount exceeds the remaining loan balance.' }, { status: 400 })
     }
   }
