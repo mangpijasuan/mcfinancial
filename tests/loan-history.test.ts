@@ -166,6 +166,26 @@ describe('confirming an Active loan', () => {
     expect(loan.notes).toMatch(/^Synced from HistoricalLoan \(2025\) Moved from the 2021–2025 records/)
   })
 
+  it('moves a copy the old script gave the wrong member of a shared name to the members the Treasurer linked', async () => {
+    // The script matched "Ben Smith" to B2 and the co-signer to Cara; the records mean B1 and Ada.
+    await older('H12', { year: 2025, borrower: 'Ben Smith', cosigner: 'Ada Lovelace', date: '2025-04-01', amount: 600, paid: 300 })
+    await createLoan('H12', 'B2', { borrowerName: 'Ben Smith', cosignerId: 'C1', cosignerName: 'Cara Jones', loanDate: new Date('2025-04-01'), loanAmount: 600, totalPaid: 0, balanceRemaining: 600, origin: 'legacy_import' })
+    await prisma.loanPayment.create({ data: { paymentId: 'LP-H12-1', loanId: 'H12', borrowerId: 'B2', borrowerName: 'Ben Smith', paymentDate: new Date('2026-02-10'), amount: 50 } })
+    await prisma.member.update({ where: { id: 'B2' }, data: { activeAsBorrower: 1, currentLoanBalance: 600 } })
+    await prisma.member.update({ where: { id: 'C1' }, data: { activeAsCosigner: 1 } })
+    await callRoute('loan-history/review/link-exact', 'POST')
+    await link('H12', { role: 'borrower', memberId: 'B1' })
+
+    expect((await confirm('H12', '300')).json).toEqual({ loanId: 'H12', balanceCents: 300_00, broughtForwardCents: 300_00 })
+    const loan = await prisma.loan.findUniqueOrThrow({ where: { loanId: 'H12' }, include: { payments: true } })
+    expect(loan).toMatchObject({ borrowerId: 'B1', cosignerId: 'A1', cosignerName: 'Ada Lovelace', balanceRemaining: 250 })
+    expect(loan.payments.map((p) => p.borrowerId)).toEqual(['B1', 'B1'])
+    expect(await prisma.member.findUniqueOrThrow({ where: { id: 'B2' } })).toMatchObject({ activeAsBorrower: 0, currentLoanBalance: 0 })
+    expect(await prisma.member.findUniqueOrThrow({ where: { id: 'C1' } })).toMatchObject({ activeAsCosigner: 0 })
+    expect(await prisma.member.findUniqueOrThrow({ where: { id: 'B1' } })).toMatchObject({ activeAsBorrower: 1, currentLoanBalance: 250 })
+    expect(await prisma.member.findUniqueOrThrow({ where: { id: 'A1' } })).toMatchObject({ activeAsCosigner: 1 })
+  })
+
   it('creates a loan owed in full with no brought-forward repayment, and closes a copied loan confirmed repaid', async () => {
     await older('H8', { year: 2025, borrower: 'Cara Jones', date: '2025-05-01', amount: 300, paid: 0 })
     await link('H8', { role: 'borrower', memberId: 'C1' })
@@ -206,11 +226,20 @@ describe('confirming an Active loan', () => {
     expect((await confirm('H10', '100')).json.error).toMatch(/must belong to a member/)
     expect((await confirm('H10', '0')).json).toMatchObject({ loanId: null }) // repaid: no member needed
 
-    // A live loan under the same ID for someone else.
+    // A live loan under the same ID that the old script did not copy, or one on the loan engine.
     await older('H11', { year: 2025, borrower: 'Ada Lovelace', date: '2025-03-01', amount: 200, paid: 100 })
     await createLoan('H11', 'C1')
+    await older('H13', { year: 2025, borrower: 'Ada Lovelace', date: '2025-03-01', amount: 200, paid: 100 })
+    await createLoan('H13', 'A1', { origin: 'legacy_import', principalCents: BigInt(200_00) })
     await callRoute('loan-history/review/link-exact', 'POST')
     expect((await confirm('H11', '100')).status).toBe(409)
+    expect((await confirm('H13', '100')).status).toBe(409)
+
+    // A copy in the live loans whose borrower turns out to have no member record.
+    await older('H14', { year: 2025, borrower: 'Nobody Known', date: '2025-03-01', amount: 200, paid: 200, status: 'Active' })
+    await createLoan('H14', 'C1', { origin: 'legacy_import' })
+    await link('H14', { role: 'borrower', memberId: null })
+    expect((await confirm('H14', '0')).json.error).toMatch(/already in the live loans, must belong to a member/)
 
     signInAs('finance')
     expect((await confirm('H6', '0')).status).toBe(403)
@@ -221,11 +250,11 @@ describe('confirming an Active loan', () => {
     await expect(prisma.$transaction((tx) => checkOpening(tx, inputs))).rejects.toThrow(/still marked Active first \(M9\): H3, H6, H7/)
     await link('H3', { role: 'borrower', memberId: 'B1' })
     await confirm('H3', '400')
-    await confirm('H6', '0')
+    await confirm('H6', '0', '2026-01-15') // repaid by mid-January says nothing of the cutover
     await confirm('H7', '250', '2026-01-15')
     const plan = await prisma.$transaction((tx) => planOpening(tx, inputs))
     expect(plan.report.anomalies.map((a) => a.code)).toContain('historical_loans_confirmed_late')
-    await expect(prisma.$transaction((tx) => checkOpening(tx, inputs))).rejects.toThrow(/as of the cutover or later.*: H7/)
+    await expect(prisma.$transaction((tx) => checkOpening(tx, inputs))).rejects.toThrow(/as of the cutover or later.*: H6, H7/)
     // A cutover after that date is fine.
     await expect(prisma.$transaction((tx) => checkOpening(tx, { ...inputs, cutover: '2026-02-01' }))).rejects.toThrow(/chart of accounts/)
   })
@@ -268,5 +297,9 @@ describe('no name matching anywhere else', () => {
     expect(history.loans).toHaveLength(7)
     const bens = history.leaderboard.filter((r: any) => r.borrowerName === 'Ben Smith')
     expect(bens.map((r: any) => [r.borrowerId, r._count.id])).toEqual(expect.arrayContaining([['B1', 1], [null, 1]]))
+    // Ada's loans are recorded as "ada lovelace (aunt)" and "Ada L": one borrower, under her name.
+    expect(history.leaderboard.filter((r: any) => r.borrowerId === 'A1')).toEqual([{ borrowerId: 'A1', borrowerName: 'Ada Lovelace', _sum: { loanAmount: 1500 }, _count: { id: 2 } }])
+    // Ranked by loans, then amount: Dan Gone's two unlinked $1,000 loans come first.
+    expect(history.leaderboard.slice(0, 2).map((r: any) => r.borrowerName)).toEqual(['Dan Gone', 'Ada Lovelace'])
   })
 })

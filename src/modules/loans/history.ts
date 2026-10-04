@@ -190,11 +190,21 @@ export async function historyReview(db: Tx) {
 
 // ── Linking ───────────────────────────────────────────────────────────────
 
+/**
+ * Every change here (linking, confirming) holds one lock until its
+ * transaction ends and reads only after taking it, so none acts on what
+ * another has since changed (a link changed while its loan is confirmed).
+ */
+async function lockHistory(tx: Tx) {
+  await tx.$queryRaw`SELECT pg_advisory_xact_lock(hashtext('historical-loans'))::text`
+}
+
 const linkData = (role: Role, memberId: string | null, link: LinkKind) =>
   role === 'borrower' ? { borrowerId: memberId, borrowerLink: link } : { cosignerId: memberId, cosignerLink: link }
 
 /** Link every name that belongs to exactly one member. Safe to run again. */
 export async function linkExactMatches(tx: Tx, ctx: AuditContext) {
+  await lockHistory(tx)
   const [members, rows] = await Promise.all([
     tx.member.findMany({ select: { id: true, legalName: true, nickname: true } }),
     tx.historicalLoan.findMany({ where: { OR: [{ borrowerLink: null }, { cosignerName: { not: null }, cosignerLink: null }] } }),
@@ -224,6 +234,7 @@ export type LinkInput = { id: string; role: Role; memberId: string | null; sameN
  * that name, unless several members share it.
  */
 export async function linkName(tx: Tx, input: LinkInput, ctx: AuditContext) {
+  await lockHistory(tx)
   const row = await tx.historicalLoan.findUnique({ where: { id: input.id } })
   if (!row) throw new OperationError(404, 'Loan not found.')
   const name = nameOf(row, input.role)
@@ -264,8 +275,7 @@ export async function linkName(tx: Tx, input: LinkInput, ctx: AuditContext) {
 export type ConfirmInput = { id: string; balanceCents: Cents; asOf: IsoDate }
 
 export async function confirmBalance(tx: Tx, input: ConfirmInput, actorId: string, ctx: AuditContext) {
-  // One confirmation at a time per loan: a second waits, then sees the first.
-  await tx.$queryRaw`SELECT 1 FROM "HistoricalLoan" WHERE "id" = ${input.id} FOR UPDATE`
+  await lockHistory(tx)
   const row = await tx.historicalLoan.findUnique({ where: { id: input.id } })
   if (!row) throw new OperationError(404, 'Loan not found.')
   if (row.status !== 'Active') throw new OperationError(409, 'Only a loan the records mark Active needs a confirmed balance.')
@@ -284,12 +294,14 @@ export async function confirmBalance(tx: Tx, input: ConfirmInput, actorId: strin
     throw new OperationError(422, `The balance must be between $0 and the ${formatUSD(principal)} loan.`)
   }
 
+  // A live loan under the same ID is one the old sync script copied (the
+  // migration marked those legacy_import); anything else is not this loan.
   const live = await tx.loan.findUnique({ where: { loanId: row.loanId }, include: { payments: true } })
-  if (live && (live.borrowerId !== row.borrowerId || live.principalCents !== null)) {
+  if (live && (live.origin !== 'legacy_import' || live.principalCents !== null)) {
     throw new OperationError(409, `A different live loan already uses the ID ${row.loanId}. Check it before confirming.`)
   }
-  if (!live && input.balanceCents > 0 && !row.borrowerId) {
-    throw new OperationError(422, 'A loan still owed must belong to a member: link the borrower to one.')
+  if ((live || input.balanceCents > 0) && !row.borrowerId) {
+    throw new OperationError(422, 'A loan still owed, or already in the live loans, must belong to a member: link the borrower to one.')
   }
 
   const recordedByAsOf = live ? sum(live.payments.filter((p) => isoDateOf(p.paymentDate) <= input.asOf).map((p) => legacyCents(p.amount).amount)) : ZERO
@@ -317,6 +329,9 @@ export async function confirmBalance(tx: Tx, input: ConfirmInput, actorId: strin
         },
       })
     }
+    // The copy may name the wrong member of a shared name: the loan and its
+    // repayments follow the members the Treasurer linked.
+    if (live) await tx.loanPayment.updateMany({ where: { loanId: row.loanId }, data: { borrowerId: row.borrowerId!, borrowerName: borrower.legalName } })
     if (forward > 0) {
       const asOf = dateOnly(input.asOf)
       await tx.loanPayment.create({
@@ -336,13 +351,16 @@ export async function confirmBalance(tx: Tx, input: ConfirmInput, actorId: strin
       where: { loanId: row.loanId },
       data: {
         origin: 'legacy_import', notes: live ? [live.notes, note].filter(Boolean).join(' ') : note,
+        borrowerId: row.borrowerId!, borrowerName: borrower.legalName,
+        cosignerId: row.cosignerId, cosignerName: cosigner?.legalName ?? row.cosignerName,
         totalPaid: toLegacyDollars(repaid), balanceRemaining: toLegacyDollars(balance),
         status: balance > 0 ? 'Active' : 'Paid Off', lifecycle: balance > 0 ? 'disbursed' : 'paid_off',
         nextDueDate: balance > 0 ? row.endDate : null, overdue: false,
       },
     })
-    await recalcMemberLoanState(tx, row.borrowerId!)
-    if (row.cosignerId) await recalcMemberLoanState(tx, row.cosignerId)
+    // Everyone whose loans changed: the linked members, and whoever the copy named.
+    const affected = new Set([row.borrowerId!, row.cosignerId, live?.borrowerId, live?.cosignerId].filter((id): id is string => !!id))
+    for (const memberId of affected) await recalcMemberLoanState(tx, memberId)
   }
 
   await tx.historicalLoan.update({
@@ -354,7 +372,10 @@ export async function confirmBalance(tx: Tx, input: ConfirmInput, actorId: strin
   })
   await recordAudit(tx, ctx, {
     action: 'loan_history.confirm_balance', entityType: 'historical_loan', entityId: row.loanId,
-    before: { status: row.status, recordBalance: row.balanceRemaining, liveLoan: live ? { balanceRemaining: live.balanceRemaining, totalPaid: live.totalPaid } : null },
+    before: {
+      status: row.status, recordBalance: row.balanceRemaining,
+      liveLoan: live ? { balanceRemaining: live.balanceRemaining, totalPaid: live.totalPaid, borrowerId: live.borrowerId, cosignerId: live.cosignerId } : null,
+    },
     after: { balanceCents: input.balanceCents, asOf: input.asOf, broughtForwardCents: importedLoanId ? forward : 0, importedLoanId },
   })
   return { loanId: importedLoanId, balanceCents: input.balanceCents, broughtForwardCents: importedLoanId ? forward : cents(0) }
@@ -365,13 +386,14 @@ export async function confirmBalance(tx: Tx, input: ConfirmInput, actorId: strin
 /**
  * Why opening balances at this cutover cannot go ahead because of older
  * loans: one marked Active without a confirmed balance, or one confirmed as
- * of the cutover or later (its brought-forward repayment would land after
- * the cutover and post as cash received).
+ * of the cutover or later. That says nothing of the balance at the cutover,
+ * and a brought-forward repayment would land after it and post as cash
+ * received.
  */
 export async function historyOpeningBlockers(db: Pick<Tx, 'historicalLoan'>, cutover: IsoDate) {
   const [unconfirmed, late] = await Promise.all([
     db.historicalLoan.findMany({ where: { status: 'Active', confirmedBalanceCents: null }, select: { loanId: true, balanceRemaining: true }, orderBy: { loanId: 'asc' } }),
-    db.historicalLoan.findMany({ where: { importedLoanId: { not: null }, balanceAsOf: { gte: dateOnly(cutover) } }, select: { loanId: true }, orderBy: { loanId: 'asc' } }),
+    db.historicalLoan.findMany({ where: { confirmedBalanceCents: { not: null }, balanceAsOf: { gte: dateOnly(cutover) } }, select: { loanId: true }, orderBy: { loanId: 'asc' } }),
   ])
   return {
     unconfirmed: unconfirmed.map((r) => ({ loanId: r.loanId, cents: legacyCents(r.balanceRemaining).amount })),
