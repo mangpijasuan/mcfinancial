@@ -7,6 +7,7 @@ import { auditContext, recordAudit } from '@/modules/audit'
 import { onMemberStatusChange } from '@/modules/contributions'
 import { badRequest, notFound, parseDate, readJsonObject } from '@/lib/http'
 import { HISTORY_FIELDS } from '@/modules/loans/history'
+import { portalAccess } from '@/modules/auth/memberLogins'
 import { withLoanBalances, withMemberFigures } from '@/modules/accounting/reads'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -36,8 +37,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   })
   // A linked staff account is shown only to people who may see staff.
   const linkedAdmin = can(auth.principal, 'staff.read')
-    ? await prisma.admin.findFirst({
-        where: { linkedMemberId: id },
+    ? await prisma.user.findFirst({
+        where: { kind: 'staff', memberId: id },
         select: { id: true, email: true, name: true, createdAt: true, disabledAt: true, roles: { select: { role: true } } },
       })
     : null
@@ -49,6 +50,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   const loansAsBorrower = await withLoanBalances(prisma, member.loansAsBorrower)
   return NextResponse.json({
     ...sanitizeMember({ ...figures, loansAsBorrower }),
+    portalEnabled: await portalAccess(prisma, id),
     linkedAdmin: linkedAdmin
       ? {
           id: linkedAdmin.id,

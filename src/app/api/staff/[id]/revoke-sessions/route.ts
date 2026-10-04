@@ -11,7 +11,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (auth.error) return auth.error
 
   const { id } = await params
-  const target = await prisma.admin.findUnique({ where: { id }, select: staffSelect })
+  const target = await prisma.user.findFirst({ where: { id, kind: 'staff' }, select: staffSelect })
   if (!target) return notFound('Staff account not found.')
   const denied = checkCanManage(auth.principal, { id, roles: target.roles.map((r) => r.role) })
   if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status })

@@ -24,7 +24,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return badRequest('Member must have an email address before getting a staff account.')
   }
 
-  const existingLinked = await prisma.admin.findFirst({ where: { linkedMemberId: member.id }, select: staffSelect })
+  const existingLinked = await prisma.user.findFirst({ where: { kind: 'staff', memberId: member.id }, select: staffSelect })
   if (existingLinked) {
     return NextResponse.json(
       { error: 'This member already has a linked staff account.', admin: staffDto(existingLinked) },
@@ -45,18 +45,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   if (denied) return NextResponse.json({ error: denied.error }, { status: denied.status })
 
   const adminEmail = member.email.trim().toLowerCase()
-  const existingEmail = await prisma.admin.findFirst({ where: { email: { equals: adminEmail, mode: 'insensitive' } } })
+  const existingEmail = await prisma.user.findFirst({ where: { email: { equals: adminEmail, mode: 'insensitive' } } })
   if (existingEmail) {
     return NextResponse.json({ error: 'That email already belongs to another staff account.' }, { status: 409 })
   }
 
   const hashed = await bcrypt.hash(password, 10)
   const admin = await prisma.$transaction(async (tx) => {
-    const created = await tx.admin.create({
-      data: { email: adminEmail, name: member.legalName, password: hashed, linkedMemberId: member.id },
+    const created = await tx.user.create({
+      data: { kind: 'staff', email: adminEmail, name: member.legalName, passwordHash: hashed, memberId: member.id },
     })
     await setRoles(tx, created.id, roles, auth.principal.id)
-    const row = await tx.admin.findUniqueOrThrow({ where: { id: created.id }, select: staffSelect })
+    const row = await tx.user.findUniqueOrThrow({ where: { id: created.id }, select: staffSelect })
     await recordAudit(tx, auditContext(req, auth.principal), {
       action: 'staff.create', entityType: 'admin', entityId: created.id, after: staffDto(row),
       metadata: { linkedMemberId: member.id },

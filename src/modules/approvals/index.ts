@@ -215,7 +215,8 @@ export async function decideApproval(requestId: string, principal: StaffPrincipa
     const approvals = request.decisions.filter((d) => d.decision === 'approve').length + 1
     let resultRef: string | null = null
     if (approvals >= request.approvalsRequired) {
-      const maker = await tx.admin.findUniqueOrThrow({ where: { id: request.requestedBy }, select: { id: true, email: true } })
+      const makerRow = await tx.user.findUniqueOrThrow({ where: { id: request.requestedBy }, select: { id: true, email: true } })
+      const maker = { id: makerRow.id, email: makerRow.email ?? '' }
       const executed = await executeOperation(
         tx, request.action as ApprovalAction, request.payload as never, { maker, checker: toRef(principal) }, ctx,
       )
@@ -292,8 +293,8 @@ export type ApprovalView = {
 
 export async function viewRequests(db: Tx | typeof prisma, rows: Row[], viewer: StaffPrincipal): Promise<ApprovalView[]> {
   const ids = Array.from(new Set(rows.flatMap((r) => [r.requestedBy, ...r.decisions.map((d) => d.deciderId)])))
-  const staff = await db.admin.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, email: true } })
-  const byId = new Map(staff.map((s) => [s.id, s]))
+  const staff = await db.user.findMany({ where: { id: { in: ids } }, select: { id: true, name: true, email: true } })
+  const byId = new Map(staff.map((s) => [s.id, { ...s, email: s.email ?? '' }]))
   const who = (id: string) => byId.get(id) ?? { id, name: 'Unknown', email: '' }
   return rows.map((r) => {
     const policy = APPROVAL_POLICIES[r.action as ApprovalAction]

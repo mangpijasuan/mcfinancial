@@ -18,7 +18,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   const { id } = await params
   const body = await readJsonObject(req)
   if (!body) return badRequest('Invalid request body.')
-  const target = await prisma.admin.findUnique({ where: { id }, select: staffSelect })
+  const target = await prisma.user.findFirst({ where: { id, kind: 'staff' }, select: staffSelect })
   if (!target) return notFound('Staff account not found.')
   const currentRoles = target.roles.map((r) => r.role)
 
@@ -31,7 +31,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   if (body.email !== undefined) {
     const email = requiredString(body.email)?.toLowerCase()
     if (!email) return badRequest('Email cannot be empty.')
-    const clash = await prisma.admin.findFirst({ where: { id: { not: id }, email: { equals: email, mode: 'insensitive' } } })
+    const clash = await prisma.user.findFirst({ where: { id: { not: id }, email: { equals: email, mode: 'insensitive' } } })
     if (clash) return NextResponse.json({ error: 'Another staff account already uses that email.' }, { status: 409 })
     data.email = email
   }
@@ -40,7 +40,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (typeof body.password !== 'string' || body.password.length < STAFF_PASSWORD_MIN_LENGTH) {
       return badRequest(`Password must be at least ${STAFF_PASSWORD_MIN_LENGTH} characters.`)
     }
-    data.password = await bcrypt.hash(body.password, 10)
+    data.passwordHash = await bcrypt.hash(body.password, 10)
     passwordChanged = true
   }
   let disabling = false
@@ -68,13 +68,13 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
   }
 
   const updated = await prisma.$transaction(async (tx) => {
-    if (Object.keys(data).length) await tx.admin.update({ where: { id }, data })
+    if (Object.keys(data).length) await tx.user.update({ where: { id }, data })
     if (roles !== undefined) await setRoles(tx, id, roles as any, auth.principal.id)
     // A new password or a disabled account ends every session at once.
     const revoked = passwordChanged || disabling
       ? await revokeStaffSessions(tx, id, disabling ? 'account_disabled' : 'password_reset')
       : 0
-    const after = await tx.admin.findUniqueOrThrow({ where: { id }, select: staffSelect })
+    const after = await tx.user.findUniqueOrThrow({ where: { id }, select: staffSelect })
     await recordAudit(tx, auditContext(req, auth.principal), {
       action: roles !== undefined && Object.keys(data).length === 0 ? 'staff.roles.update' : 'staff.update',
       entityType: 'admin', entityId: id, before: staffDto(target), after: staffDto(after),

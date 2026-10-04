@@ -11,15 +11,26 @@ datasource db {
 // do comes from their role assignments, read from the database on every
 // request (src/modules/auth); role definitions live in
 // src/modules/permissions.
-model Admin {
-  id             String    @id @default(cuid())
-  email          String    @unique
-  name           String
-  password       String
-  linkedMemberId String?   @unique
-  createdAt      DateTime  @default(now())
-  disabledAt     DateTime?
-  lastLoginAt    DateTime?
+// Every sign-in (M8). A staff user signs in to the admin console with
+// email + password + MFA; a member user signs in to the portal with the
+// member ID + password. An officer who is also a member has one of each,
+// kept apart on purpose (D-17). Staff user ids are the ids the old Admin
+// table used, so approvals, audit entries and ledger postings that name
+// them still do.
+model User {
+  id                 String    @id @default(cuid())
+  kind               String    @default("staff") // staff | member
+  email              String?   @unique // staff sign-in; null for members
+  name               String
+  passwordHash       String // bcrypt, carried over unchanged
+  // member: the member this login is. staff: the member the officer also is, if any.
+  memberId           String?
+  createdAt          DateTime  @default(now())
+  disabledAt         DateTime? // a member user: portal access switched off
+  lastLoginAt        DateTime?
+  // Member sessions issued before this moment are rejected (a new password,
+  // or access switched off). Staff sessions are rows (StaffSession).
+  sessionsValidAfter DateTime?
 
   // TOTP multi-factor authentication. Secrets are AES-256-GCM encrypted
   // with MFA_ENCRYPTION_KEY; mfaLastUsedStep blocks code replay.
@@ -31,18 +42,21 @@ model Admin {
   roles         StaffRoleAssignment[]
   sessions      StaffSession[]
   recoveryCodes MfaRecoveryCode[]
+  member        Member?               @relation(fields: [memberId], references: [id], onDelete: Restrict)
+
+  @@unique([kind, memberId])
 }
 
 model StaffRoleAssignment {
   id        String   @id @default(cuid())
-  adminId   String
+  userId    String
   role      String // a role key from src/modules/permissions
   grantedBy String? // staff id, or null for migrations and CLI
   grantedAt DateTime @default(now())
 
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@unique([adminId, role])
+  @@unique([userId, role])
 }
 
 // Server-side staff sessions. The session cookie carries a random token;
@@ -50,7 +64,7 @@ model StaffRoleAssignment {
 // 30 minutes without activity, or when revoked.
 model StaffSession {
   id            String    @id // sha256(token)
-  adminId       String
+  userId        String
   createdAt     DateTime  @default(now())
   lastSeenAt    DateTime  @default(now())
   expiresAt     DateTime
@@ -60,21 +74,21 @@ model StaffSession {
   ip            String?
   userAgent     String?
 
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([adminId])
+  @@index([userId])
 }
 
 model MfaRecoveryCode {
   id        String    @id @default(cuid())
-  adminId   String
+  userId    String
   codeHash  String    @unique // sha256 of the normalised code
   usedAt    DateTime?
   createdAt DateTime  @default(now())
 
-  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([adminId])
+  @@index([userId])
 }
 
 model Member {
@@ -99,10 +113,11 @@ model Member {
   lastContributionDate     DateTime?
   thisMonth                String    @default("NOT PAID")
   riskFlag                 String    @default("LOW")
+  // Before M8 the portal login lived here. Frozen: no longer read or
+  // written (the login is a member User now); kept for rollback until the
+  // migration is verified in production, then dropped.
   portalEnabled            Boolean   @default(false)
   portalPassword           String?
-  // Portal sessions issued before this moment are rejected (set when the
-  // portal password changes or access is switched off).
   portalSessionsValidAfter DateTime?
   // Last month for which dues obligations were considered (created, or
   // skipped while inactive). Maintained by src/modules/contributions.
@@ -121,6 +136,7 @@ model Member {
   yearlyTotals              YearlyTotal[]
   withdrawals               Withdrawal[]
   portalPayments            PortalPayment[]
+  users                     User[]
 }
 
 model YearlyTotal {

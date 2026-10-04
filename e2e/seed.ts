@@ -14,9 +14,9 @@ async function main() {
   await resetDatabase()
   const password = await bcrypt.hash(STAFF_PASSWORD, 4)
   for (const s of Object.values(STAFF)) {
-    await prisma.admin.create({
+    await prisma.user.create({
       data: {
-        id: s.id, email: s.email, name: s.name, password,
+        id: s.id, kind: 'staff', email: s.email, name: s.name, passwordHash: password,
         mfaSecret: encryptSecret(TOTP_SECRET), mfaEnabledAt: new Date(),
         roles: { create: [{ role: s.role }] },
       },
@@ -26,8 +26,11 @@ async function main() {
     data: {
       id: MEMBER.id, legalName: MEMBER.name, joinDate: new Date('2024-01-01'), status: 'Active', email: 'ada@e2e.test',
       monthsActive: 24, archiveLifetime: 2000, contributions2026: 180, overallContributions: 2000,
-      portalEnabled: true, portalPassword: await bcrypt.hash(MEMBER.password, 4),
     },
+  })
+  // Ada's portal login (M8: a member user).
+  await prisma.user.create({
+    data: { kind: 'member', memberId: MEMBER.id, name: MEMBER.name, passwordHash: await bcrypt.hash(MEMBER.password, 4) },
   })
   await prisma.member.create({
     data: {

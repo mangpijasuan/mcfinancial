@@ -70,7 +70,7 @@ describe('account controls', () => {
     expect((await callRoute('staff/[id]', 'PATCH', { params: { id: staffId('finance') }, body: { disabled: true } })).status).toBe(200)
     signInAs('finance')
     expect((await callRoute('contributions', 'GET')).status).toBe(401)
-    expect(await prisma.staffSession.count({ where: { adminId: staffId('finance'), revokedAt: null } })).toBe(0)
+    expect(await prisma.staffSession.count({ where: { userId: staffId('finance'), revokedAt: null } })).toBe(0)
   })
 
   it('a password reset ends existing sessions', async () => {
@@ -81,13 +81,13 @@ describe('account controls', () => {
   })
 
   it('an MFA reset clears the authenticator and recovery codes', async () => {
-    await prisma.mfaRecoveryCode.create({ data: { adminId: staffId('finance'), codeHash: 'x' } })
+    await prisma.mfaRecoveryCode.create({ data: { userId: staffId('finance'), codeHash: 'x' } })
     signInAs('administrator')
     const res = await callRoute('staff/[id]/reset-mfa', 'POST', { params: { id: staffId('finance') } })
     expect(res.json).toMatchObject({ mfaEnabled: false })
-    const admin = await prisma.admin.findUniqueOrThrow({ where: { id: staffId('finance') } })
+    const admin = await prisma.user.findUniqueOrThrow({ where: { id: staffId('finance') } })
     expect(admin).toMatchObject({ mfaSecret: null, mfaEnabledAt: null })
-    expect(await prisma.mfaRecoveryCode.count({ where: { adminId: staffId('finance') } })).toBe(0)
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: staffId('finance') } })).toBe(0)
     signInAs('finance')
     expect((await callRoute('contributions', 'GET')).status).toBe(401)
   })

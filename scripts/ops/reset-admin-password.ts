@@ -31,7 +31,7 @@ async function main() {
   const prisma = new PrismaClient()
   try {
     const hashed = await bcrypt.hash(password, 10)
-    const existing = await prisma.admin.findUnique({ where: { email } })
+    const existing = await prisma.user.findUnique({ where: { email } })
     // Recorded in the audit log like any other change (system actor).
     const audit = (action: string, entityId: string) => ({
       actorType: 'system', actorLabel: 'cli:reset-admin-password',
@@ -39,16 +39,16 @@ async function main() {
     })
     if (existing) {
       await prisma.$transaction(async (tx) => {
-        await tx.admin.update({
+        await tx.user.update({
           where: { email },
           data: {
-            password: hashed,
+            passwordHash: hashed,
             ...(resetMfa ? { mfaSecret: null, mfaPendingSecret: null, mfaEnabledAt: null, mfaLastUsedStep: null } : {}),
           },
         })
-        if (resetMfa) await tx.mfaRecoveryCode.deleteMany({ where: { adminId: existing.id } })
+        if (resetMfa) await tx.mfaRecoveryCode.deleteMany({ where: { userId: existing.id } })
         await tx.staffSession.updateMany({
-          where: { adminId: existing.id, revokedAt: null },
+          where: { userId: existing.id, revokedAt: null },
           data: { revokedAt: new Date(), revokedReason: 'cli_reset' },
         })
         await tx.auditLog.create({ data: audit('admin.password.reset', existing.id) })
@@ -56,8 +56,8 @@ async function main() {
       console.log(`Password updated for ${email}${resetMfa ? '; two-factor authentication cleared' : ''}. All sessions ended.`)
     } else {
       await prisma.$transaction(async (tx) => {
-        const created = await tx.admin.create({ data: { email, name: 'Millionaires Club Admin', password: hashed } })
-        await tx.staffRoleAssignment.create({ data: { adminId: created.id, role: 'super_admin' } })
+        const created = await tx.user.create({ data: { kind: 'staff', email, name: 'Millionaires Club Admin', passwordHash: hashed } })
+        await tx.staffRoleAssignment.create({ data: { userId: created.id, role: 'super_admin' } })
         await tx.auditLog.create({ data: audit('admin.create', created.id) })
       })
       console.log(`Created Super Admin ${email}. Two-factor setup happens at first sign-in.`)

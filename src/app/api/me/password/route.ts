@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
   if (await isRateLimited(limitKey, LIMITS.account)) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
   }
-  const admin = await prisma.admin.findUniqueOrThrow({ where: { id: auth.principal.id } })
-  if (!(await bcrypt.compare(current, admin.password))) {
+  const admin = await prisma.user.findUniqueOrThrow({ where: { id: auth.principal.id } })
+  if (!(await bcrypt.compare(current, admin.passwordHash))) {
     await recordFailedAttempt(limitKey)
     return badRequest('Your current password is not correct.')
   }
@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
 
   const hashed = await bcrypt.hash(next, 10)
   const revoked = await prisma.$transaction(async (tx) => {
-    await tx.admin.update({ where: { id: admin.id }, data: { password: hashed } })
+    await tx.user.update({ where: { id: admin.id }, data: { passwordHash: hashed } })
     const count = await revokeStaffSessions(tx, admin.id, 'password_changed', auth.principal.sessionId)
     await recordAudit(tx, auditContext(req, auth.principal), {
       action: 'staff.password.change', entityType: 'admin', entityId: admin.id,

@@ -9,7 +9,7 @@ export async function GET() {
   const auth = await requireStaff()
   if (auth.error) return auth.error
   const rows = await prisma.staffSession.findMany({
-    where: { adminId: auth.principal.id, revokedAt: null, expiresAt: { gt: new Date() } },
+    where: { userId: auth.principal.id, revokedAt: null, expiresAt: { gt: new Date() } },
     orderBy: { lastSeenAt: 'desc' },
     select: { id: true, createdAt: true, lastSeenAt: true, ip: true, userAgent: true },
   })

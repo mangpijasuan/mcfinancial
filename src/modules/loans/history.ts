@@ -124,7 +124,7 @@ export async function historyReview(db: Tx) {
   const [members, rows, staff, opening] = await Promise.all([
     db.member.findMany({ select: { id: true, legalName: true, nickname: true, status: true }, orderBy: { id: 'asc' } }),
     db.historicalLoan.findMany({ orderBy: [{ year: 'asc' }, { loanId: 'asc' }] }),
-    db.admin.findMany({ select: { id: true, name: true } }),
+    db.user.findMany({ where: { kind: 'staff' }, select: { id: true, name: true } }),
     ledgerOpening(db),
   ])
   const index = nameIndex(members)

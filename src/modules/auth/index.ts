@@ -50,9 +50,9 @@ async function resolveStaff(user: SessionUser): Promise<StaffPrincipal | null> {
   const sessionId = hashSessionToken(user.sid)
   const row = await prisma.staffSession.findUnique({
     where: { id: sessionId },
-    include: { admin: { include: { roles: { select: { role: true } } } } },
+    include: { user: { include: { roles: { select: { role: true } } } } },
   })
-  if (!row || row.revokedAt || row.adminId !== user.id) return null
+  if (!row || row.revokedAt || row.userId !== user.id || row.user.kind !== 'staff') return null
 
   const now = Date.now()
   if (now >= row.expiresAt.getTime() || now - row.lastSeenAt.getTime() > STAFF_SESSION_IDLE_MS) {
@@ -60,36 +60,37 @@ async function resolveStaff(user: SessionUser): Promise<StaffPrincipal | null> {
     await prisma.staffSession.updateMany({ where: { id: sessionId, revokedAt: null }, data: { revokedAt: new Date(), revokedReason: reason } })
     return null
   }
-  if (row.admin.disabledAt) return null
+  if (row.user.disabledAt) return null
 
   if (now - row.lastSeenAt.getTime() > STAFF_SESSION_TOUCH_MS) {
     await prisma.staffSession.update({ where: { id: sessionId }, data: { lastSeenAt: new Date() } })
   }
 
-  const roles = row.admin.roles.map((r) => r.role).filter(isRoleKey)
+  const roles = row.user.roles.map((r) => r.role).filter(isRoleKey)
   return {
     kind: 'staff',
-    id: row.admin.id,
-    email: row.admin.email,
-    name: row.admin.name,
+    id: row.user.id,
+    email: row.user.email!,
+    name: row.user.name,
     roles,
     permissions: permissionsForRoles(roles),
     sessionId,
-    mfaEnrolled: Boolean(row.admin.mfaEnabledAt),
+    mfaEnrolled: Boolean(row.user.mfaEnabledAt),
     mfaVerified: Boolean(row.mfaVerifiedAt),
   }
 }
 
 async function resolveMember(user: SessionUser): Promise<MemberPrincipal | null> {
   if (!user.memberId) return null
-  const member = await prisma.member.findUnique({
-    where: { id: user.memberId },
-    select: { id: true, legalName: true, portalEnabled: true, portalSessionsValidAfter: true },
+  // The member's login (M8): switched off, or sessions cut off since, means signed out.
+  const login = await prisma.user.findUnique({
+    where: { kind_memberId: { kind: 'member', memberId: user.memberId } },
+    select: { disabledAt: true, sessionsValidAfter: true, member: { select: { id: true, legalName: true } } },
   })
-  if (!member || !member.portalEnabled) return null
-  const validAfter = member.portalSessionsValidAfter?.getTime()
+  if (!login || login.disabledAt || !login.member) return null
+  const validAfter = login.sessionsValidAfter?.getTime()
   if (validAfter && !(typeof user.loginAt === 'number' && user.loginAt >= validAfter)) return null
-  return { kind: 'member', memberId: member.id, name: member.legalName }
+  return { kind: 'member', memberId: login.member.id, name: login.member.legalName }
 }
 
 /** Who is making this request, checked against the database; null if nobody (valid). */

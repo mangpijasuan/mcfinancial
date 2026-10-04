@@ -17,7 +17,7 @@ export function hashSessionToken(token: string) {
 
 export async function createStaffSession(
   db: Db,
-  adminId: string,
+  userId: string,
   opts: { mfaVerified: boolean; ip?: string | null; userAgent?: string | null },
 ) {
   const token = randomBytes(32).toString('base64url')
@@ -25,7 +25,7 @@ export async function createStaffSession(
   await db.staffSession.create({
     data: {
       id: hashSessionToken(token),
-      adminId,
+      userId,
       expiresAt: new Date(now.getTime() + STAFF_SESSION_MAX_AGE_MS),
       mfaVerifiedAt: opts.mfaVerified ? now : null,
       ip: opts.ip?.slice(0, 100) ?? null,
@@ -36,9 +36,9 @@ export async function createStaffSession(
 }
 
 /** Ends sessions for an account (all of them, or all but one). */
-export async function revokeStaffSessions(db: Db, adminId: string, reason: string, exceptSessionId?: string) {
+export async function revokeStaffSessions(db: Db, userId: string, reason: string, exceptSessionId?: string) {
   const result = await db.staffSession.updateMany({
-    where: { adminId, revokedAt: null, ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}) },
+    where: { userId, revokedAt: null, ...(exceptSessionId ? { id: { not: exceptSessionId } } : {}) },
     data: { revokedAt: new Date(), revokedReason: reason },
   })
   return result.count

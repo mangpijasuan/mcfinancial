@@ -93,17 +93,17 @@ export const authOptions: NextAuthOptions = {
           return null
         }
 
-        const admin = await prisma.admin.findFirst({
-          where: { email: { equals: email, mode: 'insensitive' } },
+        const admin = await prisma.user.findFirst({
+          where: { kind: 'staff', email: { equals: email, mode: 'insensitive' } },
           include: { roles: { select: { role: true } } },
         })
-        const passwordOk = admin ? await bcrypt.compare(creds.password, admin.password) : false
+        const passwordOk = admin ? await bcrypt.compare(creds.password, admin.passwordHash) : false
         if (!admin || !passwordOk || admin.disabledAt) {
           await recordFailedAttempt(rateLimitKey, ipKey(ip))
           await auditSignIn(req, 'auth.login.failure', 'admin', email, undefined, admin?.disabledAt ? { reason: 'disabled' } : undefined)
           return null
         }
-        const actor = { kind: 'staff' as const, id: admin.id, email: admin.email }
+        const actor = { kind: 'staff' as const, id: admin.id, email: admin.email! }
 
         let mfaMethod = 'not_enrolled'
         if (admin.mfaEnabledAt) {
@@ -130,14 +130,14 @@ export const authOptions: NextAuthOptions = {
           ip,
           userAgent: headerSource(req).headers.get('user-agent'),
         })
-        await prisma.admin.update({ where: { id: admin.id }, data: { lastLoginAt: new Date() } })
+        await prisma.user.update({ where: { id: admin.id }, data: { lastLoginAt: new Date() } })
 
         const roles = admin.roles.map((r) => r.role)
         const breakGlass = roles.includes('super_admin')
         await auditSignIn(req, 'auth.login.success', 'admin', email, actor, { mfa: mfaMethod, roles, breakGlass })
-        if (breakGlass) await notifyBreakGlass(admin.email, ip)
+        if (breakGlass) await notifyBreakGlass(admin.email!, ip)
 
-        return { id: admin.id, email: admin.email, name: admin.name, kind: 'staff', sid } as any
+        return { id: admin.id, email: admin.email!, name: admin.name, kind: 'staff', sid } as any
       },
     }),
     // Member sign-in (member ID + password)
@@ -158,14 +158,20 @@ export const authOptions: NextAuthOptions = {
           await alertLockout('member', attempted, ip)
           return null
         }
-        const member = await prisma.member.findUnique({ where: { id: attempted } })
-        const ok = member?.portalEnabled && member.portalPassword ? await bcrypt.compare(creds.password, member.portalPassword) : false
-        if (!member || !ok) {
+        // The member's login (M8), not the member record.
+        const login = await prisma.user.findUnique({
+          where: { kind_memberId: { kind: 'member', memberId: attempted } },
+          include: { member: { select: { id: true, legalName: true, email: true } } },
+        })
+        const ok = login && !login.disabledAt ? await bcrypt.compare(creds.password, login.passwordHash) : false
+        const member = login?.member
+        if (!login || !member || !ok) {
           await recordFailedAttempt(rateLimitKey, ipKey(ip))
           await auditSignIn(req, 'auth.login.failure', 'member', attempted)
           return null
         }
         await clearAttempts(rateLimitKey)
+        await prisma.user.update({ where: { id: login.id }, data: { lastLoginAt: new Date() } })
         await auditSignIn(req, 'auth.login.success', 'member', attempted, { kind: 'member', memberId: member.id })
         return { id: member.id, email: member.email || '', name: member.legalName, kind: 'member', memberId: member.id } as any
       },

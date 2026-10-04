@@ -48,39 +48,39 @@ export function checkCanManage(
 
 /** At least one enabled account with the Super Admin role must remain. */
 export async function superAdminWouldRemain(db: Db, excludingAdminId: string): Promise<boolean> {
-  const others = await db.admin.count({
-    where: { id: { not: excludingAdminId }, disabledAt: null, roles: { some: { role: 'super_admin' } } },
+  const others = await db.user.count({
+    where: { kind: 'staff', id: { not: excludingAdminId }, disabledAt: null, roles: { some: { role: 'super_admin' } } },
   })
   return others > 0
 }
 
 /** Replaces an account's role assignments; returns before/after lists. */
-export async function setRoles(db: Db, adminId: string, roles: RoleKey[], grantedBy: string | null) {
-  const current = await db.staffRoleAssignment.findMany({ where: { adminId }, select: { role: true } })
+export async function setRoles(db: Db, userId: string, roles: RoleKey[], grantedBy: string | null) {
+  const current = await db.staffRoleAssignment.findMany({ where: { userId }, select: { role: true } })
   const before = current.map((r) => r.role).sort()
   const remove = before.filter((r) => !roles.includes(r as RoleKey))
   const add = roles.filter((r) => !before.includes(r))
-  if (remove.length) await db.staffRoleAssignment.deleteMany({ where: { adminId, role: { in: remove } } })
-  if (add.length) await db.staffRoleAssignment.createMany({ data: add.map((role) => ({ adminId, role, grantedBy })) })
+  if (remove.length) await db.staffRoleAssignment.deleteMany({ where: { userId, role: { in: remove } } })
+  if (add.length) await db.staffRoleAssignment.createMany({ data: add.map((role) => ({ userId, role, grantedBy })) })
   return { before, after: [...roles].sort(), added: add, removed: remove }
 }
 
 type StaffRow = {
   id: string
-  email: string
+  email: string | null
   name: string
   createdAt: Date
   disabledAt: Date | null
   lastLoginAt: Date | null
   mfaEnabledAt: Date | null
-  linkedMemberId: string | null
+  memberId: string | null
   roles: { role: string }[]
 }
 
 export const staffSelect = {
   id: true, email: true, name: true, createdAt: true, disabledAt: true, lastLoginAt: true,
-  mfaEnabledAt: true, linkedMemberId: true, roles: { select: { role: true } },
-} satisfies Prisma.AdminSelect
+  mfaEnabledAt: true, memberId: true, roles: { select: { role: true } },
+} satisfies Prisma.UserSelect
 
 /** What the staff screens may see about an account — never secrets. */
 export function staffDto(row: StaffRow) {
@@ -94,7 +94,7 @@ export function staffDto(row: StaffRow) {
     disabled: Boolean(row.disabledAt),
     mfaEnabled: Boolean(row.mfaEnabledAt),
     lastLoginAt: row.lastLoginAt,
-    linkedMemberId: row.linkedMemberId,
+    linkedMemberId: row.memberId,
     createdAt: row.createdAt,
   }
 }

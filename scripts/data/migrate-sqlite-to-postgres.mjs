@@ -93,15 +93,28 @@ async function main() {
 
   await prisma.$transaction(async (tx) => {
     await tx.member.createMany({ data: rows.Member, skipDuplicates: true })
-    for (const { legacyRole, ...admin } of admins) {
-      await tx.admin.upsert({ where: { email: admin.email }, update: {}, create: admin })
-      const saved = await tx.admin.findUniqueOrThrow({ where: { email: admin.email } })
+    // Staff become staff users (M8), keeping their ids and password hashes.
+    for (const { legacyRole, password, linkedMemberId, ...admin } of admins) {
+      await tx.user.upsert({
+        where: { email: admin.email }, update: {},
+        create: { ...admin, kind: 'staff', passwordHash: password, memberId: linkedMemberId ?? null },
+      })
+      const saved = await tx.user.findUniqueOrThrow({ where: { email: admin.email } })
       await tx.staffRoleAssignment.upsert({
-        where: { adminId_role: { adminId: saved.id, role: legacyRole === 'super_admin' ? 'super_admin' : 'club_officer' } },
+        where: { userId_role: { userId: saved.id, role: legacyRole === 'super_admin' ? 'super_admin' : 'club_officer' } },
         update: {},
-        create: { adminId: saved.id, role: legacyRole === 'super_admin' ? 'super_admin' : 'club_officer' },
+        create: { userId: saved.id, role: legacyRole === 'super_admin' ? 'super_admin' : 'club_officer' },
       })
     }
+    // Members' portal passwords become member logins with the same hash
+    // (the same step as src/modules/auth/memberLogins.ts adoptPortalLogins).
+    await tx.$executeRawUnsafe(`
+      INSERT INTO "User" ("id", "kind", "name", "passwordHash", "memberId", "createdAt", "disabledAt", "sessionsValidAfter")
+      SELECT 'mu_' || replace(gen_random_uuid()::text, '-', ''), 'member', m."legalName", m."portalPassword", m."id", CURRENT_TIMESTAMP,
+             CASE WHEN m."portalEnabled" THEN NULL ELSE CURRENT_TIMESTAMP END, m."portalSessionsValidAfter"
+      FROM "Member" m
+      WHERE m."portalPassword" IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM "User" u WHERE u."kind" = 'member' AND u."memberId" = m."id")`)
     await tx.yearlyTotal.createMany({ data: rows.YearlyTotal, skipDuplicates: true })
     await tx.contribution.createMany({ data: rows.Contribution, skipDuplicates: true })
     await tx.loan.createMany({ data: rows.Loan, skipDuplicates: true })

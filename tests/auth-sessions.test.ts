@@ -20,13 +20,13 @@ describe('staff sessions', () => {
   it('a removed role stops working on the next request', async () => {
     signInAs('finance')
     expect((await listContributions()).status).toBe(200)
-    await prisma.staffRoleAssignment.deleteMany({ where: { adminId: staffId('finance') } })
+    await prisma.staffRoleAssignment.deleteMany({ where: { userId: staffId('finance') } })
     expect((await listContributions()).status).toBe(403)
   })
 
   it('a disabled account is locked out at once', async () => {
     signInAs('finance')
-    await prisma.admin.update({ where: { id: staffId('finance') }, data: { disabledAt: new Date() } })
+    await prisma.user.update({ where: { id: staffId('finance') }, data: { disabledAt: new Date() } })
     expect((await listContributions()).status).toBe(401)
   })
 
@@ -81,7 +81,9 @@ describe('member sessions', () => {
   it('end when portal access is switched off', async () => {
     signInAsMember(TEST_IDS.member)
     expect((await callRoute('portal/me', 'GET')).status).toBe(200)
-    await prisma.member.update({ where: { id: TEST_IDS.member }, data: { portalEnabled: false } })
+    signInAs('admin')
+    expect((await callRoute('members/[id]/set-password', 'POST', { params: { id: TEST_IDS.member }, body: { enabled: false } })).json.portalEnabled).toBe(false)
+    signInAsMember(TEST_IDS.member)
     expect((await callRoute('portal/me', 'GET')).status).toBe(401)
   })
 
