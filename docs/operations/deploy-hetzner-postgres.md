@@ -129,11 +129,12 @@ docker compose -f docker-compose.hetzner.yml exec \
 unset NEW_ADMIN_PASSWORD
 ```
 
-To load the club's records, upload the decrypted data file (README, "Real club data") straight into a private file (`chmod 600 club-data.json`), copy it into the container, seed from it, and delete both copies:
+To load the club's records, upload the decrypted data file (README, "Real club data") straight into a private file (`chmod 600 club-data.json`), copy it into the container, check it, seed from it, and delete both copies:
 
 ```bash
 read -rsp 'Admin password (12+ characters): ' ADMIN_SEED_PASSWORD; echo; export ADMIN_SEED_PASSWORD
 docker compose -f docker-compose.hetzner.yml cp club-data.json app:/tmp/club-data.json
+docker compose -f docker-compose.hetzner.yml exec -e SEED_DATA_FILE=/tmp/club-data.json app npm run -s data:check
 docker compose -f docker-compose.hetzner.yml exec \
   -e SEED_DATA_FILE=/tmp/club-data.json -e ADMIN_SEED_PASSWORD \
   app npx prisma db seed
@@ -142,7 +143,7 @@ shred -u club-data.json
 unset ADMIN_SEED_PASSWORD
 ```
 
-The seed refuses to load demo data in production.
+`data:check` writes nothing: it prints the record counts and totals for the Treasurer to compare, then any problems by record ID (README, "Real club data"). Seed only when it ends with "The file can be loaded"; the seed refuses a file with errors anyway, before writing anything. The seed refuses to load demo data in production.
 
 **Existing installation created with `prisma db push`** (before migrations existed) — baseline it once. Take a backup first — `scripts/ops/backup-postgres.sh` if encrypted backups are already set up (step 9), otherwise `(umask 077; docker compose -f docker-compose.hetzner.yml exec -T postgres pg_dump -Fc -U mcfinancial mcfinancial > pre-migration.dump)`, copied off the server and then shredded — then compare the live schema with the current one:
 

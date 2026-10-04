@@ -9,10 +9,11 @@
 // Refuses to load demo data into a production database.
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { PrismaClient } from '@prisma/client'
+import { Prisma, PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { DEFAULT_ADMIN_EMAIL } from '../src/lib/brand'
 import { adoptPortalLogins } from '../src/modules/auth/memberLogins'
+import { checkClubData, formatDataCheck } from '../src/modules/data/fileCheck'
 
 const prisma = new PrismaClient()
 
@@ -42,6 +43,10 @@ function loadData(): { data: SeedData; label: string } {
 
 async function main() {
   const { data, label } = loadData()
+  // Nothing is written from a file with errors: a half-loaded club is worse
+  // than none (npm run data:check shows the same report without loading).
+  const check = checkClubData(data, Prisma.dmmf.datamodel.models)
+  if (check.errors.length) throw new Error(`The data file has errors; nothing was loaded.\n\n${formatDataCheck(check)}`)
   console.log(`🌱 Seeding ${label}...`)
 
   // Default admin account (Super Admin; sets up two-factor at first sign-in)
