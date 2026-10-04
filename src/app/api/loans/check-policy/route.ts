@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma'
 import { checkLoanPolicy, calcApplicationFee } from '@/lib/loanPolicy'
 import { requirePermission } from '@/modules/auth'
 import { badRequest, readJsonObject, requiredString } from '@/lib/http'
+import { forLoanPolicy } from '@/modules/accounting/reads'
 
 export async function POST(req: NextRequest) {
   const auth = await requirePermission('loans.create')
@@ -33,7 +34,7 @@ export async function POST(req: NextRequest) {
   })
 
   const result = checkLoanPolicy(
-    member,
+    await prisma.$transaction((tx) => forLoanPolicy(tx, member)),
     parseFloat(amount) || 0,
     parseInt(termMonths) || 12,
     lastPaidLoan?.updatedAt

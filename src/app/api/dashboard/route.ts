@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/modules/auth'
+import { sum, toLegacyDollars } from '@/lib/money'
+import { ledgerMemberFigures, outstandingDollars, readSource, withLoanBalances } from '@/modules/accounting/reads'
 
 export async function GET() {
   const auth = await requirePermission('dashboard.view')
@@ -39,10 +41,17 @@ export async function GET() {
     }),
     prisma.loan.findMany({
       where: { status: 'Active' },
-      select: { loanId: true, borrowerName: true, loanAmount: true, balanceRemaining: true, monthlyDue: true, nextDueDate: true, overdue: true },
+      select: { loanId: true, borrowerName: true, loanAmount: true, balanceRemaining: true, monthlyDue: true, nextDueDate: true, overdue: true, lifecycle: true },
       orderBy: { overdue: 'desc' },
     }),
   ])
+
+  // Balances from the ledger once screens read from it (M6).
+  const source = await readSource(prisma)
+  const activeLoansDetail = await withLoanBalances(prisma, loanList)
+  const totalContributions = source.source === 'ledger'
+    ? toLegacyDollars(sum([...(await ledgerMemberFigures(prisma)).values()].map((f) => f.contributedCents)))
+    : memberOverallContrib._sum.overallContributions ?? 0
 
   const monthLabels = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
   const byMonth = Array.from({ length: 12 }, () => 0)
@@ -60,8 +69,8 @@ export async function GET() {
     stats: {
       totalMembers, activeMembers, inactiveMembers,
       activeLoans, overdueLoans,
-      outstandingBalance: outstandingBal._sum.balanceRemaining ?? 0,
-      totalContributions: memberOverallContrib._sum.overallContributions ?? 0,
+      outstandingBalance: source.source === 'ledger' ? await outstandingDollars(prisma) : outstandingBal._sum.balanceRemaining ?? 0,
+      totalContributions,
       contributionsLogged: contribSum._sum.amount ?? 0,
       eligibleMembers,
       totalWithdrawn: withdrawalAgg._sum.amount ?? 0,
@@ -69,6 +78,7 @@ export async function GET() {
     },
     recentContribs,
     monthlyBreakdown,
-    activeLoansDetail: loanList,
+    activeLoansDetail,
+    balanceSource: source.source,
   })
 }

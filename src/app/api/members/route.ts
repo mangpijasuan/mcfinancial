@@ -5,6 +5,7 @@ import { sanitizeMember } from '@/lib/serializers'
 import { nextMemberId } from '@/lib/publicIds'
 import { auditContext, recordAudit } from '@/modules/audit'
 import { badRequest, parseDate, readJsonObject, requiredString } from '@/lib/http'
+import { withMemberFigures } from '@/modules/accounting/reads'
 
 export async function GET(req: NextRequest) {
   const auth = await requirePermission('members.read')
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
     prisma.member.findMany({ where, orderBy: { id: 'asc' }, skip: (page - 1) * limit, take: limit }),
     prisma.member.count({ where }),
   ])
-  return NextResponse.json({ members: members.map(sanitizeMember), total, page, pages: Math.ceil(total / limit) })
+  const shown = await withMemberFigures(prisma, members)
+  return NextResponse.json({ members: shown.map(sanitizeMember), total, page, pages: Math.ceil(total / limit) })
 }
 
 export async function POST(req: NextRequest) {

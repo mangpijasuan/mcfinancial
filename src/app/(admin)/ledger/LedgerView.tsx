@@ -78,6 +78,7 @@ export default function LedgerView({ canApprove }: { canApprove: boolean }) {
           <div className="flex flex-wrap gap-x-4 gap-y-1">
             <a href="/ledger/opening" className="text-sm text-indigo-700 underline">Opening balances (M4) →</a>
             <a href="/ledger/comparison" className="text-sm text-indigo-700 underline">Nightly comparison (M5) →</a>
+            <a href="/ledger/reads" className="text-sm text-indigo-700 underline">Ledger reads (M6) →</a>
           </div>
         }
       />

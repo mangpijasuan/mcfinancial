@@ -9,8 +9,9 @@ import type { Actors } from '@/modules/approvals/actors'
 import { checkLendingCapacity } from '@/modules/treasury'
 import { DEFAULT_DUE_DAY, buildSchedule } from './amortization'
 import { agreementTermsHash } from './lifecycle'
+import { forLoanPolicy } from '@/modules/accounting/reads'
 
-type Db = Pick<Prisma.TransactionClient, 'member' | 'loan'>
+type Db = Pick<Prisma.TransactionClient, 'member' | 'loan' | 'journalEntry' | '$queryRaw'>
 
 
 export type LoanInput = {
@@ -46,7 +47,7 @@ export async function checkLoan(db: Db, input: LoanInput) {
     orderBy: { updatedAt: 'desc' },
     select: { updatedAt: true },
   })
-  const check = checkLoanPolicy(borrower, input.loanAmount, input.termMonths, lastPaidLoan?.updatedAt)
+  const check = checkLoanPolicy(await forLoanPolicy(db, borrower), input.loanAmount, input.termMonths, lastPaidLoan?.updatedAt)
   const writtenOff = await db.loan.count({ where: { borrowerId: input.borrowerId, lifecycle: 'charged_off' } })
   if (writtenOff > 0) check.errors.push('Member has a loan that was written off.')
   if (parseDollars(check.applicationFee) >= fromLegacyDollars(input.loanAmount)) {

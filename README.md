@@ -127,7 +127,7 @@ Playwright drives Chromium through the golden paths (`e2e/`), with each role sig
 3. A member claims a Zelle payment; the treasurer confirms it, and it is credited with a receipt.
 4. A loan from start to first repayment: the treasurer records the bank balance (lending capacity), the loan officer creates a loan within it, the club and the borrower sign, the treasurer pays it out, and finance records a repayment.
 5. The Treasurer links the 2021–2025 loans to members by ID (exact names, a shared name, a name with no member) and confirms the balance of one still owed, which moves to the live loans.
-6. The accountant's chart approval is recorded, the treasurer proposes opening balances, the Board approves them, the nightly comparison runs clean, and December 2025 is reconciled and closed.
+6. The accountant's chart approval is recorded, the treasurer proposes opening balances, the Board approves them, the nightly comparison runs clean, December 2025 is reconciled and closed, and *Ledger reads* shows the ledger and the records agree on every figure screens show.
 
 The tests use their own database, `mcfinancial_e2e` on the Docker database (or `E2E_DATABASE_URL`). It is created if missing and **rebuilt and re-seeded on every run**, and they always start their own server, never one already running. Its name must end in `_e2e` or `_test`. The server runs on port 3300 (`E2E_PORT`), and a failed test keeps a trace and a screenshot in `test-results/` (`npx playwright show-trace <file>`). CI runs them on every pull request.
 
@@ -234,6 +234,18 @@ Each night `npm run ledger:compare` (after the daily jobs) checks that the two a
 - every money record dated from the cutover to today has a ledger entry.
 
 Each run is stored (never changed) and shown on *Ledger → Nightly comparison*, with the count of clean days in a row. Any difference emails `LEDGER_ALERT_EMAIL` (or `SECURITY_ALERT_EMAIL`) and restarts the count. **The ledger can become the system of record (M6) after 30 clean days in a row that include a month-end.** Someone with `ledger.manage_accounts` can rerun it from the page after fixing a difference.
+
+### Screens read from the ledger (M6)
+
+With `LEDGER_READS=true` (and opening balances posted), the figures screens show come from the ledger instead of the stored totals. Nothing else changes: each figure keeps its meaning.
+
+| Figure | Where it shows | From the records | From the ledger |
+|---|---|---|---|
+| A member's contributions | member page and list, portal, dashboard total | archive total + contributions tracked since | the member's capital (2000) postings other than withdrawals |
+| Loan eligibility (4 × contributions, $5,000 cap) | New loan, policy check | archive total + contributions tracked since | the same ledger figure |
+| A loan's balance | loan pages, repayment form, dashboard, portal, the most a member can pay by card | the stored balance | the loan's receivable (1100), once it is paid out |
+
+**Ledger → Ledger reads** shows every one of these figures from both sources and lists any that differ, plus the count of clean nightly comparisons. Turn the switch on only after 30 clean days including a month-end, and the Board's review of the first monthly report from the ledger: set `LEDGER_READS=true` in `.env.production` and restart. `false` switches back. Until opening balances are posted the switch has no effect.
 
 ## Approvals (maker / checker)
 
