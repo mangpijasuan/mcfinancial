@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useId, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, ExternalLink, AlertTriangle, CheckCircle, AlertCircle, ChevronRight } from 'lucide-react'
@@ -181,7 +181,7 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
   async function searchMember(q: string, setList: any) {
     if (q.length < 2) { setList([]); return }
     try {
-      const res = await fetch(`/api/members?search=${q}&limit=10`)
+      const res = await fetch(`/api/members?search=${encodeURIComponent(q)}&limit=10`)
       const d = await readJsonSafe(res)
       setList(Array.isArray(d?.members) ? d.members : [])
     } catch {
@@ -235,35 +235,12 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
     }
   }
 
-  function MemberSearch({ label, query, setQuery, list, setList, selected, setSelected, fieldKey, required }: any) {
-    return (
-      <div className="relative col-span-2">
-        <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1">{label}</label>
-        <input value={query} onChange={e => { setQuery(e.target.value); setSelected(null); setForm((f: any) => ({ ...f, [fieldKey]: '' })) }}
-          placeholder="Type to search members…"
-          className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-        {list.length > 0 && (
-          <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
-            {list.map((m: any) => (
-              <button key={m.id} type="button" onClick={() => { setSelected(m); setQuery(m.legalName); setList([]); setForm((f: any) => ({ ...f, [fieldKey]: m.id })) }}
-                className="w-full text-left px-4 py-2 hover:bg-indigo-50 text-sm border-b border-gray-100 last:border-0">
-                <span className="font-medium">{m.legalName}</span>
-                <span className="text-gray-400 text-xs ml-2">{m.id} · {m.status} · {m.monthsActive} mo</span>
-              </button>
-            ))}
-          </div>
-        )}
-        {selected && <p className="text-xs text-green-600 mt-1">✓ {selected.legalName} ({selected.id})</p>}
-      </div>
-    )
-  }
-
   return (
     <Modal open={open} onClose={onClose} title="New loan" width="max-w-2xl">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
-          <MemberSearch label="Borrower *" query={bSearch} setQuery={setBSearch} list={bList} setList={setBList} selected={bSelected} setSelected={setBSelected} fieldKey="borrowerId" required />
-          <MemberSearch label="Co-signer (optional)" query={cSearch} setQuery={setCSearch} list={cList} setList={setCList} selected={cSelected} setSelected={setCSelected} fieldKey="cosignerId" />
+          <MemberSearch label="Borrower *" query={bSearch} setQuery={setBSearch} list={bList} setList={setBList} selected={bSelected} setSelected={setBSelected} onPick={(id: string) => setForm(f => ({ ...f, borrowerId: id }))} />
+          <MemberSearch label="Co-signer (optional)" query={cSearch} setQuery={setCSearch} list={cList} setList={setCList} selected={cSelected} setSelected={setCSelected} onPick={(id: string) => setForm(f => ({ ...f, cosignerId: id }))} />
           <Input label="Loan date *" type="date" value={form.loanDate} onChange={set('loanDate')} required />
           <Select label="Term *" value={form.termMonths} onChange={set('termMonths')} required>
             {[12, 24].map(t => <option key={t} value={t}>{t} months</option>)}
@@ -360,5 +337,32 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
         </div>
       </form>
     </Modal>
+  )
+}
+
+// Defined outside NewLoanModal: a component declared inside another's render is
+// a new type on every render, so React would remount the input and drop focus
+// after each keystroke.
+function MemberSearch({ label, query, setQuery, list, setList, selected, setSelected, onPick }: any) {
+  const inputId = useId()
+  return (
+    <div className="relative col-span-2">
+      <label htmlFor={inputId} className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1">{label}</label>
+      <input id={inputId} value={query} onChange={e => { setQuery(e.target.value); setSelected(null); onPick('') }}
+        placeholder="Type to search members…" autoComplete="off"
+        className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+      {list.length > 0 && (
+        <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-40 overflow-y-auto">
+          {list.map((m: any) => (
+            <button key={m.id} type="button" onClick={() => { setSelected(m); setQuery(m.legalName); setList([]); onPick(m.id) }}
+              className="w-full text-left px-4 py-2 hover:bg-indigo-50 text-sm border-b border-gray-100 last:border-0">
+              <span className="font-medium">{m.legalName}</span>
+              <span className="text-gray-400 text-xs ml-2">{m.id} · {m.status} · {m.monthsActive} mo</span>
+            </button>
+          ))}
+        </div>
+      )}
+      {selected && <p className="text-xs text-green-600 mt-1">✓ {selected.legalName} ({selected.id})</p>}
+    </div>
   )
 }

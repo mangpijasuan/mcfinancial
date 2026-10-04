@@ -112,6 +112,23 @@ Tests run against a separate PostgreSQL database that is **wiped on every run**:
 - `tests/ownership.test.ts` — members only reach their own agreements, loans and payments.
 - `tests/payments.test.ts` — Zelle confirm/reject and the Stripe webhook record money exactly once, including under concurrent requests.
 
+### Browser tests
+
+```bash
+npm run build      # the tests run against a production build
+npm run test:e2e
+```
+
+Playwright drives Chromium through the golden paths (`e2e/`), with each role signed in through the real login (password, then a two-factor code):
+
+1. Every staff screen and the member portal load with no console errors, and phone layouts fit the screen.
+2. Finance records a cash contribution; the receipt is numbered and printable, and the member sees it in the portal.
+3. A member claims a Zelle payment; the treasurer confirms it, and it is credited with a receipt.
+4. A loan from start to first repayment: the treasurer records the bank balance (lending capacity), the loan officer creates a loan within it, the club and the borrower sign, the treasurer pays it out, and finance records a repayment.
+5. The accountant's chart approval is recorded, the treasurer proposes opening balances, the Board approves them, the nightly comparison runs clean, and December 2025 is reconciled and closed.
+
+The tests use their own database, `mcfinancial_e2e` (or `E2E_DATABASE_URL`), which is **emptied and re-seeded on every run**. Its name must end in `_e2e` or `_test`. The server runs on port 3300 (`E2E_PORT`), and a failed test keeps a trace and a screenshot in `test-results/` (`npx playwright show-trace <file>`). CI runs them on every pull request.
+
 ---
 
 ## Staff access: roles and two-factor authentication

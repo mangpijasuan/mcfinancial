@@ -43,3 +43,8 @@ backups/
 *.age
 age-identity*.txt
 coverage
+
+# Browser tests (Playwright)
+/e2e/.auth/
+/test-results/
+/playwright-report/

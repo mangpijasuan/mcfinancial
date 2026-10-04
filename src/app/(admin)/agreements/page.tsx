@@ -274,7 +274,7 @@ function AgreementModal({ agreement: initial, onClose, onSaved }: any) {
           <div className="flex gap-3">
             <input
               value={sig} onChange={e => setSig(e.target.value)}
-              placeholder="Type your full name to sign…"
+              placeholder="Type your full name to sign…" aria-label="Your full name"
               className="flex-1 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
             />
             <Button onClick={sign} disabled={saving || !sig.trim()}>

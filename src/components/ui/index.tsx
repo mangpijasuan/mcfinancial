@@ -98,11 +98,14 @@ export function Input({ label, error, className, id, ...props }: React.InputHTML
 }
 
 /* ── Select ─────────────────────────────────────────────── */
-export function Select({ label, error, children, className, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; error?: string }) {
+export function Select({ label, error, children, className, id, ...props }: React.SelectHTMLAttributes<HTMLSelectElement> & { label?: string; error?: string }) {
+  const generatedId = useId()
+  const selectId = id ?? generatedId
   return (
     <div className="flex flex-col gap-1">
-      {label && <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
+      {label && <label htmlFor={selectId} className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
       <select
+        id={selectId}
         className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white', error && 'border-red-400', className)}
         {...props}
       >
@@ -114,11 +117,14 @@ export function Select({ label, error, children, className, ...props }: React.Se
 }
 
 /* ── Textarea ───────────────────────────────────────────── */
-export function Textarea({ label, error, className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string }) {
+export function Textarea({ label, error, className, id, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label?: string; error?: string }) {
+  const generatedId = useId()
+  const textareaId = id ?? generatedId
   return (
     <div className="flex flex-col gap-1">
-      {label && <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
+      {label && <label htmlFor={textareaId} className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</label>}
       <textarea
+        id={textareaId}
         rows={3}
         className={cn('px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white resize-none', error && 'border-red-400', className)}
         {...props}
@@ -154,20 +160,28 @@ export function Table({ headers, children, loading }: { headers: string[]; child
 export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: {
   open: boolean; onClose: () => void; title: string; children: React.ReactNode; width?: string
 }) {
+  const titleId = useId()
   useEffect(() => {
     if (open) document.body.style.overflow = 'hidden'
     else document.body.style.overflow = ''
     return () => { document.body.style.overflow = '' }
   }, [open])
+  // Escape closes it, as people expect from a dialog.
+  useEffect(() => {
+    if (!open) return
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
 
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className={cn('relative bg-white rounded-2xl shadow-2xl w-full mx-auto max-h-[90vh] flex flex-col', width)}>
+      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={cn('relative bg-white rounded-2xl shadow-2xl w-full mx-auto max-h-[90vh] flex flex-col', width)}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
-          <h3 className="text-base font-semibold text-gray-900">{title}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors rounded-lg p-1 hover:bg-gray-100">
+          <h3 id={titleId} className="text-base font-semibold text-gray-900">{title}</h3>
+          <button type="button" aria-label="Close dialog" onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors rounded-lg p-1 hover:bg-gray-100">
             <X size={18} />
           </button>
         </div>

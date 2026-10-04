@@ -57,7 +57,7 @@ The Master Prompt's 18 phases are kept, but **reordered**: the security baseline
 | Property-based | Vitest + fast-check | Engine and ledger properties across thousands of generated cases | every commit |
 | Integration | Vitest against real Postgres (CI service container) | Posting service, triggers, idempotency, approvals, migrations | every commit |
 | Authorisation matrix | Vitest + a route table | Every role × every endpoint → expected 200/401/403 (catches the class of bug found in this session's audit) | every commit |
-| End-to-end | Playwright (already used ad hoc this session) | Golden paths on desktop and 390 px mobile: admin records and approves a payment; a member submits a Zelle claim → confirm → statement; the full loan lifecycle | pull requests |
+| End-to-end | Playwright (`e2e/`, CI job `e2e`) | Golden paths against a production build, staff signed in with password and TOTP: every screen loads without console errors (desktop and 390 px phone); a recorded contribution and its receipt; a member's Zelle claim → confirm → receipt; the full loan lifecycle (capacity → loan → signatures → payout → repayment); chart approval → opening balances → Board approval → nightly comparison → bank reconciliation → month-end close | pull requests |
 | Migration rehearsal | Scripted run on an **anonymised** production snapshot | M4 opening balances, M5 reconciliation, M9 loan linking | before each migration step |
 | Smart contracts *(Phase 12+)* | Foundry (unit, fuzz, invariant); Slither | See the invariants below | every contract commit |
 
