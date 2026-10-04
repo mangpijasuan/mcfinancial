@@ -1,0 +1,6 @@
+# Findings reviewed and accepted (gitleaks fingerprints). Each must be a
+# made-up test value, never a real secret: rotate a real one instead.
+#
+# e2e/fixtures.ts: the browser tests' two-factor encryption key, a fixed
+# test-only value (base64 of "e2e-key-e2e-key-...").
+44ffaf37f9ae942a889e58b063468aabbcfcc1f9:e2e/fixtures.ts:generic-api-key:36

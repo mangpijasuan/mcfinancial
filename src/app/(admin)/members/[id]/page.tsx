@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { ArrowLeft, Edit2, KeyRound, Globe, Shield } from 'lucide-react'
 import { Card, Table, Badge, StatusBadge, EligibleBadge, RiskBadge, LoanStatusBadge,
          Button, Modal, Input, Select, Spinner } from '@/components/ui'
-import { fmt$, fmtDate, fmtDateInput } from '@/lib/utils'
+import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
 import DuesPanel from '@/components/contributions/DuesPanel'
 

@@ -104,7 +104,12 @@ sh setup.sh
 ```bash
 npm test          # run once
 npm run test:watch
+npm run lint      # ESLint: React, TypeScript and the import boundaries
 ```
+
+**Lint and import boundaries** (`eslint.config.mjs`): pages and components never import the database client (they go through API routes and modules); domain modules and shared code never import pages or components; and the pure core (money, dates, the loan schedule, the ledger's rules, the dues helpers screens use) imports nothing from the server, only types. CI fails on any error or warning.
+
+**Secret scanning:** CI runs [gitleaks](https://github.com/gitleaks/gitleaks) over every commit, so a password, key or token committed anywhere fails the build, even if a later commit removes it. A reviewed, made-up test value can be accepted in `.gitleaksignore` with its reason. A real secret that was committed must be **rotated** (changed where it is used), because removing it from the code leaves it in the history.
 
 Tests run against a separate PostgreSQL database that is **wiped on every run**: `mcfinancial_test` on the Docker database by default, or `TEST_DATABASE_URL`. The name must end in `_test`, otherwise the run refuses to start. Fixtures are synthetic; never put real member data in tests.
 

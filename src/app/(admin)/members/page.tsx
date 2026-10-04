@@ -3,9 +3,9 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Plus, ExternalLink, ChevronRight } from 'lucide-react'
-import { Card, Table, EmptyState, Badge, StatusBadge, EligibleBadge, RiskBadge, PaidBadge,
+import { Card, Table, EmptyState, StatusBadge, EligibleBadge, RiskBadge, PaidBadge,
          Button, Modal, Input, Select, PageHeader, FilterBar, SearchInput } from '@/components/ui'
-import { fmt$, fmtDate, fmtDateInput } from '@/lib/utils'
+import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
 
 export default function MembersPage() {

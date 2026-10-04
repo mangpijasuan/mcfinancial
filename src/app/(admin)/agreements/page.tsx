@@ -158,16 +158,6 @@ function AgreementModal({ agreement: initial, onClose, onSaved }: any) {
     }
   }
 
-  async function updateAddress(field: string, value: string) {
-    try {
-      await fetch(`/api/agreements/${agreement.agreementId}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ [field]: value }),
-      })
-    } catch {
-      // best effort only
-    }
-  }
 
   const a = agreement
 
@@ -233,18 +223,18 @@ function AgreementModal({ agreement: initial, onClose, onSaved }: any) {
           {/* Signatures */}
           <div className="grid grid-cols-2 gap-4 pt-4 border-t border-amber-200">
             <div className="rounded-lg border border-gray-200 bg-white p-3">
-              <p className="font-sans text-xs text-gray-500 mb-1">Lender's Name</p>
+              <p className="font-sans text-xs text-gray-500 mb-1">Lender’s Name</p>
               <p className="font-bold">Millionaires Club</p>
-              <p className="font-sans text-xs text-gray-500 mt-3 mb-1">Lender's Signature</p>
+              <p className="font-sans text-xs text-gray-500 mt-3 mb-1">Lender’s Signature</p>
               {a.lenderSignature
                 ? <p className="text-green-700 font-bold" style={{fontFamily:'cursive'}}>{a.lenderSignature} ✓</p>
                 : <p className="text-gray-400 italic">Not yet signed</p>}
               {a.lenderSignedAt && <p className="text-xs text-gray-400 mt-0.5">{fmtDate(a.lenderSignedAt)}</p>}
             </div>
             <div className="rounded-lg border border-gray-200 bg-white p-3">
-              <p className="font-sans text-xs text-gray-500 mb-1">Borrower's Name</p>
+              <p className="font-sans text-xs text-gray-500 mb-1">Borrower’s Name</p>
               <p className="font-bold">{a.borrowerName}</p>
-              <p className="font-sans text-xs text-gray-500 mt-3 mb-1">Borrower's Signature</p>
+              <p className="font-sans text-xs text-gray-500 mt-3 mb-1">Borrower’s Signature</p>
               {a.borrowerSignature
                 ? <p className="text-green-700 font-bold" style={{fontFamily:'cursive'}}>{a.borrowerSignature} ✓</p>
                 : <p className="text-gray-400 italic">Not yet signed — member signs via portal</p>}
@@ -252,9 +242,9 @@ function AgreementModal({ agreement: initial, onClose, onSaved }: any) {
             </div>
             {a.cosignerName && (
               <div className="rounded-lg border border-gray-200 bg-white p-3">
-                <p className="font-sans text-xs text-gray-500 mb-1">Co-signer's Name</p>
+                <p className="font-sans text-xs text-gray-500 mb-1">Co-signer’s Name</p>
                 <p className="font-bold">{a.cosignerName}</p>
-                <p className="font-sans text-xs text-gray-500 mt-3 mb-1">Co-signer's Signature</p>
+                <p className="font-sans text-xs text-gray-500 mt-3 mb-1">Co-signer’s Signature</p>
                 {a.cosignerSignature
                   ? <p className="text-green-700 font-bold" style={{fontFamily:'cursive'}}>{a.cosignerSignature} ✓</p>
                   : <p className="text-gray-400 italic">Not yet signed — co-signer signs via portal</p>}

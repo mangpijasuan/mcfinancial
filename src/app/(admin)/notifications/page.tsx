@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { Send, Mail, AlertTriangle, BarChart2 } from 'lucide-react'
+import { Mail, AlertTriangle, BarChart2 } from 'lucide-react'
 import { Card, Button, PageHeader, Badge } from '@/components/ui'
 import { fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'

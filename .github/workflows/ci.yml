@@ -48,6 +48,9 @@ jobs:
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Lint (React, TypeScript, import boundaries)
+        run: npm run lint
+
       - name: Tests (unit, integration, authorization matrix; 100% coverage on the money path)
         run: npm run test:coverage
 
@@ -58,6 +61,27 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # Secret scanning: gitleaks over the whole history, so a password, key or
+  # token committed anywhere (even later removed) fails the build. Accepted
+  # test-only values are listed, with the reason, in .gitleaksignore.
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: stable
+          cache: false
+
+      - name: Install gitleaks
+        run: go install github.com/zricethezav/gitleaks/v8@v8.30.1
+
+      - name: Secret scan (every commit)
+        run: gitleaks git . --redact --no-banner --verbose
 
   # Browser tests (Playwright, e2e/): the golden paths in a real browser
   # against a production build, each role signed in with password and

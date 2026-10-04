@@ -47,7 +47,7 @@ export function e2eEnv(): Record<string, string> {
     DATABASE_URL: e2eDatabaseUrl(),
     NEXTAUTH_URL: BASE_URL,
     NEXTAUTH_SECRET: 'e2e-secret-e2e-secret-e2e-secret-0123456789',
-    MFA_ENCRYPTION_KEY: 'ZTJlLWtleS1lMmUta2V5LWUyZS1rZXktMDEyMzQ1Njc=',
+    MFA_ENCRYPTION_KEY: 'ZTJlLWtleS1lMmUta2V5LWUyZS1rZXktMDEyMzQ1Njc=', // gitleaks:allow (test-only key)
     CLUB_TIME_ZONE: 'America/Chicago',
     DUES_TRACKING_START: '2026-01',
     MAKER_CHECKER_ENFORCED: 'false',

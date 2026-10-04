@@ -1,5 +1,4 @@
 const fs = require('fs')
-const path = require('path')
 const { PrismaClient } = require('@prisma/client')
 
 const prisma = new PrismaClient()
@@ -36,7 +35,6 @@ async function main() {
   const sourceHistoricalLoans = JSON.parse(fs.readFileSync(historicalPath, 'utf8')).map(normalizeHistoricalLoan)
   const dbHistoricalLoans = (await prisma.historicalLoan.findMany()).map(normalizeHistoricalLoan)
 
-  const sourceById = new Map(sourceHistoricalLoans.map((loan) => [loan.loanId, loan]))
   const dbById = new Map(dbHistoricalLoans.map((loan) => [loan.loanId, loan]))
 
   const missingInDb = []
