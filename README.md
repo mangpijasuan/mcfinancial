@@ -61,11 +61,17 @@ To load real data into a fresh database (for example a rehearsal of the ledger m
 # once: encrypt the file to the club's backup key (docs/operations/backup-and-restore.md)
 age -e -R recipients.txt -o club-data.json.age club-data.json && shred -u club-data.json
 
-# when needed: decrypt to memory-backed /dev/shm, seed, delete
+# when needed: decrypt to memory-backed /dev/shm, check, seed, delete
 age -d -i ~/secure/mc-backup-identity.txt club-data.json.age > /dev/shm/club-data.json
+SEED_DATA_FILE=/dev/shm/club-data.json npm run data:check
 SEED_DATA_FILE=/dev/shm/club-data.json npx prisma db seed
 rm /dev/shm/club-data.json
 ```
+
+**Check the file first.** `npm run data:check` reads the file the way the seed would and writes nothing (it needs no database). It prints the record counts and totals to compare with the Treasurer's records, then any problems, named by record ID and never by a person's name:
+
+- **Errors** stop the load. These are a record listed twice (the seed would keep only the first), a member, loan or payment pointing at a record that is not in the file, a missing or mistyped field, an amount that is not whole cents (the ledger cannot post it), an unknown loan status, a portal password that is not a bcrypt hash, or a value the app fills in itself (receipt numbers, ledger entries, older-loan links). The seed runs the same check and loads nothing from a file with errors.
+- **Warnings** load, but are worth checking against the records: a member's overall total that is not archive + 2026, an archive total that is not the sum of its yearly totals, a loan's total paid that is not the sum of its payments, a paid-off loan with a balance, dates in the future or out of order, and member IDs not numbered like `MC-1234`.
 
 `SEED_DATA_FILE` takes the same shape as the old `prisma/seed-data.json` (optionally with `SEED_HISTORICAL_LOANS_FILE` for the historical loans). The originals are in git history (`git show c03472c:prisma/seed-data.json`), since the founder decided not to rewrite history; the repository must stay private. After importing, `npm run contributions:normalize` and `HISTORICAL_LOANS_FILE=… npm run loans:audit` check the database against the source.
 

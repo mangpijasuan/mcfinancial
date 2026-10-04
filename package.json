@@ -27,6 +27,7 @@
     "dues:service": "tsx scripts/jobs/service-dues.ts",
     "contributions:normalize": "node scripts/data/normalize-contributions.js",
     "loans:audit": "node scripts/data/audit-loans.js",
+    "data:check": "tsx scripts/data/check-data-file.ts",
     "loans:service": "tsx scripts/jobs/service-loans.ts",
     "loans:schedule-report": "tsx scripts/data/loan-schedule-report.ts",
     "ledger:opening": "tsx scripts/data/opening-balances.ts",
