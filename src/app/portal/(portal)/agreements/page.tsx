@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { FileSignature, CheckCircle } from 'lucide-react'
+import { Modal } from '@/components/ui'
 import { APP_NAME } from '@/lib/brand'
 
 async function readJsonSafe(res: Response) {
@@ -136,14 +137,9 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 className="text-base font-semibold">Loan Agreement — {a.agreementId}</h3>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">×</button>
-        </div>
-        <div className="px-6 py-5 space-y-5">
+    // The shared dialog: focus moves in and stays, Escape closes, focus returns.
+    <Modal open onClose={onClose} title={`Loan Agreement — ${a.agreementId}`} width="max-w-2xl">
+        <div className="space-y-5">
           {/* Document */}
           <div className="bg-[#fffdf7] border border-amber-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="text-center border-b border-amber-200 bg-gradient-to-b from-amber-50 to-transparent px-5 py-4">
@@ -199,12 +195,12 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
               </p>
               {isBorrower && (
                 <div className="grid grid-cols-3 gap-3">
-                  <input value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
-                  <input value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+                  <input value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
                 </div>
               )}
-              <input value={sig} onChange={e => setSig(e.target.value)} placeholder="Type your full legal name to sign…"
+              <input value={sig} onChange={e => setSig(e.target.value)} placeholder="Type your full legal name to sign…" aria-label="Your full legal name"
                 className="w-full px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
               {error && <p className="text-xs text-red-600">{error}</p>}
               <div className="flex items-center justify-between">
@@ -225,7 +221,6 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

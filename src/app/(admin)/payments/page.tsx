@@ -71,7 +71,7 @@ export default function PaymentsPage() {
       />
 
       <div className="flex flex-wrap items-center gap-3 mb-4">
-        <Select value={status} onChange={e => setStatus(e.target.value)}>
+        <Select aria-label="Status" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="pending">Pending review</option>
           <option value="completed">Completed</option>
           <option value="rejected">Rejected</option>

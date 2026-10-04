@@ -65,7 +65,7 @@ export default function LoanPaymentsPage() {
 
       <FilterBar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search borrower or loan ID…" />
-        <Select value={year} onChange={e => setYear(e.target.value)}>
+        <Select aria-label="Year" value={year} onChange={e => setYear(e.target.value)}>
           <option value="">All years</option>
           {yearOptions.map(y => <option key={y} value={y}>{y}</option>)}
         </Select>
@@ -166,14 +166,12 @@ function RecordRepaymentModal({ open, onClose, onSaved }: any) {
     <Modal open={open} onClose={onClose} title="Record loan repayment">
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="flex flex-col gap-1">
-          <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Loan *</label>
-          <select value={form.loanId} onChange={e => selectLoan(e.target.value)} required
-            className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white">
+          <Select label="Loan *" value={form.loanId} onChange={e => selectLoan(e.target.value)} required>
             <option value="">— Select active loan —</option>
             {loans.map(l => (
               <option key={l.loanId} value={l.loanId}>{l.loanId} · {l.borrowerName} · Balance: {fmt$(l.balanceRemaining)}</option>
             ))}
-          </select>
+          </Select>
           {selected && (
             <div className="text-xs text-gray-500 bg-gray-50 rounded-lg px-3 py-2 mt-1">
               Monthly due: <strong>{fmt$(selected.monthlyDue)}</strong> · Balance: <strong>{fmt$(selected.balanceRemaining)}</strong> · Next due: <strong>{fmtDate(selected.nextDueDate)}</strong>
