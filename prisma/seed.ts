@@ -12,6 +12,7 @@ import path from 'node:path'
 import { PrismaClient } from '@prisma/client'
 import bcrypt from 'bcryptjs'
 import { DEFAULT_ADMIN_EMAIL } from '../src/lib/brand'
+import { adoptPortalLogins } from '../src/modules/auth/memberLogins'
 
 const prisma = new PrismaClient()
 
@@ -50,15 +51,15 @@ async function main() {
   }
   const hashed = await bcrypt.hash(adminPassword, 10)
   const adminEmail = process.env.ADMIN_SEED_EMAIL || DEFAULT_ADMIN_EMAIL
-  const admin = await prisma.admin.upsert({
+  const admin = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {},
-    create: { email: adminEmail, name: 'Millionaires Club Admin', password: hashed },
+    create: { kind: 'staff', email: adminEmail, name: 'Millionaires Club Admin', passwordHash: hashed },
   })
   await prisma.staffRoleAssignment.upsert({
-    where: { adminId_role: { adminId: admin.id, role: 'super_admin' } },
+    where: { userId_role: { userId: admin.id, role: 'super_admin' } },
     update: {},
-    create: { adminId: admin.id, role: 'super_admin' },
+    create: { userId: admin.id, role: 'super_admin' },
   })
   console.log('✓ Admin account (Super Admin; sets up two-factor authentication at first sign-in)')
 
@@ -74,6 +75,9 @@ async function main() {
     })
   }
   console.log(`✓ ${data.members.length} members`)
+  // A data file from before M8 carries portal passwords on the members: they become logins.
+  const logins = await adoptPortalLogins(prisma)
+  if (logins) console.log(`✓ ${logins} member portal logins`)
 
   for (const y of data.yearlyTotals) {
     await prisma.yearlyTotal.upsert({

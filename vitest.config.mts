@@ -13,7 +13,7 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'tests/**/*.test.ts'],
     globalSetup: ['tests/setup/globalSetup.ts'],
     setupFiles: ['tests/setup/session.ts'],
-    // The money path must be fully tested (docs/architecture/11 §3):
+    // The money path, and member sign-in, must be fully tested (docs/architecture/11 §3):
     // `npm run test:coverage` fails if any of these drops below 100%.
     coverage: {
       provider: 'v8',
@@ -25,6 +25,7 @@ export default defineConfig({
         'src/modules/treasury/liquidity.ts', 'src/modules/treasury/index.ts', 'src/modules/accounting/comparison.ts',
         'src/modules/accounting/reconciliation.ts', 'src/modules/loans/history.ts',
         'src/modules/accounting/reads.ts',
+        'src/modules/auth/memberLogins.ts', 'src/modules/membership/numbers.ts',
       ],
       exclude: ['**/*.test.ts'],
       thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },

@@ -71,15 +71,15 @@ function hashRecoveryCode(code: string) {
 }
 
 /** Replaces the account's recovery codes; returns the new codes (shown once). */
-export async function issueRecoveryCodes(db: Db, adminId: string): Promise<string[]> {
+export async function issueRecoveryCodes(db: Db, userId: string): Promise<string[]> {
   const alphabet = 'abcdefghjkmnpqrstuvwxyz23456789'
   const codes = Array.from({ length: RECOVERY_CODE_COUNT }, () => {
     const bytes = randomBytes(10)
     const chars = Array.from(bytes, (b) => alphabet[b % alphabet.length]).join('')
     return `${chars.slice(0, 5)}-${chars.slice(5)}`
   })
-  await db.mfaRecoveryCode.deleteMany({ where: { adminId } })
-  await db.mfaRecoveryCode.createMany({ data: codes.map((code) => ({ adminId, codeHash: hashRecoveryCode(code) })) })
+  await db.mfaRecoveryCode.deleteMany({ where: { userId } })
+  await db.mfaRecoveryCode.createMany({ data: codes.map((code) => ({ userId, codeHash: hashRecoveryCode(code) })) })
   return codes
 }
 
@@ -93,24 +93,24 @@ export type SecondFactorResult = { ok: true; method: 'totp' | 'recovery_code' } 
  */
 export async function verifySecondFactor(
   db: Db,
-  admin: { id: string; mfaSecret: string | null },
+  user: { id: string; mfaSecret: string | null },
   code: string,
 ): Promise<SecondFactorResult> {
   const trimmed = code.trim()
-  if (!admin.mfaSecret || !trimmed) return { ok: false }
+  if (!user.mfaSecret || !trimmed) return { ok: false }
 
   if (/^\d{6}$/.test(trimmed)) {
-    const step = totpStep(decryptSecret(admin.mfaSecret), trimmed)
+    const step = totpStep(decryptSecret(user.mfaSecret), trimmed)
     if (step === null) return { ok: false }
-    const claimed = await db.admin.updateMany({
-      where: { id: admin.id, OR: [{ mfaLastUsedStep: null }, { mfaLastUsedStep: { lt: step } }] },
+    const claimed = await db.user.updateMany({
+      where: { id: user.id, OR: [{ mfaLastUsedStep: null }, { mfaLastUsedStep: { lt: step } }] },
       data: { mfaLastUsedStep: step },
     })
     return claimed.count === 1 ? { ok: true, method: 'totp' } : { ok: false }
   }
 
   const burned = await db.mfaRecoveryCode.updateMany({
-    where: { adminId: admin.id, codeHash: hashRecoveryCode(trimmed), usedAt: null },
+    where: { userId: user.id, codeHash: hashRecoveryCode(trimmed), usedAt: null },
     data: { usedAt: new Date() },
   })
   return burned.count === 1 ? { ok: true, method: 'recovery_code' } : { ok: false }

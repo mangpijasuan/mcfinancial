@@ -150,6 +150,14 @@ ADMIN_EMAIL_TO_RESET=admin@mcfinancial.local NEW_ADMIN_PASSWORD='a long passphra
 ```
 Leave out `RESET_MFA=1` to keep the existing authenticator. For anyone else, a staff administrator can reset their password or two-factor authentication under Staff & Roles.
 
+### Logins: one `User` table (M8)
+
+Every sign-in goes through the `User` table. A **staff user** signs in with an email address, a password and two-factor authentication; a **member user** signs in to the portal with a member ID and a password. An officer who is also a member has one of each, kept apart: the portal password never opens the staff screens, and staff roles, sessions and recovery codes can be held only by a staff user (the database refuses anything else).
+
+- **Portal access** is the member's login. *Members → a member → Portal access* sets the first password (which switches access on), changes it, or switches access off and on. A new password, or switching access off, ends the member's open portal sessions. Each change is in the audit log (`member.portal_access.update`).
+- **New members** get the next number after the highest one in use (`MC-0042`, then `MC-0043`), never a random one. Two members added at the same moment still get one number each.
+- The portal fields on the member record (`portalEnabled`, `portalPassword`, `portalSessionsValidAfter`) are no longer read or written. The migration copied them into member logins with the same password hashes, so nobody needs a new password. The fields stay for now so the migration can be rolled back; a later migration drops them once production has been checked.
+
 ---
 
 ## Daily use

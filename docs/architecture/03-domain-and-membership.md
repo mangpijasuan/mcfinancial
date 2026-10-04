@@ -50,7 +50,7 @@ erDiagram
 
 ### Key domain rules
 
-1. A **User** is a login; a **Member** is a person in the club. Staff may be members, and members may have no staff role. Today these are two unrelated tables (`Admin`, `Member`) joined by `linkedMemberId`.
+1. A **User** is a login; a **Member** is a person in the club. Staff may be members, and members may have no staff role. Since M8 every login is a `User`: a staff user (email, two-factor) or a member user (member ID, portal password), each pointing at its member. An officer who is also a member has one of each (D-17).
 2. A **payment** is money that arrived. An **obligation** or **installment** is money that was owed. An **allocation** links the two. This separation is what makes prepayments, partial payments and overpayments representable (F-10).
 3. **Balances are never stored as the source of truth.** A member's capital, a loan's outstanding principal and the club's cash are all sums over journal lines. Cached copies are allowed only if they can be rebuilt from the ledger and are checked nightly.
 4. **Fiat and MCTN never share an account, a table or a balance** (Master Prompt §9). A contribution of $20 and any points or MCTN awarded for it are separate events in separate contexts.

@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
   if (await isRateLimited(limitKey, LIMITS.mfa)) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
   }
-  const admin = await prisma.admin.findUniqueOrThrow({ where: { id: auth.principal.id } })
+  const admin = await prisma.user.findUniqueOrThrow({ where: { id: auth.principal.id } })
   const result = await verifySecondFactor(prisma, admin, code)
   if (!result.ok) {
     await recordFailedAttempt(limitKey)

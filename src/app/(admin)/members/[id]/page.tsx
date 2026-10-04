@@ -305,7 +305,7 @@ function PortalModal({ open, onClose, member, onSaved }: any) {
       body: JSON.stringify({ password: password || undefined, enabled: true }),
     })
     if (res.ok) { onSaved(await res.json()) }
-    else { setError('Failed to save.'); setSaving(false) }
+    else { setError((await res.json().catch(() => null))?.error || 'Failed to save.'); setSaving(false) }
   }
 
   async function disable() {

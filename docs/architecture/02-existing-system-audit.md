@@ -62,7 +62,7 @@ Severity: **H** = can produce wrong money or unauthorised access; **M** = integr
 | E-2 | Two Prisma schema files maintained by hand. | M | **Fixed (Stage 2):** one schema, PostgreSQL everywhere (D-02) |
 | E-3 | Prisma `db push` instead of migrations: there is no migration history for production. | H | **Fixed (Stage 2):** `prisma migrate` with a baseline; production baselines once ([deploy guide](../operations/deploy-hetzner-postgres.md#7-initialize-the-database)) |
 | E-4 | Business logic lives inside route handlers. The shared `paymentActions.ts` is the first extraction. | M | **Refactor** into modules (D-01) |
-| E-5 | New member IDs are random (`MC-3F9A…`) while existing ones are sequential (`MC-10001`). | L | **Refactor** |
+| E-5 | New member IDs are random (`MC-3F9A…`) while existing ones are sequential (`MC-10001`). | L | **Refactor**. **Built (M8):** new members get the next number after the highest in use, allocated under a lock |
 | E-6 | No input schema validation library; validation is hand-written per route. | M | **Refactor** (zod) |
 
 ### Found and fixed by the Stage 2 tests

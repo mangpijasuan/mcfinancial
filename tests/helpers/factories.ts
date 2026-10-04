@@ -9,18 +9,34 @@ import { STAFF_ACTORS, TEST_IDS, staffEmail, staffId, staffSid, type StaffActor 
 /** A fixed TOTP secret for fixture accounts (base32). */
 export const TEST_TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
 
+const TEST_MEMBER_PASSWORD_HASH = bcrypt.hashSync('test member password', 4)
+
+/**
+ * A member with a portal login (M8), on unless `portalEnabled: false`;
+ * `portalPassword` sets the login's hash; `portal: false` makes no login.
+ */
 export async function createMember(id: string, overrides: Record<string, unknown> = {}) {
-  return prisma.member.create({
+  const { portal, portalEnabled, portalPassword, ...data } = overrides
+  const member = await prisma.member.create({
     data: {
       id,
       legalName: `Test Member ${id}`,
       joinDate: new Date('2024-01-01'),
       status: 'Active',
       email: `${id.toLowerCase()}@example.test`,
-      portalEnabled: true,
-      ...overrides,
+      ...data,
     },
   })
+  if (portal !== false) {
+    await prisma.user.create({
+      data: {
+        kind: 'member', memberId: id, name: member.legalName,
+        passwordHash: (portalPassword as string | undefined) ?? TEST_MEMBER_PASSWORD_HASH,
+        disabledAt: portalEnabled === false ? new Date() : null,
+      },
+    })
+  }
+  return member
 }
 
 export const TEST_STAFF_PASSWORD = 'correct horse battery staple'
@@ -28,12 +44,13 @@ export const TEST_STAFF_PASSWORD = 'correct horse battery staple'
 /** A staff account with the given roles; MFA enrolled unless told otherwise. */
 export async function createStaff(id: string, roles: string[], opts: { mfa?: boolean; email?: string } = {}) {
   const mfa = opts.mfa ?? true
-  return prisma.admin.create({
+  return prisma.user.create({
     data: {
       id,
+      kind: 'staff',
       email: opts.email ?? `${id}@example.test`,
       name: id,
-      password: await bcrypt.hash(TEST_STAFF_PASSWORD, 4),
+      passwordHash: await bcrypt.hash(TEST_STAFF_PASSWORD, 4),
       mfaSecret: mfa ? encryptSecret(TEST_TOTP_SECRET) : null,
       mfaEnabledAt: mfa ? new Date() : null,
       roles: { create: roles.map((role) => ({ role })) },
@@ -42,12 +59,12 @@ export async function createStaff(id: string, roles: string[], opts: { mfa?: boo
 }
 
 /** A session row for a token; MFA-verified unless told otherwise. */
-export async function createSession(adminId: string, token: string, opts: { mfaVerified?: boolean; lastSeenAt?: Date; expiresAt?: Date } = {}) {
+export async function createSession(userId: string, token: string, opts: { mfaVerified?: boolean; lastSeenAt?: Date; expiresAt?: Date } = {}) {
   const now = new Date()
   return prisma.staffSession.create({
     data: {
       id: hashSessionToken(token),
-      adminId,
+      userId,
       mfaVerifiedAt: opts.mfaVerified ?? true ? now : null,
       lastSeenAt: opts.lastSeenAt ?? now,
       expiresAt: opts.expiresAt ?? new Date(now.getTime() + STAFF_SESSION_MAX_AGE_MS),

@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   const { secret, uri } = newTotpEnrolment(auth.principal.email)
   await prisma.$transaction(async (tx) => {
-    await tx.admin.update({ where: { id: auth.principal.id }, data: { mfaPendingSecret: encryptSecret(secret) } })
+    await tx.user.update({ where: { id: auth.principal.id }, data: { mfaPendingSecret: encryptSecret(secret) } })
     await recordAudit(tx, auditContext(req, auth.principal), {
       action: 'staff.mfa.setup_started', entityType: 'admin', entityId: auth.principal.id,
     })

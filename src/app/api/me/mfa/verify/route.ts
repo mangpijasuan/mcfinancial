@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Too many attempts. Try again in 15 minutes.' }, { status: 429 })
   }
 
-  const admin = await prisma.admin.findUniqueOrThrow({ where: { id: principal.id } })
+  const admin = await prisma.user.findUniqueOrThrow({ where: { id: principal.id } })
   if (!admin.mfaPendingSecret) return badRequest('Start the setup first.')
   const step = totpStep(decryptSecret(admin.mfaPendingSecret), code)
   if (step === null) {
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
   await clearAttempts(limitKey)
 
   const recoveryCodes = await prisma.$transaction(async (tx) => {
-    const activated = await tx.admin.updateMany({
+    const activated = await tx.user.updateMany({
       where: { id: principal.id, mfaEnabledAt: null, mfaPendingSecret: admin.mfaPendingSecret },
       data: { mfaSecret: admin.mfaPendingSecret, mfaPendingSecret: null, mfaEnabledAt: new Date(), mfaLastUsedStep: step },
     })

@@ -8,7 +8,3 @@ export function nextPublicId(prefix: string) {
   return `${prefix}-${compactId()}`
 }
 
-export function nextMemberId() {
-  return `MC-${compactId()}`
-}
-

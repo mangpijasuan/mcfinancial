@@ -162,6 +162,13 @@ The output should contain **only** the `AuditLog` table and its three indexes (a
 
 **Upgrading to roles and two-factor authentication** (migration `20260926020000_rbac_mfa`): set `MFA_ENCRYPTION_KEY` in `.env.production` *before* deploying. The migration turns each existing Super Admin into a Super Admin role holder and every other admin into the transitional Club Officer role (the audit log records each one). Every staff member is asked to set up two-factor authentication at their next sign-in, so tell them to have their phone ready.
 
+**Upgrading to one login table** (migration `20261007000000_identity_users`, M8): nothing to set beforehand. The migration renames `Admin` to `User` (staff keep their ids, passwords and authenticators) and gives every member with a portal password a member login with the same password, so nobody signs in differently. Afterwards, check that the number of member logins matches the members who had portal access:
+
+```bash
+docker compose -f docker-compose.hetzner.yml exec -T postgres psql -U mcfinancial mcfinancial -c \
+  "SELECT (SELECT count(*) FROM \"Member\" WHERE \"portalPassword\" IS NOT NULL) AS had_password, (SELECT count(*) FROM \"User\" WHERE kind = 'member') AS member_logins"
+```
+
 **Every deploy after that** (migrations run before the new version starts):
 
 ```bash

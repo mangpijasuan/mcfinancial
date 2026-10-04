@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/modules/auth'
 import { sanitizeMember } from '@/lib/serializers'
-import { nextMemberId } from '@/lib/publicIds'
+import { allocateMemberId } from '@/modules/membership/numbers'
 import { auditContext, recordAudit } from '@/modules/audit'
 import { badRequest, parseDate, readJsonObject, requiredString } from '@/lib/http'
 import { withMemberFigures } from '@/modules/accounting/reads'
@@ -47,9 +47,8 @@ export async function POST(req: NextRequest) {
   if (!legalName) return badRequest('Legal name is required.')
   const joinDate = parseDate(body.joinDate)
   if (!joinDate) return badRequest('A valid join date is required.')
-  const id = nextMemberId()
-
   const member = await prisma.$transaction(async (tx) => {
+    const id = await allocateMemberId(tx)
     const created = await tx.member.create({
       data: {
       id,

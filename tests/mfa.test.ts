@@ -69,7 +69,7 @@ describe('staff sign-in with MFA', () => {
     await expect(authorize({ email: s.email, password: TEST_STAFF_PASSWORD, code: '000000' })).rejects.toThrow('MFA_INVALID')
     const entries = await auditEntriesSince(marker)
     expect(entries.map((e) => e.action)).toContain('auth.mfa.failure')
-    expect(await prisma.staffSession.count({ where: { adminId: s.id } })).toBe(0)
+    expect(await prisma.staffSession.count({ where: { userId: s.id } })).toBe(0)
   })
 
   it('accepts each code only once', async () => {
@@ -95,7 +95,7 @@ describe('staff sign-in with MFA', () => {
 
   it('refuses a disabled account even with the right password', async () => {
     const s = await staff(['finance'])
-    await prisma.admin.update({ where: { id: s.id }, data: { disabledAt: new Date() } })
+    await prisma.user.update({ where: { id: s.id }, data: { disabledAt: new Date() } })
     expect(await authorize({ email: s.email, password: TEST_STAFF_PASSWORD, code: currentTotp(TEST_TOTP_SECRET) })).toBeNull()
   })
 
@@ -133,16 +133,16 @@ describe('enrolment', () => {
     expect(setup.json.qrDataUrl).toMatch(/^data:image\/png;base64,/)
 
     expect((await callRoute('me/mfa/verify', 'POST', { body: { code: '000000' } })).status).toBe(400)
-    expect((await prisma.admin.findUniqueOrThrow({ where: { id: s.id } })).mfaEnabledAt).toBeNull()
+    expect((await prisma.user.findUniqueOrThrow({ where: { id: s.id } })).mfaEnabledAt).toBeNull()
 
     const verify = await callRoute('me/mfa/verify', 'POST', { body: { code: currentTotp(setup.json.secret) } })
     expect(verify.status).toBe(200)
     expect(verify.json.recoveryCodes).toHaveLength(10)
 
-    const admin = await prisma.admin.findUniqueOrThrow({ where: { id: s.id } })
+    const admin = await prisma.user.findUniqueOrThrow({ where: { id: s.id } })
     expect(admin.mfaEnabledAt).not.toBeNull()
     expect(admin.mfaSecret).not.toContain(setup.json.secret)
-    expect(await prisma.mfaRecoveryCode.count({ where: { adminId: s.id } })).toBe(10)
+    expect(await prisma.mfaRecoveryCode.count({ where: { userId: s.id } })).toBe(10)
 
     // This session is now verified; the other (unverified) one was ended.
     expect((await callRoute('me', 'GET')).json.mfaVerified).toBe(true)

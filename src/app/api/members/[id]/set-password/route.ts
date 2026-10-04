@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import bcrypt from 'bcryptjs'
 import { requirePermission } from '@/modules/auth'
 import { auditContext, recordAudit } from '@/modules/audit'
-import { badRequest, notFound, readJsonObject } from '@/lib/http'
+import { badRequest, readJsonObject } from '@/lib/http'
+import { operationErrorResponse } from '@/lib/operationError'
+import { setPortalAccess } from '@/modules/auth/memberLogins'
 
+// Portal access for a member: a password (the first one gives access), or
+// switching access on or off. The login is a member User (M8).
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermission('members.portal_access')
   if (auth.error) return auth.error
@@ -13,34 +16,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const body = await readJsonObject(req)
   if (!body) return badRequest('Invalid request body.')
   const { password, enabled } = body
+  if (password !== undefined && password !== '' && typeof password !== 'string') return badRequest('The password must be text.')
+  if (enabled !== undefined && typeof enabled !== 'boolean') return badRequest('enabled must be true or false.')
 
-  if (password !== undefined && password !== '' && (typeof password !== 'string' || password.length < 8)) {
-    return badRequest('Password must be at least 8 characters.')
+  try {
+    const result = await prisma.$transaction(async (tx) => {
+      const changed = await setPortalAccess(tx, id, { password: password || undefined, enabled })
+      const member = await tx.member.findUniqueOrThrow({ where: { id }, select: { id: true, legalName: true } })
+      await recordAudit(tx, auditContext(req, auth.principal), {
+        action: 'member.portal_access.update', entityType: 'member', entityId: id,
+        before: { portalEnabled: changed.before },
+        after: { portalEnabled: changed.after },
+        metadata: { passwordChanged: changed.passwordChanged },
+      })
+      return { ...member, portalEnabled: changed.after }
+    })
+    return NextResponse.json(result)
+  } catch (err) {
+    const res = operationErrorResponse(err)
+    if (res) return res
+    throw err
   }
-  const existing = await prisma.member.findUnique({ where: { id }, select: { id: true, portalEnabled: true } })
-  if (!existing) return notFound('Member not found.')
-
-  const data: any = {}
-  if (typeof enabled === 'boolean') data.portalEnabled = enabled
-  if (password) data.portalPassword = await bcrypt.hash(password, 10)
-  if (password && enabled === undefined) data.portalEnabled = true
-  // A new password or switching access off ends the member's existing sessions.
-  if (data.portalPassword || data.portalEnabled === false) data.portalSessionsValidAfter = new Date()
-
-  const member = await prisma.$transaction(async (tx) => {
-    const updated = await tx.member.update({
-      where: { id },
-      data,
-      select: { id: true, legalName: true, portalEnabled: true },
-    })
-    await recordAudit(tx, auditContext(req, auth.principal), {
-      action: 'member.portal_access.update', entityType: 'member', entityId: id,
-      before: { portalEnabled: existing.portalEnabled },
-      after: { portalEnabled: updated.portalEnabled },
-      metadata: { passwordChanged: Boolean(data.portalPassword) },
-    })
-    return updated
-  })
-
-  return NextResponse.json(member)
 }
