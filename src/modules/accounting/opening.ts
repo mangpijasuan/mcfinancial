@@ -26,6 +26,7 @@ import type { Prisma } from '@prisma/client'
 import { type Cents, ZERO, add, cents, fromBigInt, subtract, sum, toBigInt } from '@/lib/money'
 import { type IsoDate, dateOnly, isoDateOf, todayIso } from '@/lib/dates'
 import { OperationError } from '@/lib/operationError'
+import { historyOpeningBlockers } from '@/modules/loans/history'
 import { type AuditContext, recordAudit } from '@/modules/audit'
 import type { Actors } from '@/modules/approvals/actors'
 import { buildSchedule, outstandingPrincipal, replay } from '@/modules/loans/amortization'
@@ -60,8 +61,8 @@ function addDays(date: IsoDate, days: number): IsoDate {
 
 // ── Reading the legacy records ─────────────────────────────────────────
 
-async function loadRecords(db: Tx) {
-  const [members, contributions, withdrawals, loans, historicalActive] = await Promise.all([
+async function loadRecords(db: Tx, cutover: IsoDate) {
+  const [members, contributions, withdrawals, loans, history] = await Promise.all([
     db.member.findMany({ select: { id: true, legalName: true, archiveLifetime: true, overallContributions: true }, orderBy: { id: 'asc' } }),
     db.contribution.findMany({
       select: { transactionId: true, memberId: true, amountCents: true, paymentDate: true, reversedAt: true, receiptNumber: true },
@@ -71,9 +72,9 @@ async function loadRecords(db: Tx) {
       include: { payments: { orderBy: [{ paymentDate: 'asc' }, { eventSeq: 'asc' }] } },
       orderBy: { loanId: 'asc' },
     }),
-    db.historicalLoan.aggregate({ where: { status: 'Active' }, _count: { id: true }, _sum: { balanceRemaining: true } }),
+    historyOpeningBlockers(db, cutover),
   ])
-  return { members, contributions, withdrawals, loans, historicalActive }
+  return { members, contributions, withdrawals, loans, history }
 }
 
 type Records = Awaited<ReturnType<typeof loadRecords>>
@@ -122,7 +123,7 @@ export type OpeningPlan = { opening: EntryInput[]; openingHash: string; report: 
 export async function planOpening(db: Tx, inputs: OpeningInputs, asOf: IsoDate = todayIso()): Promise<OpeningPlan> {
   const { cutover } = inputs
   const openingDate = addDays(cutover, -1)
-  const r = await loadRecords(db)
+  const r = await loadRecords(db, cutover)
   const anomalies: Anomaly[] = []
   const flag = (code: string, message: string, items: { id: string; cents?: Cents }[]) => {
     if (items.length === 0) return
@@ -207,13 +208,13 @@ export async function planOpening(db: Tx, inputs: OpeningInputs, asOf: IsoDate =
     live.filter((c) => c.amountCents <= BigInt(0)).map(asItem))
   flag('withdrawal_before_cutover', 'Withdrawals dated before the cutover (are the archive totals gross or net of them? not posted)',
     r.withdrawals.filter((w) => isoDateOf(w.withdrawalDate) < cutover).map((w) => ({ id: w.withdrawalId, cents: legacyCents(w.amount).amount })))
-  if (r.historicalActive._count.id > 0) {
-    anomalies.push({
-      code: 'historical_loans_active', count: r.historicalActive._count.id,
-      totalCents: legacyCents(r.historicalActive._sum.balanceRemaining!).amount,
-      message: 'Historical loans (2021–2025 table) still marked Active and not in the loans list: confirm their balances (M9); not posted',
-    })
-  }
+  // Older loans (M9): each one marked Active needs a confirmed balance first.
+  flag('historical_loans_unconfirmed',
+    'Older loans (2021–2025) marked Active without a confirmed balance: confirm them under Loan History → Link older loans before proposing',
+    r.history.unconfirmed.map((h) => ({ id: h.loanId, cents: h.cents })))
+  flag('historical_loans_confirmed_late',
+    'Older loans confirmed as of the cutover or later: their balance must be as of a day before the cutover',
+    r.history.confirmedTooLate.map((id) => ({ id })))
 
   // Projection: member capital and loan balances once everything is posted
   const capitalBy = new Map<string, Cents>(capitalLines.map((l) => [l.memberId!, l.credit!]))
@@ -343,6 +344,13 @@ export async function checkOpening(tx: Tx, inputs: OpeningInputs) {
   if (inputs.bankBalanceCents === null) throw new OperationError(400, 'Enter the bank balance at the cutover (from the statement).')
   const plan = await planOpening(tx, inputs)
   if (plan.opening.length === 0) throw new OperationError(422, 'There is nothing to open: no archive capital, bank balance or open loans.')
+  const history = await historyOpeningBlockers(tx, inputs.cutover)
+  if (history.unconfirmed.length) {
+    throw new OperationError(422, `Confirm the balances of the older loans still marked Active first (M9): ${history.unconfirmed.map((h) => h.loanId).join(', ')}.`)
+  }
+  if (history.confirmedTooLate.length) {
+    throw new OperationError(422, `These older loans were confirmed as of the cutover or later; their balance must be as of a day before it: ${history.confirmedTooLate.join(', ')}.`)
+  }
   if (!(await accountsReady(tx, plan.report.accounts))) {
     throw new OperationError(422, 'The chart of accounts must be approved before opening balances can be posted (Gate #1 A13).')
   }

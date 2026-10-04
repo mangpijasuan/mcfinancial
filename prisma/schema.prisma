@@ -110,15 +110,17 @@ model Member {
   createdAt                DateTime  @default(now())
   updatedAt                DateTime  @updatedAt
 
-  contributions   Contribution[]
-  duesPlans       DuesPlan[]
-  duesObligations DuesObligation[]
-  loansAsBorrower Loan[]           @relation("Borrower")
-  loansAsCosigner Loan[]           @relation("Cosigner")
-  loanPayments    LoanPayment[]
-  yearlyTotals    YearlyTotal[]
-  withdrawals     Withdrawal[]
-  portalPayments  PortalPayment[]
+  contributions             Contribution[]
+  duesPlans                 DuesPlan[]
+  duesObligations           DuesObligation[]
+  loansAsBorrower           Loan[]           @relation("Borrower")
+  loansAsCosigner           Loan[]           @relation("Cosigner")
+  historicalLoansAsBorrower HistoricalLoan[] @relation("HistoricalBorrower")
+  historicalLoansAsCosigner HistoricalLoan[] @relation("HistoricalCosigner")
+  loanPayments              LoanPayment[]
+  yearlyTotals              YearlyTotal[]
+  withdrawals               Withdrawal[]
+  portalPayments            PortalPayment[]
 }
 
 model YearlyTotal {
@@ -213,6 +215,8 @@ model Loan {
   nextDueDate      DateTime?
   overdue          Boolean   @default(false)
   notes            String?
+  // live: made in this app; legacy_import: moved from the 2021–2025 records (M9)
+  origin           String    @default("live")
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
@@ -314,6 +318,10 @@ model LoanPayment {
   borrower Member @relation(fields: [borrowerId], references: [id])
 }
 
+// Loans from the 2021–2025 records. The original fields are kept as they
+// were; M9 links each loan to its members by ID (never by name) and, for a
+// loan still marked Active, records the balance the Treasurer confirmed and
+// the live loan it was moved to (src/modules/loans/history.ts).
 model HistoricalLoan {
   id               String    @id @default(cuid())
   loanId           String    @unique
@@ -327,6 +335,22 @@ model HistoricalLoan {
   balanceRemaining Float     @default(0)
   status           String    @default("Paid Off")
   createdAt        DateTime  @default(now())
+
+  borrowerId            String?
+  cosignerId            String?
+  borrowerLink          String? // exact | reviewed | no_member; null = not linked yet
+  cosignerLink          String? // the same, for a loan with a co-signer
+  confirmedBalanceCents BigInt? // the Treasurer's figure, for a loan marked Active
+  balanceAsOf           DateTime? @db.Date
+  balanceConfirmedBy    String? // staff id
+  balanceConfirmedAt    DateTime?
+  importedLoanId        String?   @unique // the live loan carrying the balance, if any
+
+  borrower Member? @relation("HistoricalBorrower", fields: [borrowerId], references: [id], onDelete: Restrict)
+  cosigner Member? @relation("HistoricalCosigner", fields: [cosignerId], references: [id], onDelete: Restrict)
+
+  @@index([borrowerId])
+  @@index([cosignerId])
 }
 
 model Withdrawal {

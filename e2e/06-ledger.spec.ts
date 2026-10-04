@@ -5,8 +5,10 @@
 import { expect, test } from '@playwright/test'
 import { signedIn } from './helpers'
 
-// Member capital at the cutover: the seeded archive totals ($2,000 + $1,000).
-const BANK_AT_CUTOVER = '3,000.00'
+// The books tie when the bank equals member capital (the seeded archive
+// totals, $2,000 + $1,000) less the older loan still owed at the cutover
+// ($400 on HE-2, confirmed in 05-loan-history).
+const BANK_AT_CUTOVER = '2,600.00'
 
 test('opening balances, approval, comparison and month-end close', async ({ browser }) => {
   const treasurer = await signedIn(browser, 'treasurer')

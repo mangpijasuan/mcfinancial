@@ -16,6 +16,14 @@ import { cents } from '@/lib/money'
 
 const approve = (id: string) => callRoute('approvals/[id]/approve', 'POST', { params: { id }, body: {} })
 
+/** HL-T1, an older loan still marked Active: the Treasurer finds it was repaid (M9). */
+async function settleOlderLoan() {
+  signInAs('treasurer')
+  const hl = await prisma.historicalLoan.findUniqueOrThrow({ where: { loanId: 'HL-T1' } })
+  expect((await callRoute('loan-history/[id]/link', 'POST', { params: { id: hl.id }, body: { role: 'borrower', memberId: null } })).status).toBe(200)
+  expect((await callRoute('loan-history/[id]/confirm', 'POST', { params: { id: hl.id }, body: { balance: '0', asOf: '2025-12-31' } })).json).toMatchObject({ loanId: null })
+}
+
 async function approveChart() {
   const codes = (await prisma.ledgerAccount.findMany({ select: { code: true } })).map((a) => a.code)
   await prisma.$transaction((tx) => approveAccounts(tx, { codes, approvedBy: staffId('treasurer'), note: 'test chart approval' }))
@@ -78,7 +86,7 @@ describe('the report', () => {
     expect(r.loansAtCutover.map((l: any) => [l.loanId, l.balanceCents, l.source])).toEqual([['LBAD', 80000, 'derived'], ['LPRE', 60000, 'derived']])
     expect(r.openingEquityCents).toBe(500000 + 140000 - 150000)
     expect(r.anomalies.map((a: any) => a.code)).toEqual(expect.arrayContaining([
-      'contribution_before_cutover', 'contribution_future_dated', 'historical_loans_active',
+      'contribution_before_cutover', 'contribution_future_dated', 'historical_loans_unconfirmed',
     ]))
     expect(r.checks.loans).toEqual([expect.objectContaining({ loanId: 'LBAD', ledgerCents: 80000, legacyCents: 90000 })])
     // M1: 1000 + 60 = 1060 ✓. M2: 500 − 100 = 400 in the ledger, but the record (520 − 100) counts the 2025 contribution.
@@ -112,6 +120,10 @@ describe('posting', () => {
     expect((await callRoute('ledger/opening', 'POST', { body: { ...body, bankBalance: '' } })).status).toBe(400)
     expect((await callRoute('ledger/opening', 'POST', { body })).status).toBe(422) // chart still proposed
     await approveChart()
+    const older = await callRoute('ledger/opening', 'POST', { body })
+    expect(older.status).toBe(422) // HL-T1 marked Active, balance not confirmed (M9)
+    expect(older.json.error).toContain('HL-T1')
+    await settleOlderLoan()
     const queued = await callRoute('ledger/opening', 'POST', { body })
     expect(queued.status).toBe(202)
     expect(await prisma.journalEntry.count()).toBe(0)
@@ -127,6 +139,12 @@ describe('posting', () => {
     expect(await checkInvariants(prisma)).toEqual({ ok: true, problems: [] })
     expect((await accountBalance(prisma, '9000')).balance).toBe(490000)
     expect(await ledgerOpening(prisma)).toMatchObject({ cutover: '2026-01-01' })
+    // Older loans had to be confirmed before: afterwards it is refused (M9).
+    const late = await prisma.historicalLoan.create({ data: { loanId: 'HL-T2', year: 2025, borrowerName: 'Test Member M1', borrowerId: 'M1', borrowerLink: 'reviewed', loanDate: new Date('2025-01-01'), loanAmount: 100, balanceRemaining: 100, status: 'Active' } })
+    signInAs('treasurer')
+    expect((await callRoute('loan-history/[id]/confirm', 'POST', { params: { id: late.id }, body: { balance: '100', asOf: '2025-12-31' } })).status).toBe(409)
+    expect((await callRoute('loan-history/review', 'GET')).json.openingPosted).toBe(true)
+    await prisma.historicalLoan.delete({ where: { id: late.id } })
     const capital = await prisma.journalLine.groupBy({ by: ['memberId'], where: { accountCode: '2000' }, _sum: { creditCents: true, debitCents: true } })
     const net = Object.fromEntries(capital.map((g) => [g.memberId, Number(g._sum.creditCents) - Number(g._sum.debitCents)]))
     expect(net).toMatchObject({ M1: 106000, M2: 40000 })
@@ -152,6 +170,7 @@ describe('posting', () => {
 
   it('refuses the approval if records before the cutover changed after proposing', async () => {
     await approveChart()
+    await settleOlderLoan()
     signInAs('treasurer')
     const { id } = (await callRoute('ledger/opening', 'POST', { body: { bankBalance: '5000', confirmLoans: true } })).json.approvalRequest
     await payment('LBAD', 'M2', '2025-11-10', 100)
@@ -164,6 +183,7 @@ describe('posting', () => {
 
   it('keeps posting what happens afterwards, once, from the daily job', async () => {
     await approveChart()
+    await settleOlderLoan()
     // A loan already on the loan engine (approved, not paid out yet).
     await createMember('MC-ENG', { monthsActive: 24, archiveLifetime: 2000, overallContributions: 2000 })
     await recordBankBalance(5000_00, '2025-12-31') // the lending capacity before the ledger holds cash (A10)

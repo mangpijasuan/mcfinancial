@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requirePermission } from '@/modules/auth'
+import { HISTORY_FIELDS } from '@/modules/loans/history'
 
 export async function GET(req: NextRequest) {
   const auth = await requirePermission('loans.read')
@@ -24,6 +25,7 @@ export async function GET(req: NextRequest) {
   const [loans, byYearHistorical, leaderboard, liveLoansCurrentYear] = await Promise.all([
     prisma.historicalLoan.findMany({
       where,
+      select: HISTORY_FIELDS,
       orderBy: [{ year: 'desc' }, { loanDate: 'desc' }],
     }),
     // Year summary
@@ -33,9 +35,10 @@ export async function GET(req: NextRequest) {
       _count: { id: true },
       orderBy: { year: 'asc' },
     }),
-    // Top borrowers (all time)
+    // Top borrowers (all time), by the member each loan is linked to (M9):
+    // two members who share a name are two borrowers.
     prisma.historicalLoan.groupBy({
-      by: ['borrowerName'],
+      by: ['borrowerId', 'borrowerName'],
       _sum: { loanAmount: true },
       _count: { id: true },
       orderBy: { _count: { id: 'desc' } },

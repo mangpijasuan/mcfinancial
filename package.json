@@ -29,8 +29,7 @@
     "loans:service": "tsx scripts/jobs/service-loans.ts",
     "loans:schedule-report": "tsx scripts/data/loan-schedule-report.ts",
     "ledger:opening": "tsx scripts/data/opening-balances.ts",
-    "ledger:compare": "tsx scripts/jobs/compare-ledger.ts",
-    "loans:sync-active-2024-2025": "node scripts/data/sync-active-historical-loans.js"
+    "ledger:compare": "tsx scripts/jobs/compare-ledger.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
