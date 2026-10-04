@@ -49,28 +49,33 @@ export async function readSource(db: Pick<Db, 'journalEntry'>): Promise<ReadSour
 // ── Members ───────────────────────────────────────────────────────────────
 
 export type MemberFigures = { contributedCents: Cents; withdrawnCents: Cents; capitalCents: Cents }
-const NONE: MemberFigures = { contributedCents: ZERO, withdrawnCents: ZERO, capitalCents: ZERO }
+/** The ledger's contributions, split as screens show them: the archive total at the cutover, and everything since. */
+export type LedgerMemberFigures = MemberFigures & { archiveCents: Cents; sinceCents: Cents }
+const NONE: LedgerMemberFigures = { contributedCents: ZERO, withdrawnCents: ZERO, capitalCents: ZERO, archiveCents: ZERO, sinceCents: ZERO }
 
 /** Each member's contributions and withdrawals as the ledger holds them. */
 /** memberIds, when given, must not be empty. */
-export async function ledgerMemberFigures(db: Pick<Db, '$queryRaw'>, memberIds?: string[]): Promise<Map<string, MemberFigures>> {
+export async function ledgerMemberFigures(db: Pick<Db, '$queryRaw'>, memberIds?: string[]): Promise<Map<string, LedgerMemberFigures>> {
   const only = memberIds ? Prisma.sql`AND l."memberId" IN (${Prisma.join(memberIds)})` : Prisma.empty
-  const rows = await db.$queryRaw<{ memberId: string; withdrawal: boolean; credit: bigint; debit: bigint }[]>`
+  const rows = await db.$queryRaw<{ memberId: string; kind: 'withdrawal' | 'opening' | 'since'; credit: bigint; debit: bigint }[]>`
     SELECT l."memberId",
-           (e."type" = 'withdrawal' OR (e."type" = 'reversal' AND r."type" = 'withdrawal')) AS "withdrawal",
+           CASE WHEN e."type" = 'withdrawal' OR (e."type" = 'reversal' AND r."type" = 'withdrawal') THEN 'withdrawal'
+                WHEN e."type" = 'opening_balance' THEN 'opening' ELSE 'since' END AS "kind",
            COALESCE(SUM(l."creditCents"), 0)::bigint AS "credit", COALESCE(SUM(l."debitCents"), 0)::bigint AS "debit"
     FROM "JournalLine" l
     JOIN "JournalEntry" e ON e."id" = l."entryId"
     LEFT JOIN "JournalEntry" r ON r."id" = e."reversesEntryId"
     WHERE l."accountCode" = ${MEMBER_CAPITAL} AND l."memberId" IS NOT NULL ${only}
     GROUP BY 1, 2`
-  const out = new Map<string, MemberFigures>()
+  const out = new Map<string, LedgerMemberFigures>()
   for (const row of rows) {
     const f = out.get(row.memberId) ?? { ...NONE }
     const credit = fromBigInt(row.credit)
     const debit = fromBigInt(row.debit)
-    if (row.withdrawal) f.withdrawnCents = add(f.withdrawnCents, subtract(debit, credit))
-    else f.contributedCents = add(f.contributedCents, subtract(credit, debit))
+    if (row.kind === 'withdrawal') f.withdrawnCents = add(f.withdrawnCents, subtract(debit, credit))
+    else if (row.kind === 'opening') f.archiveCents = add(f.archiveCents, subtract(credit, debit))
+    else f.sinceCents = add(f.sinceCents, subtract(credit, debit))
+    f.contributedCents = add(f.archiveCents, f.sinceCents)
     f.capitalCents = subtract(f.contributedCents, f.withdrawnCents)
     out.set(row.memberId, f)
   }
@@ -102,12 +107,19 @@ export async function forLoanPolicy<T extends { id: string }>(db: Pick<Db, 'jour
   return { ...member, contributions: toLegacyDollars((await ledgerMemberFigures(db, [member.id])).get(member.id)?.contributedCents ?? ZERO) }
 }
 
-/** Members with overallContributions replaced by the ledger's figure when reading from it. */
-export async function withMemberFigures<T extends { id: string; overallContributions: number }>(db: Db, members: T[]): Promise<T[]> {
+/**
+ * Members with their contribution figures from the ledger when reading from
+ * it: the archive total, contributions since, and the two together (screens
+ * show either the parts or the total).
+ */
+export async function withMemberFigures<T extends { id: string; overallContributions: number; archiveLifetime: number; contributions2026: number }>(db: Db, members: T[]): Promise<T[]> {
   const src = await readSource(db)
   if (src.source === 'records' || members.length === 0) return members
   const figures = await ledgerMemberFigures(db, members.map((m) => m.id))
-  return members.map((m) => ({ ...m, overallContributions: toLegacyDollars((figures.get(m.id) ?? NONE).contributedCents) }))
+  return members.map((m) => {
+    const f = figures.get(m.id) ?? NONE
+    return { ...m, archiveLifetime: toLegacyDollars(f.archiveCents), contributions2026: toLegacyDollars(f.sinceCents), overallContributions: toLegacyDollars(f.contributedCents) }
+  })
 }
 
 // ── Loans ─────────────────────────────────────────────────────────────────

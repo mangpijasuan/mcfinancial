@@ -32,5 +32,5 @@ export async function GET() {
   const [figures] = await withMemberFigures(prisma, [member])
   const loansAsBorrower = await withLoanBalances(prisma, member.loansAsBorrower)
   // Strip sensitive fields
-  return NextResponse.json(sanitizeMember({ ...member, overallContributions: figures.overallContributions, loansAsBorrower } as any))
+  return NextResponse.json(sanitizeMember({ ...figures, loansAsBorrower } as any))
 }

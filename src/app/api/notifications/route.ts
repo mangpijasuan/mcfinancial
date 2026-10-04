@@ -84,13 +84,12 @@ export async function POST(req: NextRequest) {
     const adminEmail = process.env.ADMIN_EMAIL
     if (!adminEmail) return NextResponse.json({ error: 'Set ADMIN_EMAIL in .env to receive summaries.' }, { status: 400 })
 
-    const [activeMembers, activeLoans, unpaidCount, overdueCount, contribAgg, loanAgg, recentContribs] = await Promise.all([
+    const [activeMembers, activeLoans, unpaidCount, overdueCount, contribAgg, recentContribs] = await Promise.all([
       prisma.member.count({ where: { status: 'Active' } }),
       prisma.loan.count({ where: { status: 'Active' } }),
       prisma.member.count({ where: { status: 'Active', thisMonth: 'NOT PAID' } }),
       prisma.loan.count({ where: { overdue: true } }),
       prisma.contribution.aggregate({ where: { reversedAt: null }, _sum: { amount: true } }),
-      prisma.loan.count({ where: { status: 'Active' } }),
       prisma.contribution.findMany({ where: { reversedAt: null }, orderBy: { paymentDate: 'desc' }, take: 8, select: { memberName: true, amount: true, monthYear: true } }),
     ])
 

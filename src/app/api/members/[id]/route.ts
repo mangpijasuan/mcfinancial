@@ -48,7 +48,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   const [figures] = await withMemberFigures(prisma, [member])
   const loansAsBorrower = await withLoanBalances(prisma, member.loansAsBorrower)
   return NextResponse.json({
-    ...sanitizeMember({ ...member, overallContributions: figures.overallContributions, loansAsBorrower }),
+    ...sanitizeMember({ ...figures, loansAsBorrower }),
     linkedAdmin: linkedAdmin
       ? {
           id: linkedAdmin.id,

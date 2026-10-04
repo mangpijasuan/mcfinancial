@@ -55,8 +55,9 @@ describe('after opening balances', () => {
   beforeEach(async () => {
     await openLedger()
     await createLoan('LAPP', 'M1', { loanDate: new Date('2026-09-01'), loanAmount: 500, balanceRemaining: 500, lifecycle: 'approved' })
-    // A withdrawal recorded in the app posts to the ledger as it is saved (M5).
+    // A contribution and a withdrawal recorded in the app post to the ledger as they are saved (M5).
     signInAs('finance')
+    expect((await callRoute('contributions', 'POST', { body: { memberId: 'M1', amount: '20', paymentDate: '2026-09-15', paymentMethod: 'Cash', receivedBy: 'Fin' } })).status).toBe(201)
     expect((await callRoute('withdrawals', 'POST', { body: { memberId: 'M1', amount: '50', withdrawalDate: '2026-09-20' } })).status).toBe(201)
   })
 
@@ -68,9 +69,9 @@ describe('after opening balances', () => {
     expect(r.parity).toMatchObject({
       members: [], loans: [], checked: { members: 3, loans: 3 },
       totals: {
-        contributed: { recordsCents: 1000_00, ledgerCents: 1000_00 },
+        contributed: { recordsCents: 1020_00, ledgerCents: 1020_00 },
         withdrawn: { recordsCents: 50_00, ledgerCents: 50_00 },
-        capital: { recordsCents: 950_00, ledgerCents: 950_00 },
+        capital: { recordsCents: 970_00, ledgerCents: 970_00 },
         outstanding: { recordsCents: 2000_00, ledgerCents: 2000_00 },
       },
     })
@@ -87,7 +88,7 @@ describe('after opening balances', () => {
     it('reports each figure that differs', async () => {
       const p = (await readsParity(prisma))!
       expect(p.members).toEqual([
-        { memberId: 'M1', name: 'Test Member M1', field: 'contributions', recordsCents: 1200_00, ledgerCents: 1000_00, differenceCents: -200_00 },
+        { memberId: 'M1', name: 'Test Member M1', field: 'contributions', recordsCents: 1200_00, ledgerCents: 1020_00, differenceCents: -180_00 },
         { memberId: 'M1', name: 'Test Member M1', field: 'withdrawals', recordsCents: 80_00, ledgerCents: 50_00, differenceCents: -30_00 },
       ])
       expect(p.loans).toEqual([{ loanId: 'LN-TEST-A', borrower: `Test Member ${TEST_IDS.member}`, recordsCents: 900_00, ledgerCents: 1000_00, differenceCents: 100_00 }])
@@ -96,7 +97,7 @@ describe('after opening balances', () => {
 
     it('shows the records while the switch is off', async () => {
       signInAs('auditor')
-      expect((await callRoute('members/[id]', 'GET', { params: { id: 'M1' } })).json.overallContributions).toBe(1200)
+      expect((await callRoute('members/[id]', 'GET', { params: { id: 'M1' } })).json).toMatchObject({ archiveLifetime: 1000, contributions2026: 200, overallContributions: 1200 })
       expect((await callRoute('loans/[id]', 'GET', { params: { id: 'LN-TEST-A' } })).json.balanceRemaining).toBe(900)
       const dash = (await callRoute('dashboard', 'GET')).json
       expect(dash).toMatchObject({ balanceSource: 'records', stats: { outstandingBalance: 2400, totalContributions: 1200 } })
@@ -107,8 +108,9 @@ describe('after opening balances', () => {
     it('shows the ledger once the switch is on', async () => {
       ledgerOn()
       signInAs('auditor')
+      // The member page shows the parts (archive, since the cutover), the list and the portal the total.
       const m1 = (await callRoute('members/[id]', 'GET', { params: { id: 'M1' } })).json
-      expect(m1.overallContributions).toBe(1000)
+      expect(m1).toMatchObject({ archiveLifetime: 1000, contributions2026: 20, overallContributions: 1020 })
       // Older loans without an agreement are listed too; the approved one keeps its stored figure.
       expect(m1.loansAsBorrower.map((l: any) => [l.loanId, l.balanceRemaining])).toEqual([['LAPP', 500]])
       const other = (await callRoute('members/[id]', 'GET', { params: { id: TEST_IDS.otherMember } })).json
@@ -118,17 +120,20 @@ describe('after opening balances', () => {
       const list = (await callRoute('loans', 'GET', { query: 'status=Active' })).json
       expect(Object.fromEntries(list.map((l: any) => [l.loanId, l.balanceRemaining]))).toMatchObject({ 'LN-TEST-A': 1000, 'LN-TEST-B': 1000, LAPP: 500 })
       const members = (await callRoute('members', 'GET', { query: 'search=M1' })).json.members
-      expect(members.map((m: any) => m.overallContributions)).toEqual([1000])
+      expect(members.map((m: any) => m.overallContributions)).toEqual([1020])
       expect((await callRoute('members', 'GET', { query: 'search=nobody' })).json.members).toEqual([])
 
       const dash = (await callRoute('dashboard', 'GET')).json
-      expect(dash).toMatchObject({ balanceSource: 'ledger', stats: { outstandingBalance: 2500, totalContributions: 1000 } })
+      expect(dash).toMatchObject({ balanceSource: 'ledger', stats: { outstandingBalance: 2500, totalContributions: 1020 } })
       expect(dash.activeLoansDetail.find((l: any) => l.loanId === 'LN-TEST-A').balanceRemaining).toBe(1000)
 
-      // Eligibility: 4 × the ledger's $1,000, not the records' $1,200; nothing in the ledger, nothing to lend on.
+      // Eligibility: 4 × the ledger's $1,020, not the records' $1,200; nothing in the ledger, nothing to lend on.
       signInAs('loan_officer')
-      expect((await callRoute('loans/check-policy', 'POST', { body: { memberId: 'M1', amount: '100', termMonths: 12 } })).json.maxLoanAmount).toBe(4000)
+      expect((await callRoute('loans/check-policy', 'POST', { body: { memberId: 'M1', amount: '100', termMonths: 12 } })).json.maxLoanAmount).toBe(4080)
       expect((await callRoute('loans/check-policy', 'POST', { body: { memberId: TEST_IDS.otherMember, amount: '100', termMonths: 12 } })).json.maxLoanAmount).toBe(0)
+
+      signInAsMember('M1')
+      expect((await callRoute('portal/me', 'GET')).json).toMatchObject({ archiveLifetime: 1000, contributions2026: 20, overallContributions: 1020 })
 
       // The borrower's portal: the balance and the most they can pay.
       signInAsMember(TEST_IDS.member)
