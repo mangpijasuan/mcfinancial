@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import Link from 'next/link'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Trophy, TrendingUp } from 'lucide-react'
 import { Card, Table, EmptyState, LoanStatusBadge, PageHeader, FilterBar, SearchInput, Select, Badge } from '@/components/ui'
@@ -32,7 +33,11 @@ export default function LoanHistoryPage() {
 
   return (
     <div className="p-4 sm:p-8">
-      <PageHeader title="Loan History" sub={`${totalLoans} loans · ${fmt$(totalLent)} lent ${START_YEAR}–${currentYear}`} />
+      <PageHeader
+        title="Loan History"
+        sub={`${totalLoans} loans · ${fmt$(totalLent)} lent ${START_YEAR}–${currentYear}`}
+        action={<Link href="/loan-history/review" className="text-sm text-indigo-700 underline">Link older loans to members</Link>}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Year-by-year chart */}
@@ -74,7 +79,7 @@ export default function LoanHistoryPage() {
           </h2>
           <div className="space-y-2.5">
             {data?.leaderboard?.slice(0, 10).map((r: any, i: number) => (
-              <div key={r.borrowerName} className="flex items-center gap-3">
+              <div key={`${r.borrowerId ?? ''}:${r.borrowerName}`} className="flex items-center gap-3">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
                   i === 0 ? 'bg-amber-400 text-amber-900' :
                   i === 1 ? 'bg-gray-300 text-gray-700' :
@@ -82,7 +87,7 @@ export default function LoanHistoryPage() {
                   'bg-gray-100 text-gray-500'
                 }`}>{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-900 truncate">{r.borrowerName}</p>
+                  <p className="text-sm font-medium text-gray-900 truncate">{r.borrowerName}{r.borrowerId && <span className="ml-1 text-xs font-normal text-gray-400">{r.borrowerId}</span>}</p>
                   <p className="text-xs text-gray-400">{r._count?.id || 0} loans · {fmt$(r._sum.loanAmount)}</p>
                 </div>
                 <Badge variant={(r._count?.id || 0) >= 3 ? 'red' : (r._count?.id || 0) >= 2 ? 'amber' : 'gray'}>
@@ -100,11 +105,11 @@ export default function LoanHistoryPage() {
         <div className="px-5 py-4 border-b border-gray-100">
           <FilterBar>
             <SearchInput value={search} onChange={setSearch} placeholder="Search borrower or loan ID…" />
-            <Select value={year} onChange={e => setYear(e.target.value)}>
+            <Select aria-label="Year" value={year} onChange={e => setYear(e.target.value)}>
               <option value="">All years</option>
               {years.map(y => <option key={y} value={y}>{y}</option>)}
             </Select>
-            <Select value={status} onChange={e => setStatus(e.target.value)}>
+            <Select aria-label="Status" value={status} onChange={e => setStatus(e.target.value)}>
               <option value="">All statuses</option>
               <option value="Paid Off">Paid off</option>
               <option value="Active">Active</option>
@@ -123,13 +128,21 @@ export default function LoanHistoryPage() {
                     l.year === 2023 ? 'teal' : l.year === 2022 ? 'amber' : 'gray'
                   }>{l.year}</Badge>
                 </td>
-                <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{l.borrowerName}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{l.cosignerName || '—'}</td>
+                <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
+                  {l.borrowerId ? <Link href={`/members/${l.borrowerId}`} className="hover:underline">{l.borrowerName}</Link> : l.borrowerName}
+                </td>
+                <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
+                  {l.cosignerId ? <Link href={`/members/${l.cosignerId}`} className="hover:underline">{l.cosignerName}</Link> : l.cosignerName || '—'}
+                </td>
                 <td className="px-4 py-3 font-semibold text-gray-900">{fmt$(l.loanAmount)}</td>
                 <td className="px-4 py-3 text-green-700 font-medium">{fmt$(l.totalPaid)}</td>
                 <td className="px-4 py-3 text-gray-700">{l.balanceRemaining > 0 ? fmt$(l.balanceRemaining) : '—'}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(l.loanDate)}</td>
-                <td className="px-4 py-3"><LoanStatusBadge status={l.status} /></td>
+                <td className="px-4 py-3">
+                  {l.importedLoanId
+                    ? <Link href={`/loans/${l.importedLoanId}`} className="text-xs text-indigo-700 underline whitespace-nowrap">In live loans</Link>
+                    : <LoanStatusBadge status={l.status} />}
+                </td>
               </tr>
             ))
           }

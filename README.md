@@ -126,7 +126,8 @@ Playwright drives Chromium through the golden paths (`e2e/`), with each role sig
 2. Finance records a cash contribution; the receipt is numbered and printable, and the member sees it in the portal.
 3. A member claims a Zelle payment; the treasurer confirms it, and it is credited with a receipt.
 4. A loan from start to first repayment: the treasurer records the bank balance (lending capacity), the loan officer creates a loan within it, the club and the borrower sign, the treasurer pays it out, and finance records a repayment.
-5. The accountant's chart approval is recorded, the treasurer proposes opening balances, the Board approves them, the nightly comparison runs clean, and December 2025 is reconciled and closed.
+5. The Treasurer links the 2021–2025 loans to members by ID (exact names, a shared name, a name with no member) and confirms the balance of one still owed, which moves to the live loans.
+6. The accountant's chart approval is recorded, the treasurer proposes opening balances, the Board approves them, the nightly comparison runs clean, and December 2025 is reconciled and closed.
 
 The tests use their own database, `mcfinancial_e2e` on the Docker database (or `E2E_DATABASE_URL`). It is created if missing and **rebuilt and re-seeded on every run**, and they always start their own server, never one already running. Its name must end in `_e2e` or `_test`. The server runs on port 3300 (`E2E_PORT`), and a failed test keeps a trace and a screenshot in `test-results/` (`npx playwright show-trace <file>`). CI runs them on every pull request.
 
@@ -170,6 +171,7 @@ npm run loans:audit             # compare historical loan data against the sourc
 | `/loans` | Loan portfolio — create new loans |
 | `/loans/[id]` | Loan detail with repayment progress bar |
 | `/loan-payments` | All repayments — record new repayment |
+| `/loan-history` | The 2021–2025 loans; **Link older loans** links them to members by ID (M9) |
 | `/payments` | Pending Zelle claims to confirm/reject, plus card payment history |
 | `/portal/pay` | Member-facing: pay a contribution or loan by card (Stripe) or Zelle |
 
@@ -285,6 +287,17 @@ npm run loans:service -- --dry-run # report only
 Payouts, repayments, fees, waivers and write-offs **post to the ledger** once the accountant has approved the chart of accounts. Anything recorded before that is posted by the next daily run.
 
 Loans made **before** this change keep working the old way (hand-kept balance and overdue flag) until they are migrated with the opening balances (M4). `npm run loans:schedule-report` compares each of them with the schedule the engine would give it. It changes nothing; run it on the production snapshot (A14).
+
+### Older loans (2021–2025): linked by member ID (M9)
+
+The 2021–2025 loan records name the borrower and co-signer but do not say which member they are. **Loan History → Link older loans** (`/loan-history/review`) links them by member ID, once, and nothing matches names afterwards:
+
+- **Exact matches**, in one click: a name links automatically only when exactly one member has it (legal name or nickname, ignoring case, punctuation and anything in brackets). Never a partial match.
+- **Names to review**: a name several members share is decided loan by loan; a name no member has is linked to the right member or recorded as *no member record* (someone who has left, a co-signer who was never a member). One decision can cover every loan with the same name.
+- **Loans still marked Active**: the Treasurer confirms what each still owed at the end of a day **before the cutover**, from the club's own records. A balance still owed moves the loan to the live loans (marked *moved from the 2021–2025 records*). Everything repaid before that day is recorded as one *brought forward* repayment, so the ledger opens the loan at exactly the confirmed figure. A loan the old `sync-active-historical-loans.js` script already copied is brought to the same figure, and moved, with its repayments, to the members you linked (the script may have picked the wrong one of a shared name). A balance of $0 records the loan as repaid.
+- **Opening balances cannot be proposed** until every loan marked Active has a confirmed balance, and confirming is closed once they are posted.
+
+The member page, the portal's history and the Loan History use these links. Before, the portal matched names, so a member could see the older loans of anyone sharing their name.
 
 ## Treasury: cash reserve and lending capacity
 

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
+import { HISTORY_FIELDS } from '@/modules/loans/history'
 
 export async function GET() {
   const auth = await requireMember()
@@ -8,10 +9,7 @@ export async function GET() {
   const memberId = auth.principal.memberId
 
   const [member, yearlyTotals, contributions2026, historical] = await Promise.all([
-    prisma.member.findUnique({
-      where: { id: memberId },
-      select: { legalName: true, nickname: true },
-    }),
+    prisma.member.findUnique({ where: { id: memberId }, select: { id: true } }),
     prisma.yearlyTotal.findMany({
       where: { memberId },
       orderBy: { year: 'asc' },
@@ -20,19 +18,19 @@ export async function GET() {
       where: { memberId },
       orderBy: { paymentDate: 'desc' },
     }),
+    // Only loans linked to this member by ID (M9). Matching by name showed a
+    // member the loans of anyone sharing their name.
     prisma.historicalLoan.findMany({
-      where: { year: { gte: 2024 } },
+      where: { year: { gte: 2024 }, OR: [{ borrowerId: memberId }, { cosignerId: memberId }] },
+      select: HISTORY_FIELDS,
       orderBy: [{ year: 'desc' }, { loanDate: 'desc' }],
     }),
   ])
 
   if (!member) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const normalize = (v: string) => v.trim().toLowerCase().replace(/\s+/g, ' ')
-  const names = new Set<string>([member.legalName, member.nickname || ''].filter(Boolean).map((n) => normalize(String(n))))
-
-  const historicalLoansAsBorrower = historical.filter((loan) => names.has(normalize(loan.borrowerName)))
-  const historicalLoansAsCosigner = historical.filter((loan) => loan.cosignerName && names.has(normalize(loan.cosignerName)))
+  const historicalLoansAsBorrower = historical.filter((loan) => loan.borrowerId === memberId)
+  const historicalLoansAsCosigner = historical.filter((loan) => loan.cosignerId === memberId)
 
   return NextResponse.json({
     yearlyTotals,

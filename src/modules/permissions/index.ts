@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   'loans.create': 'Create loan applications (with their agreements)',
   'loans.update': 'Edit loan notes and flags',
   'loans.cancel': 'Cancel a loan before any repayment',
+  'loans.link_history': 'Link older (2021–2025) loans to members and confirm the balances of those still open (M9)',
   'loan_payments.read': 'View loan repayments',
   'loan_payments.record': 'Record loan repayments',
   'agreements.read': 'View loan agreements',
@@ -107,6 +108,7 @@ export const ROLES = {
       'loans.disburse', 'loan_fees.waive', 'loan_fees.approve_waiver', 'loans.write_off',
       'contributions.reverse', 'contributions.approve_reversal', 'dues.manage_plans', 'treasury.record_balance',
       'treasury.record_transfer', 'treasury.approve_transfer', 'ledger.reconcile', 'ledger.close_period',
+      'loans.link_history',
     ],
   },
   compliance: {
@@ -141,7 +143,7 @@ export const ROLES = {
   club_officer: {
     label: 'Club Officer (transitional)',
     description: 'The access every admin had before roles existed. Replace with specific roles once officers are named.',
-    permissions: ALL_PERMISSIONS.filter((p) => !['audit.read', 'staff.read', 'staff.manage', 'ledger.manage_accounts'].includes(p)),
+    permissions: ALL_PERMISSIONS.filter((p) => !['audit.read', 'staff.read', 'staff.manage', 'ledger.manage_accounts', 'loans.link_history'].includes(p)),
     transitional: true,
   },
 } satisfies Record<string, RoleDefinition>

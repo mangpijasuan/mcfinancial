@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { encryptSecret } from '@/modules/auth/mfa'
 import { resetDatabase } from '../tests/helpers/db'
-import { MEMBER, OTHER_MEMBER, STAFF, STAFF_PASSWORD, TOTP_SECRET } from './fixtures'
+import { MEMBER, NAMESAKE, OTHER_MEMBER, STAFF, STAFF_PASSWORD, TOTP_SECRET } from './fixtures'
 
 async function main() {
   // This empties the database: refuse anything not named as a test database.
@@ -35,6 +35,22 @@ async function main() {
       monthsActive: 24, archiveLifetime: 1000, overallContributions: 1000,
     },
   })
+  await prisma.member.create({
+    data: { id: NAMESAKE.id, legalName: NAMESAKE.name, joinDate: new Date('2025-06-01'), status: 'Active', email: 'ben2@e2e.test', monthsActive: 4 },
+  })
+
+  // Older loans (2021–2025 records), linked by the Treasurer in 05-loan-history:
+  // one exact name, one shared name still owing, one name with no member.
+  const older = (loanId: string, year: number, borrowerName: string, amount: number, paid: number, cosignerName: string | null = null) =>
+    prisma.historicalLoan.create({
+      data: {
+        loanId, year, borrowerName, cosignerName, loanDate: new Date(`${year}-04-01`), endDate: new Date(`${year + 1}-04-01`),
+        loanAmount: amount, totalPaid: paid, balanceRemaining: amount - paid, status: paid >= amount ? 'Paid Off' : 'Active',
+      },
+    })
+  await older('HE-1', 2023, MEMBER.name, 800, 800)
+  await older('HE-2', 2024, OTHER_MEMBER.name, 1000, 600, MEMBER.name)
+  await older('HE-3', 2022, 'Old Member', 500, 500)
   console.log('e2e database seeded')
 }
 

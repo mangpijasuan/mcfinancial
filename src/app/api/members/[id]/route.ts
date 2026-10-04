@@ -6,6 +6,7 @@ import { sanitizeMember } from '@/lib/serializers'
 import { auditContext, recordAudit } from '@/modules/audit'
 import { onMemberStatusChange } from '@/modules/contributions'
 import { badRequest, notFound, parseDate, readJsonObject } from '@/lib/http'
+import { HISTORY_FIELDS } from '@/modules/loans/history'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermission('members.read')
@@ -25,10 +26,10 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   })
   if (!member) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const normalize = (v: string) => v.trim().toLowerCase().replace(/\s+/g, ' ')
-  const names = new Set<string>([member.legalName, member.nickname || ''].filter(Boolean).map((n) => normalize(String(n))))
-
+  // Older loans by the member ID they were linked to (M9), never by name.
   const historical = await prisma.historicalLoan.findMany({
+    where: { OR: [{ borrowerId: id }, { cosignerId: id }] },
+    select: HISTORY_FIELDS,
     orderBy: [{ year: 'desc' }, { loanDate: 'desc' }],
   })
   // A linked staff account is shown only to people who may see staff.
@@ -39,8 +40,8 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
       })
     : null
 
-  const historicalLoansAsBorrower = historical.filter((loan) => names.has(normalize(loan.borrowerName)))
-  const historicalLoansAsCosigner = historical.filter((loan) => loan.cosignerName && names.has(normalize(loan.cosignerName)))
+  const historicalLoansAsBorrower = historical.filter((loan) => loan.borrowerId === id)
+  const historicalLoansAsCosigner = historical.filter((loan) => loan.cosignerId === id)
 
   return NextResponse.json({
     ...sanitizeMember(member),

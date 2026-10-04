@@ -19,6 +19,8 @@ export type StaffRole = keyof typeof STAFF
 
 export const MEMBER = { id: 'MC-E2E-01', name: 'Ada Example', password: 'member passphrase 2026' }
 export const OTHER_MEMBER = { id: 'MC-E2E-02', name: 'Ben Example' }
+/** A second member with the same name as OTHER_MEMBER (the 2021–2025 records cannot tell them apart). */
+export const NAMESAKE = { id: 'MC-E2E-03', name: 'Ben Example' }
 
 export const authFile = (role: StaffRole | 'member') => `e2e/.auth/${role}.json`
 
