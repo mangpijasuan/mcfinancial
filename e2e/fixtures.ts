@@ -27,10 +27,22 @@ export function totp(now = Date.now()) {
   return new OTPAuth.TOTP({ algorithm: 'SHA1', digits: 6, period: 30, secret: OTPAuth.Secret.fromBase32(TOTP_SECRET) }).generate({ timestamp: now })
 }
 
+/**
+ * The browser-test database: `mcfinancial_e2e` on the local Docker database
+ * (port 5434) unless E2E_DATABASE_URL says otherwise. It is wiped on every
+ * run, so its name must end in _e2e or _test.
+ */
+export function e2eDatabaseUrl(): string {
+  const url = process.env.E2E_DATABASE_URL || 'postgresql://mcfinancial:mcfinancial_dev@127.0.0.1:5434/mcfinancial_e2e?schema=public'
+  const name = new URL(url).pathname.slice(1)
+  if (!/_(e2e|test)$/.test(name)) throw new Error(`Refusing to run browser tests against "${name}": the database name must end in _e2e or _test.`)
+  return url
+}
+
 /** The environment the app runs with in the browser tests (seed and server must agree on the MFA key). */
 export function e2eEnv(): Record<string, string> {
   return {
-    DATABASE_URL: process.env.E2E_DATABASE_URL || 'postgresql://mcfinancial:mcfinancial_dev@127.0.0.1:5432/mcfinancial_e2e?schema=public',
+    DATABASE_URL: e2eDatabaseUrl(),
     NEXTAUTH_URL: BASE_URL,
     NEXTAUTH_SECRET: 'e2e-secret-e2e-secret-e2e-secret-0123456789',
     MFA_ENCRYPTION_KEY: 'ZTJlLWtleS1lMmUta2V5LWUyZS1rZXktMDEyMzQ1Njc=',

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { FileSignature, CheckCircle } from 'lucide-react'
+import { Modal } from '@/components/ui'
 import { APP_NAME } from '@/lib/brand'
 
 async function readJsonSafe(res: Response) {
@@ -136,14 +137,9 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 overflow-y-auto">
-      <div className="absolute inset-0 bg-black/40" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby="sign-agreement-title" className="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl">
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-          <h3 id="sign-agreement-title" className="text-base font-semibold">Loan Agreement — {a.agreementId}</h3>
-          <button type="button" aria-label="Close dialog" onClick={onClose} className="text-gray-400 hover:text-gray-700 text-xl">×</button>
-        </div>
-        <div className="px-6 py-5 space-y-5">
+    // The shared dialog: focus moves in and stays, Escape closes, focus returns.
+    <Modal open onClose={onClose} title={`Loan Agreement — ${a.agreementId}`} width="max-w-2xl">
+        <div className="space-y-5">
           {/* Document */}
           <div className="bg-[#fffdf7] border border-amber-200 rounded-2xl overflow-hidden shadow-sm">
             <div className="text-center border-b border-amber-200 bg-gradient-to-b from-amber-50 to-transparent px-5 py-4">
@@ -225,7 +221,6 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+    </Modal>
   )
 }

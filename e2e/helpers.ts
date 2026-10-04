@@ -1,14 +1,23 @@
 import { type Browser, type Page, expect } from '@playwright/test'
 import { type StaffRole, authFile } from './fixtures'
 
-/** A page signed in as a role, failing the test on any browser console error (hydration errors included). */
+/**
+ * A page signed in as a role, failing the test on any browser console error
+ * (hydration errors included). Contexts made from the `browser` fixture take
+ * the config's `use` options (baseURL, time zone).
+ */
 export async function signedIn(browser: Browser, role: StaffRole | 'member', viewport = { width: 1280, height: 900 }) {
   const context = await browser.newContext({ storageState: authFile(role), viewport })
   const page = await context.newPage()
   const errors: string[] = []
   page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
   page.on('pageerror', (e) => errors.push(e.message))
-  page.on('dialog', (d) => d.accept())
+  // Confirmations the flows ask for are accepted; an alert is how the app
+  // reports a failed request, so it fails the test.
+  page.on('dialog', (d) => {
+    if (d.type() === 'alert') errors.push(`alert: ${d.message()}`)
+    void d.accept()
+  })
   return { page, errors, close: () => context.close() }
 }
 

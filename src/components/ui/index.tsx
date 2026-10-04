@@ -161,24 +161,55 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: {
   open: boolean; onClose: () => void; title: string; children: React.ReactNode; width?: string
 }) {
   const titleId = useId()
-  useEffect(() => {
-    if (open) document.body.style.overflow = 'hidden'
-    else document.body.style.overflow = ''
-    return () => { document.body.style.overflow = '' }
-  }, [open])
-  // Escape closes it, as people expect from a dialog.
+  const dialogRef = useRef<HTMLDivElement>(null)
+  // Read through a ref so a new onClose each render does not re-run the
+  // effect below (which would move focus back to the first field).
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  // While open: the page behind does not scroll, focus moves into the dialog
+  // and stays there (Tab wraps), Escape closes it, and focus returns to
+  // whatever opened it.
   useEffect(() => {
     if (!open) return
-    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
+    const previous = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const dialog = dialogRef.current
+    document.body.style.overflow = 'hidden'
+    const focusable = () => Array.from(dialog?.querySelectorAll<HTMLElement>(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ) ?? [])
+    // The first field if there is one, else the first control (the close button).
+    const fields = focusable()
+    ;(fields.find((el) => el.matches('input, select, textarea')) ?? fields[0])?.focus()
+
+    function onKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') { onCloseRef.current(); return }
+      if (event.key !== 'Tab') return
+      const items = focusable()
+      if (!items.length) return
+      const first = items[0]
+      const last = items[items.length - 1]
+      if (event.shiftKey && (document.activeElement === first || !dialog?.contains(document.activeElement))) {
+        event.preventDefault()
+        last.focus()
+      } else if (!event.shiftKey && (document.activeElement === last || !dialog?.contains(document.activeElement))) {
+        event.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = ''
+      document.removeEventListener('keydown', onKeyDown)
+      previous?.focus()
+    }
+  }, [open])
 
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div role="dialog" aria-modal="true" aria-labelledby={titleId} className={cn('relative bg-white rounded-2xl shadow-2xl w-full mx-auto max-h-[90vh] flex flex-col', width)}>
+      <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby={titleId} className={cn('relative bg-white rounded-2xl shadow-2xl w-full mx-auto max-h-[90vh] flex flex-col', width)}>
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
           <h3 id={titleId} className="text-base font-semibold text-gray-900">{title}</h3>
           <button type="button" aria-label="Close dialog" onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors rounded-lg p-1 hover:bg-gray-100">

@@ -26,7 +26,8 @@ export default defineConfig({
   webServer: {
     command: `npx next start -p ${PORT}`,
     url: `${BASE_URL}/api/health`,
-    reuseExistingServer: !process.env.CI,
+    // Always our own server: one already on the port may use another database.
+    reuseExistingServer: false,
     timeout: 120_000,
     env: e2eEnv(),
   },

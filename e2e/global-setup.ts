@@ -8,7 +8,8 @@ import { BASE_URL, MEMBER, STAFF, STAFF_PASSWORD, type StaffRole, authFile, e2eE
 
 export default async function globalSetup(_config: FullConfig) {
   const env = { ...process.env, ...e2eEnv() }
-  execSync('npx prisma migrate deploy', { env, stdio: 'inherit' })
+  // Drops and recreates the database from the migrations (creating it if missing).
+  execSync('npx prisma migrate reset --force --skip-seed --skip-generate', { env, stdio: 'inherit' })
   execSync('npx tsx e2e/seed.ts', { env, stdio: 'inherit' })
   fs.mkdirSync('e2e/.auth', { recursive: true })
 

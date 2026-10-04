@@ -115,7 +115,8 @@ Tests run against a separate PostgreSQL database that is **wiped on every run**:
 ### Browser tests
 
 ```bash
-npm run build      # the tests run against a production build
+npx playwright install chromium   # once: the browser the tests drive
+npm run build                     # the tests run against a production build
 npm run test:e2e
 ```
 
@@ -127,7 +128,7 @@ Playwright drives Chromium through the golden paths (`e2e/`), with each role sig
 4. A loan from start to first repayment: the treasurer records the bank balance (lending capacity), the loan officer creates a loan within it, the club and the borrower sign, the treasurer pays it out, and finance records a repayment.
 5. The accountant's chart approval is recorded, the treasurer proposes opening balances, the Board approves them, the nightly comparison runs clean, and December 2025 is reconciled and closed.
 
-The tests use their own database, `mcfinancial_e2e` (or `E2E_DATABASE_URL`), which is **emptied and re-seeded on every run**. Its name must end in `_e2e` or `_test`. The server runs on port 3300 (`E2E_PORT`), and a failed test keeps a trace and a screenshot in `test-results/` (`npx playwright show-trace <file>`). CI runs them on every pull request.
+The tests use their own database, `mcfinancial_e2e` on the Docker database (or `E2E_DATABASE_URL`). It is created if missing and **rebuilt and re-seeded on every run**, and they always start their own server, never one already running. Its name must end in `_e2e` or `_test`. The server runs on port 3300 (`E2E_PORT`), and a failed test keeps a trace and a screenshot in `test-results/` (`npx playwright show-trace <file>`). CI runs them on every pull request.
 
 ---
 

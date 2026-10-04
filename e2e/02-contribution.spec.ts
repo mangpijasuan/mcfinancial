@@ -7,8 +7,15 @@ import { clubToday, signedIn } from './helpers'
 test('record a contribution and print its receipt', async ({ browser }) => {
   const { page, errors, close } = await signedIn(browser, 'finance')
   await page.goto('/contributions')
-  await page.getByRole('button', { name: 'Record payment' }).click()
+  const open = page.getByRole('button', { name: 'Record payment' })
   const dialog = page.getByRole('dialog')
+  // Keyboard: focus moves into the dialog, Escape closes it and focus returns.
+  await open.click()
+  await expect(dialog.getByPlaceholder('Type name or ID to search…')).toBeFocused()
+  await page.keyboard.press('Escape')
+  await expect(dialog).toBeHidden()
+  await expect(open).toBeFocused()
+  await open.click()
   await dialog.getByPlaceholder('Type name or ID to search…').pressSequentially('Ada', { delay: 50 })
   await dialog.getByRole('button', { name: new RegExp(MEMBER.name) }).click()
   await dialog.getByLabel('Payment date *').fill(clubToday())
