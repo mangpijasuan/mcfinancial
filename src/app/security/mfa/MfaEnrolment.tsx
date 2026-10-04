@@ -83,14 +83,14 @@ export default function MfaEnrolment({ name, email }: { name: string; email: str
             <img src={setup.qrDataUrl} alt="QR code for your authenticator app" className="mx-auto h-44 w-44" />
             <details className="text-xs text-gray-500">
               <summary className="cursor-pointer">Can’t scan? Enter this key instead</summary>
-              <p className="mt-2 break-all rounded bg-gray-50 p-2 font-mono text-gray-800">{setup.secret}</p>
+              <p className="mt-2 break-all rounded-sm bg-gray-50 p-2 font-mono text-gray-800">{setup.secret}</p>
             </details>
             <div>
               <label htmlFor="code" className="block"><strong>2.</strong> Enter the 6-digit code it shows:</label>
               <input
                 id="code" autoFocus inputMode="numeric" autoComplete="one-time-code" maxLength={6} value={code}
                 onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
-                className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-center text-lg tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-2 w-full rounded-xl border border-gray-200 px-4 py-2.5 text-center text-lg tracking-widest focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
                 placeholder="123456" required
               />
             </div>

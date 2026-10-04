@@ -53,7 +53,7 @@ export default function Receipt({ id, backHref }: { id: string; backHref: string
         <a href={backHref} className="text-sm text-indigo-700 underline">← Back</a>
         <button type="button" onClick={() => window.print()} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">Print</button>
       </div>
-      <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm print:border-none print:shadow-none">
+      <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs print:border-none print:shadow-none">
         <header className="flex items-center gap-3 border-b border-gray-100 pb-4">
           <Image src="/mc-logo.png" alt="" width={72} height={40} />
           <div className="min-w-0">
@@ -72,7 +72,7 @@ export default function Receipt({ id, backHref }: { id: string; backHref: string
           {rows.map(([label, value]) => (
             <div key={label} className="flex flex-col gap-0.5 py-2 sm:flex-row sm:gap-4">
               <dt className="w-32 shrink-0 text-gray-500">{label}</dt>
-              <dd className="break-words text-gray-900">{value}</dd>
+              <dd className="wrap-break-word text-gray-900">{value}</dd>
             </div>
           ))}
         </dl>

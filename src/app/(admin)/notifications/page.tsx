@@ -97,7 +97,7 @@ export default function NotificationsPage() {
           <div className="min-w-0">
             <p className="text-sm font-semibold text-indigo-900">Email setup required</p>
             <p className="text-sm text-indigo-700 mt-1">
-              Add these two lines to your <code className="bg-indigo-100 px-1.5 py-0.5 rounded text-xs">.env</code> file, then restart the app:
+              Add these two lines to your <code className="bg-indigo-100 px-1.5 py-0.5 rounded-sm text-xs">.env</code> file, then restart the app:
             </p>
             <pre className="mt-2 bg-white border border-indigo-200 rounded-lg px-4 py-3 text-xs font-mono text-gray-800 overflow-x-auto">
 {`RESEND_API_KEY="re_xxxxxxxxxxxx"   # Get free at resend.com

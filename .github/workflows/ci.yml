@@ -51,15 +51,10 @@ jobs:
       - name: Tests (unit, integration, authorization matrix; 100% coverage on the money path)
         run: npm run test:coverage
 
-      # What ships (production dependencies) must have no high-severity
-      # advisories. Build and test tools (devDependencies) never run in
-      # production, so they only block on critical ones; `npm audit` still
-      # lists everything in the log.
-      - name: Dependency audit (production)
-        run: npm audit --omit=dev --audit-level=high
-
-      - name: Dependency audit (build and test tools)
-        run: npm audit --audit-level=critical
+      # No high-severity advisory in any dependency: what ships, and the
+      # build and test tools.
+      - name: Dependency audit
+        run: npm audit --audit-level=high
 
       - name: Build
         run: npm run build

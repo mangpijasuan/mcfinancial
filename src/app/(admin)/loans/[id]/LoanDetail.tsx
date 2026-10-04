@@ -196,7 +196,7 @@ export default function LoanDetail({ id, can }: { id: string; can: { disburse: b
           ].map(([l, v]) => (
             <div key={l} className="bg-gray-50 rounded-lg px-4 py-3">
               <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-0.5">{l}</p>
-              <p className="font-medium text-gray-900 break-words">{v}</p>
+              <p className="font-medium text-gray-900 wrap-break-word">{v}</p>
             </div>
           ))}
         </div>

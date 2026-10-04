@@ -113,7 +113,7 @@ export default function MonthlyContributionsPrintPage() {
         ) : error ? (
           <Card className="p-6 text-red-700 bg-red-50 border-red-200">{error}</Card>
         ) : (
-          <Card className="p-0 overflow-hidden shadow-sm print:shadow-none print:border-none">
+          <Card className="p-0 overflow-hidden shadow-xs print:shadow-none print:border-none">
             <div className="bg-[#fffdf7] border-b border-amber-200 px-6 py-5 text-center print:px-0">
               <p className="text-2xl font-bold tracking-wide text-gray-900">Monthly Contributions Report</p>
               <p className="text-xs uppercase tracking-[0.25em] text-gray-500 mt-1">{APP_NAME}</p>

@@ -17,7 +17,7 @@ function InfoCard({ label, value, sub, color = 'white' }: { label: string; value
   const textColor = color === 'white' ? 'text-gray-900' : 'text-white'
   const subColor  = color === 'white' ? 'text-gray-500' : 'text-white/70'
   return (
-    <div className={`rounded-xl p-5 shadow-sm ${colors[color]}`}>
+    <div className={`rounded-xl p-5 shadow-xs ${colors[color]}`}>
       <p className={`text-xs font-semibold uppercase tracking-wide ${color === 'white' ? 'text-gray-400' : 'text-white/70'}`}>{label}</p>
       <p className={`text-2xl font-bold mt-1 ${textColor}`}>{value}</p>
       {sub && <p className={`text-xs mt-0.5 ${subColor}`}>{sub}</p>}
@@ -80,7 +80,7 @@ export default function PortalDashboard() {
 
       {/* Monthly dues */}
       {dues && dues.obligations.length > 0 && (
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200 space-y-3">
+        <div className="bg-white rounded-xl p-5 shadow-xs border border-gray-200 space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold text-gray-700">Monthly dues{dues.monthlyCents !== null ? ` · ${formatUSD(dues.monthlyCents)} a month` : ''}</h2>
             <Link href="/portal/history" className="text-xs text-indigo-600 underline">Receipts</Link>
@@ -95,7 +95,7 @@ export default function PortalDashboard() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Loan eligibility */}
-        <div className={`rounded-xl p-5 shadow-sm border ${eligible ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
+        <div className={`rounded-xl p-5 shadow-xs border ${eligible ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Loan eligibility</h2>
           {eligible ? (
             <div>
@@ -116,7 +116,7 @@ export default function PortalDashboard() {
         </div>
 
         {/* Active loan */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-200">
+        <div className="bg-white rounded-xl p-5 shadow-xs border border-gray-200">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Active loan</h2>
           {activeLoan && activeLoan.status === 'Active' ? (
             <div>
@@ -151,7 +151,7 @@ export default function PortalDashboard() {
       </div>
 
       {/* Recent contributions */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded-xl shadow-xs border border-gray-200">
         <div className="px-5 py-4 border-b border-gray-100">
           <h2 className="text-sm font-semibold text-gray-700">Recent contributions (2026)</h2>
         </div>

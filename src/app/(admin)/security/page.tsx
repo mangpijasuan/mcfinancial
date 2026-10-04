@@ -120,7 +120,7 @@ export default function SecurityPage() {
         <ul className="mt-3 divide-y divide-gray-100 text-sm">
           {sessions.map((s, i) => (
             <li key={i} className="py-2">
-              <p className="text-gray-800 break-words">
+              <p className="text-gray-800 wrap-break-word">
                 {s.userAgent || 'Unknown device'} {s.current && <Badge variant="green">This device</Badge>}
               </p>
               <p className="text-xs text-gray-500">

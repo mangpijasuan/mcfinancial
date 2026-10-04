@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { APP_NAME } from '@/lib/brand'
 
 const inputClass =
-  'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500'
+  'w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500'
 
 export default function LoginPage() {
   const router = useRouter()

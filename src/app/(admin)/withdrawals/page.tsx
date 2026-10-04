@@ -171,7 +171,7 @@ function RecordWithdrawalModal({ open, onClose, onSaved }: any) {
           <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide block mb-1">Member *</label>
           <input value={memberSearch} onChange={e => { setMemberSearch(e.target.value); setSelected(null); setForm(f => ({ ...f, memberId: '' })) }}
             placeholder="Type to search…"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500" />
+            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
           {members.length > 0 && (
             <div className="absolute z-10 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-48 overflow-y-auto">
               {members.map(m => (
