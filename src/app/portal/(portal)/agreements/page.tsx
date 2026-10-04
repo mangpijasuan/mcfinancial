@@ -60,7 +60,6 @@ export default function PortalAgreements() {
         <div className="space-y-4">
           {agreements.map(a => {
             const isBorrower  = a.borrowerId  === me?.id
-            const isCosigner  = a.cosignerId  === me?.id
             const mySignature = isBorrower ? a.borrowerSignature : a.cosignerSignature
             const mySigned    = !!mySignature
 
@@ -116,7 +115,6 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
   const [error, setError]   = useState('')
 
   const isBorrower = a.borrowerId === me.id
-  const isCosigner = a.cosignerId === me.id
   const mySigned   = isBorrower ? !!a.borrowerSignature : !!a.cosignerSignature
   const signerType = isBorrower ? 'borrower' : 'cosigner'
 

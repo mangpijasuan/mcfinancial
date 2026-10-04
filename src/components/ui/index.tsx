@@ -165,7 +165,7 @@ export function Modal({ open, onClose, title, children, width = 'max-w-lg' }: {
   // Read through a ref so a new onClose each render does not re-run the
   // effect below (which would move focus back to the first field).
   const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
+  useEffect(() => { onCloseRef.current = onClose }, [onClose])
 
   // While open: the page behind does not scroll, focus moves into the dialog
   // and stays there (Tab wraps), Escape closes it, and focus returns to

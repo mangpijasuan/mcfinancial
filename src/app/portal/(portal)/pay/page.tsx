@@ -71,7 +71,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, onDone }: {
         <CheckCircle size={18} className="text-green-600 shrink-0 mt-0.5" />
         <div>
           <p className="text-sm font-semibold text-green-800">Payment claim submitted</p>
-          <p className="text-xs text-green-600 mt-0.5">An admin will confirm it once they see the Zelle transfer in the club's account. It'll show as pending until then.</p>
+          <p className="text-xs text-green-600 mt-0.5">An admin will confirm it once they see the Zelle transfer in the club’s account. It’ll show as pending until then.</p>
         </div>
       </div>
     )
@@ -110,10 +110,10 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, onDone }: {
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
           {zelleConfigured ? (
             <p className="text-xs text-gray-600">
-              Send via Zelle to <strong>{zelleName}</strong>{zelleEmail && <> · <strong>{zelleEmail}</strong></>}, then submit a claim below. It won't be credited until an admin confirms it.
+              Send via Zelle to <strong>{zelleName}</strong>{zelleEmail && <> · <strong>{zelleEmail}</strong></>}, then submit a claim below. It won’t be credited until an admin confirms it.
             </p>
           ) : (
-            <p className="text-xs text-gray-600">Contact your admin for the club's Zelle details, then submit a claim below with your confirmation note.</p>
+            <p className="text-xs text-gray-600">Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</p>
           )}
           <input
             value={zelleReference} onChange={e => setZelleReference(e.target.value)}

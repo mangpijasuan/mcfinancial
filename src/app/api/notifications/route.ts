@@ -50,7 +50,8 @@ export async function POST(req: NextRequest) {
       const { subject, html } = contributionReminderEmail(m)
       const result = await sendEmail(m.email!, subject, html)
       logs.push({ type: 'contribution_reminder', recipient: m.email!, subject, status: result.ok ? 'sent' : 'failed' })
-      result.ok ? sent++ : failed++
+      if (result.ok) sent++
+      else failed++
     }
 
     await prisma.emailLog.createMany({ data: logs })
@@ -72,7 +73,8 @@ export async function POST(req: NextRequest) {
       const { subject, html } = loanOverdueEmail(loan.borrower, loan)
       const result = await sendEmail(loan.borrower.email, subject, html)
       logs.push({ type: 'loan_overdue', recipient: loan.borrower.email, subject, status: result.ok ? 'sent' : 'failed' })
-      result.ok ? sent++ : failed++
+      if (result.ok) sent++
+      else failed++
     }
 
     await prisma.emailLog.createMany({ data: logs })

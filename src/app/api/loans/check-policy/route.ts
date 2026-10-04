@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
-import { checkLoanPolicy, calcApplicationFee } from '@/lib/loanPolicy'
+import { checkLoanPolicy } from '@/lib/loanPolicy'
 import { requirePermission } from '@/modules/auth'
 import { badRequest, readJsonObject, requiredString } from '@/lib/http'
 import { forLoanPolicy } from '@/modules/accounting/reads'

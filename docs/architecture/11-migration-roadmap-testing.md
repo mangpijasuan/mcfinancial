@@ -89,5 +89,5 @@ The Master Prompt's 18 phases are kept, but **reordered**: the security baseline
 
 - Coverage: 100% branch coverage on `lib/money`, `modules/accounting/ledger` and `modules/loans/amortization`; 70% or more overall.
 - Test data: synthetic fixtures in git. **No real member data in tests or CI** (S-7).
-- CI pipeline: install → `prisma migrate deploy` (Postgres service) → typecheck → lint (with import boundaries) → unit + integration → build → Playwright (PRs) → `npm audit --audit-level=high` (every dependency) → secret scanning.
+- CI pipeline *(in place)*: install → `prisma migrate deploy` (Postgres service) → typecheck → lint (ESLint with import boundaries, `eslint.config.mjs`) → unit + integration → build → Playwright (PRs) → `npm audit --audit-level=high` (every dependency) → secret scanning (gitleaks over the whole history).
 - A failing invariant check in production (nightly job) pages the Treasurer and engineering.

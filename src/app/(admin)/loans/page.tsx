@@ -149,6 +149,18 @@ export default function LoansPage() {
   )
 }
 
+/** Members whose name or ID matches (two characters at least). */
+async function findMembers(q: string): Promise<any[]> {
+  if (q.length < 2) return []
+  try {
+    const res = await fetch(`/api/members?search=${encodeURIComponent(q)}&limit=10`)
+    const d = await res.json().catch(() => null)
+    return Array.isArray(d?.members) ? d.members : []
+  } catch {
+    return []
+  }
+}
+
 function NewLoanModal({ open, onClose, onSaved }: any) {
   const today = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({ borrowerId: '', cosignerId: '', loanDate: today, termMonths: '12', loanAmount: '', borrowerAddress: '', borrowerCity: '', borrowerState: '', notes: '' })
@@ -178,19 +190,18 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
     }
   }
 
-  async function searchMember(q: string, setList: any) {
-    if (q.length < 2) { setList([]); return }
-    try {
-      const res = await fetch(`/api/members?search=${encodeURIComponent(q)}&limit=10`)
-      const d = await readJsonSafe(res)
-      setList(Array.isArray(d?.members) ? d.members : [])
-    } catch {
-      setList([])
-    }
-  }
-
-  useEffect(() => { searchMember(bSearch, setBList) }, [bSearch])
-  useEffect(() => { searchMember(cSearch, setCList) }, [cSearch])
+  // A result that arrives after a newer search started is dropped, so a slow
+  // answer for "Ad" cannot replace the one for "Ada".
+  useEffect(() => {
+    let current = true
+    findMembers(bSearch).then((list) => { if (current) setBList(list) })
+    return () => { current = false }
+  }, [bSearch])
+  useEffect(() => {
+    let current = true
+    findMembers(cSearch).then((list) => { if (current) setCList(list) })
+    return () => { current = false }
+  }, [cSearch])
 
   // Live policy check whenever borrower or amount or term changes
   useEffect(() => {
