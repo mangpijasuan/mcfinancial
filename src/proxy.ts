@@ -25,7 +25,9 @@ export function proxy(request: NextRequest) {
       ? NextResponse.json({ error: 'Not found' }, { status: decision.status })
       : new NextResponse('Not found', { status: decision.status })
   }
-  if (pathname.startsWith('/api/')) return NextResponse.next()
+  // API calls, and pages Next.js fetches ahead of a click, need no policy.
+  const prefetch = request.headers.has('next-router-prefetch') || request.headers.get('purpose') === 'prefetch'
+  if (pathname.startsWith('/api/') || prefetch) return NextResponse.next()
 
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const isDev = process.env.NODE_ENV === 'development'
@@ -58,13 +60,8 @@ export const config = {
   matcher: [
     // API routes: the address check only (they return JSON, no policy needed).
     '/api/:path*',
-    {
-      // Pages; static files need neither.
-      source: '/((?!api|_next/static|_next/image|favicon.ico|icon.png|brand/).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
+    // Pages, prefetches included, so every page request gets the address
+    // check; static files need neither.
+    '/((?!api|_next/static|_next/image|favicon.ico|icon.png|brand/).*)',
   ],
 }

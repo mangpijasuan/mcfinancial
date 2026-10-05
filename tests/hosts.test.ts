@@ -14,11 +14,19 @@ describe('settings', () => {
   })
 
   it('sign-in follows the request address only when split', () => {
+    const warnings: string[] = []
     const single: Record<string, string | undefined> = { NEXTAUTH_URL: 'https://admin.mcfinancial.us' }
-    signInFollowsRequestHost(single)
+    signInFollowsRequestHost(single, (m) => warnings.push(m))
     expect(single).toEqual({ NEXTAUTH_URL: 'https://admin.mcfinancial.us' })
+    expect(warnings).toEqual([])
+    // The same address twice is one address: say so rather than split silently.
+    const same: Record<string, string | undefined> = { APP_HOST: 'admin.mcfinancial.us', ADMIN_HOST: 'Admin.mcfinancial.us', NEXTAUTH_URL: 'https://admin.mcfinancial.us' }
+    signInFollowsRequestHost(same, (m) => warnings.push(m))
+    expect(same.NEXTAUTH_URL).toBe('https://admin.mcfinancial.us')
+    expect(warnings).toEqual([expect.stringContaining('APP_DOMAIN is the same address as DOMAIN (admin.mcfinancial.us)')])
     const split: Record<string, string | undefined> = { APP_HOST: cfg.app, ADMIN_HOST: cfg.admin, NEXTAUTH_URL: 'https://admin.mcfinancial.us' }
-    signInFollowsRequestHost(split)
+    signInFollowsRequestHost(split, (m) => warnings.push(m))
+    expect(warnings).toHaveLength(1)
     expect(split).toEqual({ APP_HOST: cfg.app, ADMIN_HOST: cfg.admin, AUTH_TRUST_HOST: 'true' })
   })
 
@@ -54,9 +62,10 @@ describe('requests', () => {
     expect(hostDecision(cfg, 'app.mcfinancial.us:3400', '/members/MC-0001', '', 'http')).toEqual({ kind: 'redirect', to: 'http://admin.mcfinancial.us:3400/members/MC-0001' })
   })
 
-  it('send members on the bare address, or the old sign-in path, to theirs', () => {
+  it('send members on the bare address to the portal, and the staff sign-in link to the staff address', () => {
     expect(hostDecision(cfg, 'app.mcfinancial.us', '/')).toEqual({ kind: 'redirect', to: 'https://app.mcfinancial.us/portal' })
-    expect(hostDecision(cfg, 'app.mcfinancial.us', '/login')).toEqual({ kind: 'redirect', to: 'https://app.mcfinancial.us/portal/login' })
+    expect(hostDecision(cfg, 'app.mcfinancial.us', '/login')).toEqual({ kind: 'redirect', to: 'https://admin.mcfinancial.us/login' })
+    expect(hostDecision(cfg, 'admin.mcfinancial.us', '/portal/login')).toEqual({ kind: 'redirect', to: 'https://app.mcfinancial.us/portal/login' })
   })
 
   it('refuse an API call on the wrong address, and any unknown address', () => {

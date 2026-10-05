@@ -45,10 +45,9 @@ export function hostDecision(cfg: HostConfig | null, host: string | null, pathna
   const name = hostname(host ?? '')
   const here: Surface | null = name === cfg.app ? 'app' : name === cfg.admin ? 'admin' : null
   if (!here) return { kind: 'refuse', status: 421 }
-  // Members who type the bare address, or the old sign-in path, land on theirs.
-  if (here === 'app' && (pathname === '/' || pathname === '/login')) {
-    return { kind: 'redirect', to: `${proto}://${host}${pathname === '/' ? '/portal' : '/portal/login'}` }
-  }
+  // Members who type the bare address land on the portal. (/login is the
+  // staff sign-in, so on this address it moves to the staff address below.)
+  if (here === 'app' && pathname === '/') return { kind: 'redirect', to: `${proto}://${host}/portal` }
   const wants = routeSurface(pathname)
   if (wants === 'both' || wants === here) return { kind: 'pass' }
   if (pathname.startsWith('/api/')) return { kind: 'refuse', status: 404 }
@@ -70,8 +69,14 @@ export function memberAppOrigin(requestUrl: string, env: Record<string, string |
  * that case it is set aside and NextAuth trusts the request's host, which
  * the proxy has already limited to APP_HOST and ADMIN_HOST.
  */
-export function signInFollowsRequestHost(env: Record<string, string | undefined> = process.env) {
-  if (!hostConfig(env)) return
+export function signInFollowsRequestHost(env: Record<string, string | undefined> = process.env, warn = console.warn) {
+  if (!hostConfig(env)) {
+    const app = env.APP_HOST?.trim().toLowerCase()
+    if (app && app === env.ADMIN_HOST?.trim().toLowerCase()) {
+      warn(`APP_DOMAIN is the same address as DOMAIN (${app}): members and staff share one address. Set APP_DOMAIN to the member app's own address.`)
+    }
+    return
+  }
   delete env.NEXTAUTH_URL
   env.AUTH_TRUST_HOST = 'true'
 }
