@@ -191,4 +191,6 @@ jobs:
           run -e ADMIN_EMAIL_TO_RESET=ci@example.test -e NEW_ADMIN_PASSWORD=ci-passphrase-123 mcfinancial-app npm run -s admin:reset-password
           run mcfinancial-app npm run -s dues:service
           run mcfinancial-app npm run -s loans:service
-          run mcfinancial-app test -f public/mc-logo.png
+          # Static files reach the image (the logos are served from public/brand).
+          run mcfinancial-app test -f public/brand/mc-logo.svg
+          run mcfinancial-app test -f public/brand/mc-logo-on-dark.svg
