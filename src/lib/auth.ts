@@ -7,6 +7,10 @@ import { sendEmail } from './email'
 import { anonymousAuditContext, auditContext, recordAudit } from '@/modules/audit'
 import { createStaffSession, hashSessionToken } from '@/modules/auth/sessions'
 import { verifySecondFactor } from '@/modules/auth/mfa'
+import { signInFollowsRequestHost } from './hosts'
+
+// Members and staff on separate addresses: each sign-in stays on its own (src/lib/hosts.ts).
+signInFollowsRequestHost()
 
 // Member sessions last 7 days. Staff sessions are additionally bounded by
 // their database row (12 hours, 30 minutes idle) — see src/modules/auth.

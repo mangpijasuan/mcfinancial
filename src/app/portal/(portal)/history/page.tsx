@@ -73,13 +73,16 @@ export default function PortalHistory() {
               const max = Math.max(...allYears.map(a => a.amount), 1)
               const pct = Math.max((y.amount / max) * 100, y.amount > 0 ? 4 : 0)
               return (
-                <div key={y.year} className="flex-1 flex flex-col items-center gap-1">
-                  <div
-                    className={`w-full rounded-t-sm transition-all ${
-                      y.type === 'live' ? 'bg-blue-400' : y.amount > 0 ? 'bg-green-500' : 'bg-gray-200'
-                    }`}
-                    style={{ height: `${pct}%` }}
-                  />
+                <div key={y.year} className="flex-1 h-full flex flex-col items-center gap-1">
+                  {/* The bar's height is a share of this box, which fills the chart's height. */}
+                  <div className="w-full flex-1 flex items-end">
+                    <div
+                      className={`w-full rounded-t-sm transition-all ${
+                        y.type === 'live' ? 'bg-blue-400' : y.amount > 0 ? 'bg-green-500' : 'bg-gray-200'
+                      }`}
+                      style={{ height: `${pct}%` }}
+                    />
+                  </div>
                   <span className="text-[9px] text-gray-400 font-medium">
                     {String(y.year).slice(2)}
                   </span>
