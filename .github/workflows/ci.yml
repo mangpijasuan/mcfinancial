@@ -78,7 +78,7 @@ jobs:
           BACKUP_LOCAL_ONLY=1 BACKUP_DATABASE_URL="$ROUND_TRIP_URL" BACKUP_AGE_RECIPIENTS_FILE="$RUNNER_TEMP/recipients.txt" \
             ./scripts/ops/backup-postgres.sh
           AGE_IDENTITY_FILE="$RUNNER_TEMP/identity.txt" RESTORE_ADMIN_URL="postgresql://mcfinancial:mcfinancial_ci@127.0.0.1:5432/postgres" \
-            ./scripts/ops/restore-postgres.sh verify | tee "$RUNNER_TEMP/verify.log"
+            ./scripts/ops/restore-postgres.sh verify 2>&1 | tee "$RUNNER_TEMP/verify.log"
           grep -q PASS "$RUNNER_TEMP/verify.log"
 
   # Secret scanning: gitleaks over the whole history, so a password, key or
