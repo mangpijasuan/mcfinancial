@@ -22,7 +22,8 @@ export async function GET() {
     prisma.emailLog.findMany({ orderBy: { sentAt: 'desc' }, take: 20 }),
   ])
 
-  return NextResponse.json({ unpaidMembers, overdueLoans, recentLogs })
+  // Read here, at request time: a NEXT_PUBLIC_ copy would be frozen into the build.
+  return NextResponse.json({ unpaidMembers, overdueLoans, recentLogs, adminEmail: process.env.ADMIN_EMAIL || null })
 }
 
 export async function POST(req: NextRequest) {

@@ -120,9 +120,17 @@ check_restored() { # check_restored <database url>
   latest=$(q "select migration_name from _prisma_migrations where finished_at is not null order by finished_at desc limit 1")
   triggers=$(q "select count(*) from pg_trigger where tgname in ('audit_log_no_update_delete', 'audit_log_no_truncate')")
   members=$(q 'select count(*) from "Member"')
-  staff=$(q 'select count(*) from "Admin" where "disabledAt" is null')
+  # Logins are in "User" since M8 (20261007000000_identity_users); a backup
+  # taken before it still has "Admin", where every row is staff.
+  local logins="User"
+  [ "$(q "select to_regclass('public.\"User\"') is not null")" = "t" ] || logins="Admin"
+  if [ "$logins" = "User" ]; then
+    staff=$(q 'select count(*) from "User" where kind = '"'staff'"' and "disabledAt" is null')
+  else
+    staff=$(q 'select count(*) from "Admin" where "disabledAt" is null')
+  fi
   log "migrations applied: $migrations (latest: $latest)"
-  for t in Member Contribution Loan LoanPayment Withdrawal PortalPayment LoanAgreement Admin AuditLog; do
+  for t in Member Contribution Loan LoanPayment Withdrawal PortalPayment LoanAgreement "$logins" AuditLog; do
     log "  $t: $(q "select count(*) from \"$t\"")"
   done
   [ "$migrations" -ge 1 ] || die "no applied migrations recorded"

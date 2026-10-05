@@ -99,7 +99,7 @@ In `.env.production`:
 - `DATABASE_URL`: replace `change-me` with the database password from `.env`
 - `SECURITY_ALERT_EMAIL` (receives an alert on every Super Admin sign-in)
 - `RESEND_API_KEY`, `ADMIN_EMAIL`, `EMAIL_FROM` for email
-- `STRIPE_*` and `NEXT_PUBLIC_ZELLE_*` for online payments, if used
+- `STRIPE_*` and `ZELLE_RECIPIENT_NAME` / `ZELLE_RECIPIENT_EMAIL` for online payments, if used (the Zelle details are shown on the member's payment page; a server that still has the old `NEXT_PUBLIC_ZELLE_*` names must rename them)
 - leave `MAKER_CHECKER_ENFORCED` and `LATE_FEES_ENABLED` at `"false"` until Gate #1 A4 and A7 are settled
 
 ## 6. Bring up the stack
@@ -134,6 +134,8 @@ To load the club's records, upload the decrypted data file (README, "Real club d
 ```bash
 read -rsp 'Admin password (12+ characters): ' ADMIN_SEED_PASSWORD; echo; export ADMIN_SEED_PASSWORD
 docker compose -f docker-compose.hetzner.yml cp club-data.json app:/tmp/club-data.json
+# the copy keeps your user as owner; hand it to the app's user, still private
+docker compose -f docker-compose.hetzner.yml exec -u root app chown nextjs:nodejs /tmp/club-data.json
 docker compose -f docker-compose.hetzner.yml exec -e SEED_DATA_FILE=/tmp/club-data.json app npm run -s data:check
 docker compose -f docker-compose.hetzner.yml exec \
   -e SEED_DATA_FILE=/tmp/club-data.json -e ADMIN_SEED_PASSWORD \

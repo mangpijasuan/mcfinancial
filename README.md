@@ -216,8 +216,8 @@ pretending to work — nothing silently fails.
 **Zelle** has no payment API for merchants, so there's no way for the app to know a Zelle transfer
 happened. A member submits a claim (amount + optional confirmation note) from the portal, which shows
 up on the admin **Pending Payments** page (`/payments`). An admin checks the club's actual bank
-activity and clicks **Confirm** (which records the payment) or **Reject**. `NEXT_PUBLIC_ZELLE_RECIPIENT_NAME`
-/ `NEXT_PUBLIC_ZELLE_RECIPIENT_EMAIL` just control what instructions are shown to members.
+activity and clicks **Confirm** (which records the payment) or **Reject**. `ZELLE_RECIPIENT_NAME`
+/ `ZELLE_RECIPIENT_EMAIL` just control what instructions are shown to members.
 
 ---
 

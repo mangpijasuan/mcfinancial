@@ -18,11 +18,14 @@ function StatusBadge({ status }: { status: string }) {
   return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] || map.failed}`}>{status}</span>
 }
 
-function PayForm({ type, loanId, defaultAmount, maxAmount, onDone }: {
+type Zelle = { name: string; email: string } | null
+
+function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
   type: 'contribution' | 'loan_payment'
   loanId?: string
   defaultAmount: number
   maxAmount?: number
+  zelle: Zelle
   onDone: () => void
 }) {
   const [amount, setAmount] = useState(String(defaultAmount))
@@ -33,9 +36,10 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, onDone }: {
   const [zelleSubmitted, setZelleSubmitted] = useState(false)
   const amountId = useId()
 
-  const zelleName = process.env.NEXT_PUBLIC_ZELLE_RECIPIENT_NAME || ''
-  const zelleEmail = process.env.NEXT_PUBLIC_ZELLE_RECIPIENT_EMAIL || ''
-  const zelleConfigured = !!(zelleName || zelleEmail)
+  // From the server (ZELLE_RECIPIENT_NAME / _EMAIL), so a change takes effect on restart.
+  const zelleName = zelle?.name ?? ''
+  const zelleEmail = zelle?.email ?? ''
+  const zelleConfigured = zelle !== null
 
   async function submit() {
     const amt = parseFloat(amount)
@@ -140,6 +144,7 @@ export default function PortalPayPage() {
   const searchParams = useSearchParams()
   const [member, setMember] = useState<any>(null)
   const [payments, setPayments] = useState<any[]>([])
+  const [zelle, setZelle] = useState<Zelle>(null)
   const [loading, setLoading] = useState(true)
 
   const status = searchParams.get('status')
@@ -152,7 +157,10 @@ export default function PortalPayPage() {
     const me = await readJsonSafe(meRes)
     const paymentsData = await readJsonSafe(paymentsRes)
     if (me) setMember(me)
-    if (paymentsData) setPayments(paymentsData.payments || [])
+    if (paymentsData) {
+      setPayments(paymentsData.payments || [])
+      setZelle(paymentsData.zelle ?? null)
+    }
     setLoading(false)
   }
 
@@ -184,7 +192,7 @@ export default function PortalPayPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white rounded-xl border border-gray-200 p-5">
           <h2 className="text-sm font-semibold text-gray-700 mb-3">Pay monthly contribution</h2>
-          <PayForm type="contribution" defaultAmount={20} onDone={load} />
+          <PayForm type="contribution" defaultAmount={20} zelle={zelle} onDone={load} />
         </div>
 
         <div className="bg-white rounded-xl border border-gray-200 p-5">
@@ -195,6 +203,7 @@ export default function PortalPayPage() {
               loanId={activeLoan.loanId}
               defaultAmount={Math.min(activeLoan.monthlyDue, activeLoan.balanceRemaining)}
               maxAmount={activeLoan.balanceRemaining}
+              zelle={zelle}
               onDone={load}
             />
           ) : (
