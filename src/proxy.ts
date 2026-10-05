@@ -60,7 +60,7 @@ export const config = {
     '/api/:path*',
     {
       // Pages; static files need neither.
-      source: '/((?!api|_next/static|_next/image|favicon.ico|icon.png|mc-logo.png).*)',
+      source: '/((?!api|_next/static|_next/image|favicon.ico|icon.png|brand/).*)',
       missing: [
         { type: 'header', key: 'next-router-prefetch' },
         { type: 'header', key: 'purpose', value: 'prefetch' },

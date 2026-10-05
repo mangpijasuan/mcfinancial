@@ -40,7 +40,7 @@ export default function MfaEnrolment({ name, email }: { name: string; email: str
     <div className="min-h-screen bg-[#1B2A4A] flex items-center justify-center p-4">
       <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 shadow-2xl">
         <div className="flex items-center gap-3 mb-4">
-          <img src="/mc-logo.png" alt="" className="w-16 h-10 object-contain" />
+          <img src="/brand/mc-logo.svg" alt="" className="w-16 h-10 object-contain" />
           <div>
             <h1 className="text-lg font-bold text-gray-900">Set up two-factor authentication</h1>
             <p className="text-xs text-gray-500">{name} · {email}</p>

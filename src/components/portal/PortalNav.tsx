@@ -22,7 +22,7 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
       <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
         <div className="flex items-center gap-6 min-w-0">
           <div className="flex items-center gap-2.5 min-w-0">
-            <img src="/mc-logo.png" alt={APP_NAME} className="w-11 h-7 object-contain shrink-0" />
+            <img src="/brand/mc-logo-on-dark.svg" alt={APP_NAME} className="w-11 h-7 object-contain shrink-0" />
             <span className="text-white font-semibold text-sm truncate">{APP_NAME}</span>
           </div>
           <nav className="hidden md:flex items-center gap-1">
