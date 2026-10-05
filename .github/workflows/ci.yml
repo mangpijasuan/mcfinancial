@@ -62,6 +62,25 @@ jobs:
       - name: Build
         run: npm run build
 
+      # The weekly restore check (runbook Stage 1) against a real backup, so a
+      # schema change that breaks it fails here and not on the club's server.
+      - name: Backup and restore round trip
+        env:
+          ROUND_TRIP_URL: postgresql://mcfinancial:mcfinancial_ci@127.0.0.1:5432/mc_backup_ci
+          ADMIN_SEED_PASSWORD: ci-only seed password
+        run: |
+          sudo apt-get update -qq && sudo apt-get install -y -qq age postgresql-client
+          psql "postgresql://mcfinancial:mcfinancial_ci@127.0.0.1:5432/postgres" -qc 'CREATE DATABASE mc_backup_ci'
+          DATABASE_URL="$ROUND_TRIP_URL?schema=public" npx prisma migrate deploy
+          DATABASE_URL="$ROUND_TRIP_URL?schema=public" npx prisma db seed
+          age-keygen -o "$RUNNER_TEMP/identity.txt"
+          age-keygen -y "$RUNNER_TEMP/identity.txt" > "$RUNNER_TEMP/recipients.txt"
+          BACKUP_LOCAL_ONLY=1 BACKUP_DATABASE_URL="$ROUND_TRIP_URL" BACKUP_AGE_RECIPIENTS_FILE="$RUNNER_TEMP/recipients.txt" \
+            ./scripts/ops/backup-postgres.sh
+          AGE_IDENTITY_FILE="$RUNNER_TEMP/identity.txt" RESTORE_ADMIN_URL="postgresql://mcfinancial:mcfinancial_ci@127.0.0.1:5432/postgres" \
+            ./scripts/ops/restore-postgres.sh verify | tee "$RUNNER_TEMP/verify.log"
+          grep -q PASS "$RUNNER_TEMP/verify.log"
+
   # Secret scanning: gitleaks over the whole history, so a password, key or
   # token committed anywhere (even later removed) fails the build. Accepted
   # test-only values are listed, with the reason, in .gitleaksignore.

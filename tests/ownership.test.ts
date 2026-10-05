@@ -1,5 +1,5 @@
 // Object-level access: a signed-in member reaches only their own records.
-import { beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TEST_IDS, signInAs, signInAsMember } from './helpers/actors'
 import { prisma, resetDatabase } from './helpers/db'
 import { createBaseFixtures } from './helpers/factories'
@@ -64,5 +64,30 @@ describe('member ownership', () => {
     const res = await callRoute('portal/payments', 'GET')
     expect(res.status).toBe(200)
     expect(res.json.payments).toEqual([])
+  })
+})
+
+// Settings shown in the browser are read on the server at request time: a
+// NEXT_PUBLIC_ copy is frozen into the build, which runs without them.
+describe('settings read at request time', () => {
+  afterEach(() => vi.unstubAllEnvs())
+
+  it('the payment page gets the club Zelle details, when set', async () => {
+    signInAs('member')
+    vi.stubEnv('ZELLE_RECIPIENT_NAME', '')
+    vi.stubEnv('ZELLE_RECIPIENT_EMAIL', '')
+    expect((await callRoute('portal/payments', 'GET')).json.zelle).toBeNull()
+    vi.stubEnv('ZELLE_RECIPIENT_EMAIL', ' pay@club.example ')
+    expect((await callRoute('portal/payments', 'GET')).json.zelle).toEqual({ name: '', email: 'pay@club.example' })
+    vi.stubEnv('ZELLE_RECIPIENT_NAME', 'Millionaires Club')
+    expect((await callRoute('portal/payments', 'GET')).json.zelle).toEqual({ name: 'Millionaires Club', email: 'pay@club.example' })
+  })
+
+  it('the notifications page gets the admin summary address', async () => {
+    signInAs('treasurer')
+    vi.stubEnv('ADMIN_EMAIL', '')
+    expect((await callRoute('notifications', 'GET')).json.adminEmail).toBeNull()
+    vi.stubEnv('ADMIN_EMAIL', 'board@club.example')
+    expect((await callRoute('notifications', 'GET')).json.adminEmail).toBe('board@club.example')
   })
 })

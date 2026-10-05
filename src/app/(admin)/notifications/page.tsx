@@ -140,7 +140,7 @@ ADMIN_EMAIL="your@email.com"       # Where to send admin summaries`}
           icon={<BarChart2 size={18} />}
           title="Admin monthly summary"
           description="Send a summary report to the admin email with key stats."
-          detail={process.env.NEXT_PUBLIC_ADMIN_EMAIL ? `Will send to ${process.env.NEXT_PUBLIC_ADMIN_EMAIL}` : 'Set ADMIN_EMAIL in .env to enable'}
+          detail={!stats ? 'Loading…' : stats.adminEmail ? `Will send to ${stats.adminEmail}` : 'Set ADMIN_EMAIL in .env.production to enable'}
           buttonLabel="Send summary"
           buttonVariant="secondary"
           onClick={() => send('admin_summary')}
