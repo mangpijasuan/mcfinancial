@@ -87,7 +87,7 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
             </button>
           )}
           <img
-            src="/mc-logo.png"
+            src="/brand/mc-logo-on-dark.svg"
             alt={APP_NAME}
             className={cn('shrink-0 object-contain', compact ? 'h-7 w-10' : 'h-8 w-12')}
           />
@@ -277,7 +277,7 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
           >
             {open ? <X size={20} /> : <Menu size={20} />}
           </button>
-          <img src="/mc-logo.png" alt={APP_NAME} className="h-7 w-11 shrink-0 object-contain" />
+          <img src="/brand/mc-logo-on-dark.svg" alt={APP_NAME} className="h-7 w-11 shrink-0 object-contain" />
           <span className="truncate text-sm font-semibold text-white">{APP_NAME}</span>
         </div>
       </div>

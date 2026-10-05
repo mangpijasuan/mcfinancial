@@ -46,7 +46,8 @@ Create DNS records pointing your domain to the Hetzner server IP.
 
 Example:
 
-- `A` record for `admin.your-domain.example`
+- `A` record for `admin.your-domain.example` (the staff console)
+- `A` record for `app.your-domain.example` (the member app), so members and staff sign in on separate addresses
 
 ## 3. Install Docker on the server
 
@@ -89,6 +90,7 @@ openssl rand -base64 32    # MFA_ENCRYPTION_KEY (a different value)
 In `.env`:
 
 - `DOMAIN`: the admin panel's address, e.g. `admin.your-domain.example`
+- `APP_DOMAIN`: the member app's address, e.g. `app.your-domain.example`. Members then sign in only there and staff only at `DOMAIN`, each with their own session; a page opened on the wrong address moves to the right one. Leave it empty to serve both from `DOMAIN`
 - `POSTGRES_PASSWORD`: the database password (the stack refuses to start while it is empty)
 
 In `.env.production`:

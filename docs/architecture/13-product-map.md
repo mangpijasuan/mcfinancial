@@ -111,7 +111,7 @@ The surfaces are a product boundary first and a deployment boundary later ([stag
 | Stage | WWW | APP | ADMIN |
 |---|---|---|---|
 | Today | does not exist | `/portal/*` in the single Next.js app | `(admin)` routes in the same app |
-| Stage 2 | new static site (`apps/web`) on `mcfinancial.us` | the same app answers on `app.mcfinancial.us` | the same app answers on `admin.mcfinancial.us`. Host-matched routing (`next.config` rewrites with `has: [{ type: 'host' }]`, or reading the Host header in `proxy.ts`) serves each route group only on its own host, and the data-access layer re-checks the role on every request |
+| Stage 2 | new static site (`apps/web`) on `mcfinancial.us` | ✅ **built:** the same app answers on `app.mcfinancial.us` (`APP_DOMAIN`) | ✅ **built:** the same app answers on `admin.mcfinancial.us`. `proxy.ts` reads the host (`src/lib/hosts.ts`): each route group is served only on its own host, a page on the wrong host moves to the right one, an API call there is refused, and an unknown host is refused. Each host keeps its own sign-in cookie; the data-access layer still checks the role on every request. The access gateway in front of admin is still to come |
 | After RBAC is stable | — | stays the member app | split into its own deployment (`apps/admin`) behind the access gateway |
 
 Caddy terminates TLS for all three hosts. DNS and certificates are added when each host goes live.

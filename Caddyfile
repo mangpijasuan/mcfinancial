@@ -1,4 +1,6 @@
-{$DOMAIN} {
+# The staff console (DOMAIN) and, once APP_DOMAIN is set in .env, the member
+# app on its own address (D-17). The app keeps each to its own routes.
+{$DOMAIN} {$APP_DOMAIN} {
   encode gzip zstd
   header {
     # Browsers remember to use HTTPS only (S-8). No "preload": that is

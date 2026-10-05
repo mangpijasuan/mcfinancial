@@ -25,7 +25,7 @@ export default defineConfig({
         'src/modules/treasury/liquidity.ts', 'src/modules/treasury/index.ts', 'src/modules/accounting/comparison.ts',
         'src/modules/accounting/reconciliation.ts', 'src/modules/loans/history.ts',
         'src/modules/accounting/reads.ts',
-        'src/modules/auth/memberLogins.ts', 'src/modules/membership/numbers.ts', 'src/modules/data/fileCheck.ts',
+        'src/modules/auth/memberLogins.ts', 'src/modules/membership/numbers.ts', 'src/modules/data/fileCheck.ts', 'src/lib/hosts.ts',
       ],
       exclude: ['**/*.test.ts'],
       thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },

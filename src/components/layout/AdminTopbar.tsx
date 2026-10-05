@@ -55,7 +55,7 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
       <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="min-w-0">
           <div className="flex items-center gap-3 min-w-0">
-            <img src="/mc-logo.png" alt={APP_NAME} className="hidden lg:block h-9 w-14 shrink-0 object-contain" />
+            <img src="/brand/mc-logo.svg" alt={APP_NAME} className="hidden lg:block h-9 w-14 shrink-0 object-contain" />
             <div className="min-w-0">
               <p className="truncate text-base font-semibold text-slate-900">{pageTitle}</p>
               <div className="flex items-center gap-2">

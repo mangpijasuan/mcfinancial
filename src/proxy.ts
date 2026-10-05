@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { hostConfig, hostDecision } from '@/lib/hosts'
 
 // Content-Security-Policy with a fresh nonce per request (S-8), following
 // node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md.
@@ -8,9 +9,26 @@ import { NextRequest, NextResponse } from 'next/server'
 //
 // Styles allow 'unsafe-inline': charts (recharts) and a few components use
 // style attributes, which nonces cannot cover, and injected CSS cannot run
-// code. This proxy only adds headers; authorisation lives in the Data
-// Access Layer (src/modules/auth), per the Next.js authentication guide.
+// code.
+//
+// With APP_HOST and ADMIN_HOST set, it also keeps members and staff on
+// their own addresses (src/lib/hosts.ts). Authorisation still lives in the
+// Data Access Layer (src/modules/auth), per the Next.js authentication guide.
 export function proxy(request: NextRequest) {
+  const host = request.headers.get('x-forwarded-host') ?? request.headers.get('host')
+  const proto = request.headers.get('x-forwarded-proto') ?? request.nextUrl.protocol.replace(':', '')
+  const { pathname, search } = request.nextUrl
+  const decision = hostDecision(hostConfig(), host, pathname, search, proto)
+  if (decision.kind === 'redirect') return NextResponse.redirect(decision.to, 307)
+  if (decision.kind === 'refuse') {
+    return pathname.startsWith('/api/')
+      ? NextResponse.json({ error: 'Not found' }, { status: decision.status })
+      : new NextResponse('Not found', { status: decision.status })
+  }
+  // API calls, and pages Next.js fetches ahead of a click, need no policy.
+  const prefetch = request.headers.has('next-router-prefetch') || request.headers.get('purpose') === 'prefetch'
+  if (pathname.startsWith('/api/') || prefetch) return NextResponse.next()
+
   const nonce = Buffer.from(crypto.randomUUID()).toString('base64')
   const isDev = process.env.NODE_ENV === 'development'
   const behindHttps = request.headers.get('x-forwarded-proto') === 'https' || request.nextUrl.protocol === 'https:'
@@ -40,13 +58,10 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    {
-      // Pages only: API routes return JSON, and static files need no policy.
-      source: '/((?!api|_next/static|_next/image|favicon.ico|icon.png|mc-logo.png).*)',
-      missing: [
-        { type: 'header', key: 'next-router-prefetch' },
-        { type: 'header', key: 'purpose', value: 'prefetch' },
-      ],
-    },
+    // API routes: the address check only (they return JSON, no policy needed).
+    '/api/:path*',
+    // Pages, prefetches included, so every page request gets the address
+    // check; static files need neither.
+    '/((?!api|_next/static|_next/image|favicon.ico|icon.png|brand/).*)',
   ],
 }

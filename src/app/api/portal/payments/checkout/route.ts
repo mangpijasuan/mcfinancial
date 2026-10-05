@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
 import { nextPublicId } from '@/lib/publicIds'
 import { getStripe } from '@/lib/stripe'
+import { memberAppOrigin } from '@/lib/hosts'
 import { badRequest, readJsonObject } from '@/lib/http'
 import { auditContext, recordAudit } from '@/modules/audit'
 import { withLoanBalances } from '@/modules/accounting/reads'
@@ -69,7 +70,8 @@ export async function POST(req: NextRequest) {
   // Stripe
   try {
     const stripe = getStripe()
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(req.url).origin
+    // Stripe sends the member back to the member app's address.
+    const baseUrl = memberAppOrigin(req.url)
     const description = type === 'contribution' ? 'Monthly contribution' : `Loan payment (${loanId})`
 
     const session = await stripe.checkout.sessions.create({

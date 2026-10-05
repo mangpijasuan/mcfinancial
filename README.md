@@ -156,6 +156,10 @@ ADMIN_EMAIL_TO_RESET=admin@mcfinancial.local NEW_ADMIN_PASSWORD='a long passphra
 ```
 Leave out `RESET_MFA=1` to keep the existing authenticator. For anyone else, a staff administrator can reset their password or two-factor authentication under Staff & Roles.
 
+### Members and staff on separate addresses (D-17)
+
+On a server with `APP_DOMAIN` set in `.env`, members use the member app at `app.<domain>` and staff use the console at `admin.<domain>`. Each address keeps its own sign-in, so a member session is never sent to the staff console, and an officer who is also a member is signed in to each separately. A page opened on the wrong address moves to the right one (`app.<domain>` alone opens the portal); an API call on the wrong address does not exist there; any other address is refused. The rules are in `src/lib/hosts.ts`. Without `APP_DOMAIN`, one address serves both, as in development.
+
 ### Logins: one `User` table (M8)
 
 Every sign-in goes through the `User` table. A **staff user** signs in with an email address, a password and two-factor authentication; a **member user** signs in to the portal with a member ID and a password. An officer who is also a member has one of each, kept apart: the portal password never opens the staff screens, and staff roles, sessions and recovery codes can be held only by a staff user (the database refuses anything else).
