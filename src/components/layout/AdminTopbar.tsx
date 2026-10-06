@@ -54,22 +54,20 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm supports-backdrop-filter:bg-white/75">
       <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="min-w-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src="/brand/mc-logo.svg" alt={APP_NAME} className="hidden lg:block h-9 w-14 shrink-0 object-contain" />
-            <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-slate-900">{pageTitle}</p>
-              <div className="flex items-center gap-2">
-                <p className="truncate text-xs text-slate-500">{APP_NAME} administration</p>
-                {roleSummary && (
-                  <Badge variant="blue">
-                    <span className="inline-flex items-center gap-1">
-                      <Shield size={11} />
-                      {roleSummary}
-                    </span>
-                  </Badge>
-                )}
-              </div>
-            </div>
+          {/* The sidebar shows the logo, the club's name and your role; on a phone,
+              where it is folded away, the role shows here instead. */}
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="truncate text-base font-semibold text-slate-900">{pageTitle}</p>
+            {roleSummary && (
+              <span className="lg:hidden shrink-0">
+                <Badge variant="blue">
+                  <span className="inline-flex items-center gap-1">
+                    <Shield size={11} />
+                    {roleSummary}
+                  </span>
+                </Badge>
+              </span>
+            )}
           </div>
         </div>
 
