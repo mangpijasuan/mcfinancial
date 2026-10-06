@@ -71,7 +71,7 @@ The Finance and Web3 columns are styled differently: dollar amounts and point/to
 | | Rewards (MC Points) | points balance, how they were earned, what they can be used for | Rewards points ledger (off-chain) | Stage 4 (D-10) |
 | | Benefits | member perks and events; UMI only if ever approved (D-15) | Membership / Rewards | Stage 4 |
 | Finance | Contributions | plan, dues by month, arrears, prepayments | Contributions + Ledger | now (basic); obligations in Stage 3 |
-| | Loans | active loan, schedule, next payment, payoff quote, agreement | Loans + Ledger | now (basic); schedule in Stage 3 |
+| | Loans | active loan, schedule, next payment, payoff quote, agreement | Loans + Ledger | ✅ **built:** *My Loan* (`/portal/loan`): schedule, what is paid and late, payoff today, payments, co-signed loans (`src/modules/loans/memberView.ts`) |
 | | Payments | pay by card or Zelle; payment status | Payments | now (`/portal/pay`) |
 | | Withdrawals | request a partial withdrawal or exit; status | Payments + Approvals | Stage 3 |
 | | Statements | monthly and annual statements, regenerable for any past date | **Ledger** | Stage 3 |

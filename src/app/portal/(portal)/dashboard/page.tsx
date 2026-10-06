@@ -147,6 +147,9 @@ export default function PortalDashboard() {
           ) : (
             <p className="text-sm text-gray-400">No active loan.</p>
           )}
+          {activeLoan && activeLoan.status === 'Active' && (
+            <Link href="/portal/loan" className="mt-3 inline-block text-sm text-indigo-600 underline">See the schedule and payoff →</Link>
+          )}
         </div>
       </div>
 

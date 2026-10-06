@@ -84,6 +84,7 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'payments/[id]/reject': { POST: perm('payments.review') },
   'portal/dues': { GET: { member: true } },
   'portal/history': { GET: { member: true } },
+  'portal/loans': { GET: { member: true } },
   'portal/me': { GET: { member: true } },
   'portal/payments': { GET: { member: true } },
   'portal/payments/checkout': { POST: { member: true } },
