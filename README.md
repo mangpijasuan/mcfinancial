@@ -197,6 +197,7 @@ npm run loans:audit             # compare historical loan data against the sourc
 | `/loan-history` | The 2021–2025 loans; **Link older loans** links them to members by ID (M9) |
 | `/payments` | Pending Zelle claims to confirm/reject, plus card payment history |
 | `/portal/pay` | Member-facing: pay a contribution or loan by card (Stripe) or Zelle |
+| `/portal/loan` | Member-facing: My Loan. The member's loans with the month-by-month schedule, what is paid and late, the amount that pays it off today, payments, and the loans they co-sign; the same figures as the staff loan page |
 
 ---
 

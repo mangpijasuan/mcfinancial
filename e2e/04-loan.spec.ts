@@ -101,6 +101,18 @@ test('a loan from capacity check to first repayment', async ({ browser }) => {
   await expect(member.page).toHaveURL(/\/portal\/dashboard$/)
   await expect(member.page.getByText(loanId).first()).toBeVisible()
   await expect(member.page.getByText('$450').first()).toBeVisible()
+
+  // My Loan shows the schedule with the repayment against it, and the payoff.
+  await member.page.getByRole('link', { name: 'See the schedule and payoff →' }).click()
+  await expect(member.page.getByRole('heading', { name: 'My Loan' })).toBeVisible()
+  await expect(member.page.getByRole('heading', { name: `Loan ${loanId}` })).toBeVisible()
+  await expect(member.page.getByText('Being repaid')).toBeVisible()
+  // $500 over 12 months: the $50 pays the first month and part of the second.
+  await expect(member.page.getByRole('row').nth(1)).toContainText('Paid')
+  await expect(member.page.getByRole('row').nth(2)).toContainText('Part paid')
+  await expect(member.page.getByText('$50.00').first()).toBeVisible()
+  await expect(member.page.getByText('To pay it off today')).toBeVisible()
+  await expect(member.page.getByText('$450.00').first()).toBeVisible()
   expect(member.errors).toEqual([])
   await member.close()
 })
