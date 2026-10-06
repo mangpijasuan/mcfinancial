@@ -87,7 +87,7 @@ The Finance and Web3 columns are styled differently: dollar amounts and point/to
 | Approvals | the maker/checker queue for everything in D-06 | `approvals.decide` | Stage 2–3 (Zelle confirmations today) |
 | Treasury | fiat: cash position, reserve, lending capacity; MCTN Safes mirror after Gate #2 | `treasury.view` | Stage 3 |
 | Rewards rules | MC Points rules, budgets, manual awards | `rewards.manage` | Stage 4 |
-| Reports | trial balance, portfolio, aging, cash flow, member statements, as of any date | `reports.view` | now (dashboard); ledger-based in Stage 3 |
+| Reports | trial balance, portfolio, aging, cash flow, member statements, as of any date | `ledger.read` | ✅ **built:** *Reports* (`/reports`): balance sheet and loan portfolio with aging (current, 1–30, 31–60, 61–90, over 90 days late) as of any date; income statement and cash flow for any range; print and CSV (`src/modules/accounting/reports.ts`). The trial balance is on *Ledger*, member statements on each member |
 | Audit log | who did what, before and after | `audit.read` | now (`/settings/audit`) |
 | Users & Roles | staff accounts, role assignment, MFA status | `staff.read` / `staff.manage` | now (`/settings/staff`) |
 | Compliance | compliance matrix tracker, retention settings, data-subject requests | `compliance.*` | Stage 3 |

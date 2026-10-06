@@ -70,7 +70,17 @@ test('opening balances, approval, comparison and month-end close', async ({ brow
   await expect(page.getByText("Every member's contributions and withdrawals agree.")).toBeVisible()
   await expect(page.getByText("Every paid-out loan's balance agrees.")).toBeVisible()
 
-  // 7. Statements start: the member sees this year's, and staff see the same one.
+  // 7. The reports read from the ledger: the balance sheet balances, and the
+  //    loans owed add up to Loans receivable on it.
+  await page.goto('/reports')
+  await expect(page.getByText('Assets equal liabilities plus equity.')).toBeVisible()
+  const receivable = await page.getByRole('region', { name: 'Assets' }).getByRole('row', { name: /Loans receivable/ }).getByRole('cell').last().textContent()
+  await page.getByRole('tab', { name: 'Loan portfolio' }).click()
+  await expect(page.getByRole('row', { name: /Total owed/ })).toContainText(receivable!)
+  await page.getByRole('tab', { name: 'Cash flow' }).click()
+  await expect(page.getByRole('row', { name: /Cash at the end/ })).toBeVisible()
+
+  // 8. Statements start: the member sees this year's, and staff see the same one.
   const member = await signedIn(browser, 'member')
   await member.page.goto('/portal/statements')
   await member.page.getByLabel('Statement for').selectOption({ label: 'Year 2026 (to date)' })
