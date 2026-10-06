@@ -198,6 +198,7 @@ npm run loans:audit             # compare historical loan data against the sourc
 | `/payments` | Pending Zelle claims to confirm/reject, plus card payment history |
 | `/portal/pay` | Member-facing: pay a contribution or loan by card (Stripe) or Zelle |
 | `/portal/loan` | Member-facing: My Loan. The member's loans with the month-by-month schedule, what is paid and late, the amount that pays it off today, payments, and the loans they co-sign; the same figures as the staff loan page |
+| `/portal/statements` | Member-facing: monthly and annual statements from the ledger, from the cutover on: the balance at the start and end and every movement on the member's capital, loans, fees and held money. Final once the month is closed (provisional until then); printable. Staff see the same statement at `/members/[id]/statements` |
 
 ---
 

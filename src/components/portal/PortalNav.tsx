@@ -15,6 +15,7 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
     { href: '/portal/pay',          label: 'Make a Payment' },
     { href: '/portal/history',      label: 'Payment History' },
     { href: '/portal/loan',         label: 'My Loan' },
+    { href: '/portal/statements',   label: 'Statements' },
     { href: '/portal/agreements',   label: 'Loan Application' },
   ]
 
@@ -39,7 +40,7 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
         </div>
 
         <div className="hidden lg:flex items-center gap-3 shrink-0">
-          <span className="text-white/60 text-xs whitespace-nowrap">{user.memberId} · {user.name}</span>
+          <span className="hidden xl:inline text-white/60 text-xs whitespace-nowrap">{user.memberId} · {user.name}</span>
           <button
             onClick={() => signOut({ callbackUrl: '/portal/login' })}
             className="text-white/60 hover:text-white text-xs px-3 py-1.5 rounded-lg hover:bg-white/8 transition-colors"

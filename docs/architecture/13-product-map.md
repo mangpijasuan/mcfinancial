@@ -74,7 +74,7 @@ The Finance and Web3 columns are styled differently: dollar amounts and point/to
 | | Loans | active loan, schedule, next payment, payoff quote, agreement | Loans + Ledger | ✅ **built:** *My Loan* (`/portal/loan`): schedule, what is paid and late, payoff today, payments, co-signed loans (`src/modules/loans/memberView.ts`) |
 | | Payments | pay by card or Zelle; payment status | Payments | now (`/portal/pay`) |
 | | Withdrawals | request a partial withdrawal or exit; status | Payments + Approvals | Stage 3 |
-| | Statements | monthly and annual statements, regenerable for any past date | **Ledger** | Stage 3 |
+| | Statements | monthly and annual statements, regenerable for any past date | **Ledger** | ✅ **built:** *Statements* (`/portal/statements`, staff: *Statements* on the member page): each month and year from the cutover, the balance at each end and every movement on the member's capital, loans, fees and held money; final once its months are closed, provisional until then (`src/modules/accounting/statements.ts`) |
 | Web3 | Wallet | linked wallet (embedded or external), recovery | Web3 (wallet links) | after Gate #2 |
 | | MCTN | on-chain balance, settled rewards, contract address | the chain (mirrored) | after Gate #2 |
 
