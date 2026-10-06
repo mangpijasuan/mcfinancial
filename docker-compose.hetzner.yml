@@ -45,11 +45,14 @@ services:
     environment:
       DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
       APP_DOMAIN: ${APP_DOMAIN:-}
+      # The public site (apps/web); published once WWW_DOMAIN is set in .env.
+      WWW_DOMAIN: ${WWW_DOMAIN:-http://www.localhost}
     ports:
       - "80:80"
       - "443:443"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./apps/web/public:/srv/www:ro
       - caddy_data:/data
       - caddy_config:/config
 

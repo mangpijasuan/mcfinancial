@@ -30,6 +30,7 @@ Open **http://localhost:3000**. Sign in as `admin@mcfinancial.local` with the pa
 
 ```
 src/            the app: pages (src/app), API routes (src/app/api), modules (money, loans, contributions, ledger, auth…)
+apps/web/       the public website (mcfinancial.us): static HTML and CSS served by Caddy, never the app
 prisma/         database schema, migrations, seed and synthetic demo data
 tests/          integration and authorisation tests (unit tests sit next to the code)
 scripts/

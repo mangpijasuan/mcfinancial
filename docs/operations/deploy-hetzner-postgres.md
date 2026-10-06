@@ -48,6 +48,7 @@ Example:
 
 - `A` record for `admin.your-domain.example` (the staff console)
 - `A` record for `app.your-domain.example` (the member app), so members and staff sign in on separate addresses
+- `A` records for `your-domain.example` and `www.your-domain.example` (the public website, `apps/web`), once it is ready to publish
 
 ## 3. Install Docker on the server
 
@@ -91,6 +92,7 @@ In `.env`:
 
 - `DOMAIN`: the admin panel's address, e.g. `admin.your-domain.example`
 - `APP_DOMAIN`: the member app's address, e.g. `app.your-domain.example`. Members then sign in only there and staff only at `DOMAIN`, each with their own session; a page opened on the wrong address moves to the right one. Leave it empty to serve both from `DOMAIN`
+- `WWW_DOMAIN`: the public website's addresses, e.g. `"your-domain.example www.your-domain.example"`. Leave it empty until the site is ready to publish ([apps/web/README.md](../../apps/web/README.md)); Caddy serves it from `apps/web/public` and never sends it to the app
 - `POSTGRES_PASSWORD`: the database password (the stack refuses to start while it is empty)
 
 In `.env.production`:

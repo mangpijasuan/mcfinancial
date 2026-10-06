@@ -111,7 +111,7 @@ The surfaces are a product boundary first and a deployment boundary later ([stag
 | Stage | WWW | APP | ADMIN |
 |---|---|---|---|
 | Today | does not exist | `/portal/*` in the single Next.js app | `(admin)` routes in the same app |
-| Stage 2 | new static site (`apps/web`) on `mcfinancial.us` | ✅ **built:** the same app answers on `app.mcfinancial.us` (`APP_DOMAIN`) | ✅ **built:** the same app answers on `admin.mcfinancial.us`. `proxy.ts` reads the host (`src/lib/hosts.ts`): each route group is served only on its own host, a page on the wrong host moves to the right one, an API call there is refused, and an unknown host is refused. Each host keeps its own sign-in cookie; the data-access layer still checks the role on every request. The access gateway in front of admin is still to come |
+| Stage 2 | ✅ **built:** static site in `apps/web` (Home, About, Membership, Contact; draft sections to write and counsel to review before it goes live), served by Caddy on `mcfinancial.us` (`WWW_DOMAIN`), never the app | ✅ **built:** the same app answers on `app.mcfinancial.us` (`APP_DOMAIN`) | ✅ **built:** the same app answers on `admin.mcfinancial.us`. `proxy.ts` reads the host (`src/lib/hosts.ts`): each route group is served only on its own host, a page on the wrong host moves to the right one, an API call there is refused, and an unknown host is refused. Each host keeps its own sign-in cookie; the data-access layer still checks the role on every request. The access gateway in front of admin is still to come |
 | After RBAC is stable | — | stays the member app | split into its own deployment (`apps/admin`) behind the access gateway |
 
 Caddy terminates TLS for all three hosts. DNS and certificates are added when each host goes live.
