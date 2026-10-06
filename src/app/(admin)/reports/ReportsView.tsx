@@ -48,11 +48,15 @@ export default function ReportsView({ today }: { today: string }) {
   useEffect(() => {
     const query = current.range ? `from=${from}&to=${to}` : `asOf=${asOf}`
     if (current.range ? !(from && to) : !asOf) return
+    // A slower answer for an earlier tab or date must not replace this one.
+    let chosen = true
     setError('')
+    setData(null)
     fetch(`/api/reports/${current.api}?${query}`)
       .then(async (r) => (r.ok ? r.json() : Promise.reject(new Error((await r.json().catch(() => null))?.error ?? 'The report could not be loaded.'))))
-      .then((report) => setData({ tab, report }))
-      .catch((e: Error) => { setData(null); setError(e.message) })
+      .then((report) => { if (chosen) setData({ tab, report }) })
+      .catch((e: Error) => { if (chosen) { setData(null); setError(e.message) } })
+    return () => { chosen = false }
   }, [tab, current, asOf, from, to])
 
   const report = data?.tab === tab ? data.report : null

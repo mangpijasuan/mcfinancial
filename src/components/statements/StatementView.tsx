@@ -33,11 +33,14 @@ export default function StatementView({ api, historyHref }: { api: string; histo
 
   useEffect(() => {
     if (!period) return
+    // A slower answer for a period no longer chosen must not replace this one.
+    let chosen = true
     setStatement(null)
     fetch(`${api}/${period}`)
       .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
-      .then(setStatement)
-      .catch(() => setFailed(true))
+      .then((s: Statement) => { if (chosen) setStatement(s) })
+      .catch(() => { if (chosen) setFailed(true) })
+    return () => { chosen = false }
   }, [api, period])
 
   if (failed) return <p className="text-sm text-red-700">The statement could not be loaded. Please reload the page.</p>

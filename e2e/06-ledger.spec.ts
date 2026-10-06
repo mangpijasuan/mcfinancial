@@ -82,8 +82,16 @@ test('opening balances, approval, comparison and month-end close', async ({ brow
 
   // 8. Statements start: the member sees this year's, and staff see the same one.
   const member = await signedIn(browser, 'member')
+  // The month the page opens on answers late, after the year the member
+  // picked: the year must stay on screen.
+  await member.page.route(/\/api\/portal\/statements\/\d{4}-\d{2}$/, async (route) => {
+    await new Promise((resolve) => setTimeout(resolve, 1500))
+    await route.continue()
+  })
+  const lateMonth = member.page.waitForResponse(/\/api\/portal\/statements\/\d{4}-\d{2}$/)
   await member.page.goto('/portal/statements')
   await member.page.getByLabel('Statement for').selectOption({ label: 'Year 2026 (to date)' })
+  await lateMonth
   await expect(member.page.getByRole('heading', { name: 'Statement · Year 2026 (to date)' })).toBeVisible()
   const capital = member.page.getByRole('region', { name: 'Your capital' })
   await expect(capital.getByRole('row', { name: /Balance at the end/ })).toBeVisible()
