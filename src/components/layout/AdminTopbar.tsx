@@ -3,8 +3,6 @@
 import { useMemo, useState } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { Search, Shield } from 'lucide-react'
-import { Badge } from '@/components/ui'
-import { APP_NAME } from '@/lib/brand'
 
 const pageTitles: Record<string, string> = {
   '/dashboard': 'Dashboard',
@@ -15,6 +13,9 @@ const pageTitles: Record<string, string> = {
   '/loan-payments': 'Repayments',
   '/loan-history': 'Loan History',
   '/withdrawals': 'Withdrawals',
+  '/dues': 'Dues',
+  '/treasury': 'Treasury',
+  '/reconciliation': 'Reconciliation',
   '/payments': 'Online Payment Review',
   '/notifications': 'Notifications',
   '/ledger': 'Ledger',
@@ -30,7 +31,10 @@ function titleFromPath(pathname: string) {
   const matched = Object.keys(pageTitles)
     .filter((key) => pathname === key || pathname.startsWith(`${key}/`))
     .sort((a, b) => b.length - a.length)[0]
-  return matched ? pageTitles[matched] : APP_NAME
+  // A page without an entry is named from its path, never the club's name again.
+  if (matched) return pageTitles[matched]
+  const first = pathname.split('/').filter(Boolean)[0] ?? ''
+  return first ? first.charAt(0).toUpperCase() + first.slice(1).replace(/-/g, ' ') : 'Dashboard'
 }
 
 export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSummary?: string; canSearchMembers: boolean }) {
@@ -54,22 +58,21 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
     <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm supports-backdrop-filter:bg-white/75">
       <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
         <div className="min-w-0">
-          <div className="flex items-center gap-3 min-w-0">
-            <img src="/brand/mc-logo.svg" alt={APP_NAME} className="hidden lg:block h-9 w-14 shrink-0 object-contain" />
-            <div className="min-w-0">
-              <p className="truncate text-base font-semibold text-slate-900">{pageTitle}</p>
-              <div className="flex items-center gap-2">
-                <p className="truncate text-xs text-slate-500">{APP_NAME} administration</p>
-                {roleSummary && (
-                  <Badge variant="blue">
-                    <span className="inline-flex items-center gap-1">
-                      <Shield size={11} />
-                      {roleSummary}
-                    </span>
-                  </Badge>
-                )}
-              </div>
-            </div>
+          {/* The sidebar shows the logo, the club's name and your role. On a phone,
+              where it is folded away, and on desktop while it is collapsed
+              (globals.css, .role-in-topbar), the role shows here instead. A long
+              list of roles is shortened so the page title keeps its room. */}
+          <div className="flex items-center gap-2 min-w-0">
+            <p className="shrink-0 whitespace-nowrap text-base font-semibold text-slate-900">{pageTitle}</p>
+            {roleSummary && (
+              <span
+                className="role-in-topbar min-w-0 max-w-full items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800"
+                title={roleSummary}
+              >
+                <Shield size={11} className="shrink-0" />
+                <span className="truncate">{roleSummary}</span>
+              </span>
+            )}
           </div>
         </div>
 

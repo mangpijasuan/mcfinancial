@@ -4,7 +4,6 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGri
 import { StatCard, Card, Table, EmptyState, LoanStatusBadge, Badge } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { Users, Landmark, TrendingUp, ShieldCheck, AlertTriangle, Receipt, Trophy, ArrowDownLeft } from 'lucide-react'
-import { APP_NAME } from '@/lib/brand'
 
 export default function DashboardPage() {
   const currentYear = new Date().getFullYear()
@@ -72,7 +71,7 @@ export default function DashboardPage() {
       <div className="mb-7">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {APP_NAME} - overview{data.balanceSource === 'ledger' ? ' · balances from the ledger' : ''}
+          Club overview{data.balanceSource === 'ledger' ? ' · balances from the ledger' : ''}
         </p>
       </div>
 

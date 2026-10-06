@@ -93,7 +93,7 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
           />
           {!compact && (
             <div className="min-w-0 text-left">
-              <p className="truncate text-sm font-semibold leading-tight text-white">{APP_NAME}</p>
+              <p className="text-sm font-semibold leading-tight text-white">{APP_NAME}</p>
               <p className="truncate text-xs text-white/45">{roleSummary || 'Staff'}</p>
             </div>
           )}
@@ -174,6 +174,11 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
   useEffect(() => {
     setCollapsed(window.localStorage.getItem('mcfinancial.sidebar.collapsed') === 'true')
   }, [])
+
+  // While the sidebar is collapsed the top bar shows the role instead (globals.css, .role-in-topbar).
+  useEffect(() => {
+    document.documentElement.dataset.sidebar = collapsed ? 'compact' : 'full'
+  }, [collapsed])
 
   useEffect(() => {
     setOpen(false)
