@@ -1,7 +1,7 @@
 'use client'
 import { use, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { ArrowLeft, Edit2, KeyRound, Globe, Shield } from 'lucide-react'
+import { ArrowLeft, Edit2, FileText, KeyRound, Globe, Shield } from 'lucide-react'
 import { Card, Table, Badge, StatusBadge, EligibleBadge, RiskBadge, LoanStatusBadge,
          Button, Modal, Input, Select, Spinner } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
@@ -53,6 +53,7 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
           {can('staff.manage') && (
             <Button variant="secondary" size="sm" onClick={() => setShowPromoteAdmin(true)}><Shield size={14} /> {member.linkedAdmin ? 'Staff account' : 'Give staff access'}</Button>
           )}
+          <Button variant="secondary" size="sm" onClick={() => router.push(`/members/${encodeURIComponent(member.id)}/statements`)}><FileText size={14} /> Statements</Button>
           {can('members.portal_access') && <Button variant="secondary" size="sm" onClick={() => setShowPortal(true)}><KeyRound size={14} /> Portal access</Button>}
           {can('members.update') && <Button variant="secondary" size="sm" onClick={() => setShowEdit(true)}><Edit2 size={14} /> Edit</Button>}
         </div>

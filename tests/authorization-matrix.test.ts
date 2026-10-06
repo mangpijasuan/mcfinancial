@@ -77,6 +77,8 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'members/[id]': { GET: perm('members.read'), PATCH: perm('members.update') }, // no DELETE (Gate #1 A3)
   'members/[id]/dues': { GET: perm('contributions.read'), POST: perm('dues.manage_plans') },
   'members/[id]/promote-admin': { POST: perm('staff.manage') },
+  'members/[id]/statements': { GET: perm('members.read') },
+  'members/[id]/statements/[period]': { GET: perm('members.read') },
   'members/[id]/set-password': { POST: perm('members.portal_access') },
   'notifications': { GET: perm('notifications.read'), POST: perm('notifications.send') },
   'payments': { GET: perm('payments.read') },
@@ -85,6 +87,8 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'portal/dues': { GET: { member: true } },
   'portal/history': { GET: { member: true } },
   'portal/loans': { GET: { member: true } },
+  'portal/statements': { GET: { member: true } },
+  'portal/statements/[period]': { GET: { member: true } },
   'portal/me': { GET: { member: true } },
   'portal/payments': { GET: { member: true } },
   'portal/payments/checkout': { POST: { member: true } },

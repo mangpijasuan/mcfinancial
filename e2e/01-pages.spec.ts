@@ -43,7 +43,7 @@ test('phone layouts fit the screen', async ({ browser }) => {
 
 test('the member portal loads cleanly', async ({ browser }) => {
   const { page, errors, close } = await signedIn(browser, 'member', { width: 390, height: 844 })
-  for (const path of ['/portal/dashboard', '/portal/history', '/portal/pay', '/portal/loan', '/portal/agreements']) {
+  for (const path of ['/portal/dashboard', '/portal/history', '/portal/pay', '/portal/loan', '/portal/statements', '/portal/agreements']) {
     await page.goto(path)
     await expect(page.locator('h1, h2').first(), path).toBeVisible()
     await expectNoOverflow(page)
