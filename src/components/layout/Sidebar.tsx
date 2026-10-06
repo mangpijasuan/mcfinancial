@@ -175,6 +175,11 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
     setCollapsed(window.localStorage.getItem('mcfinancial.sidebar.collapsed') === 'true')
   }, [])
 
+  // While the sidebar is collapsed the top bar shows the role instead (globals.css, .role-in-topbar).
+  useEffect(() => {
+    document.documentElement.dataset.sidebar = collapsed ? 'compact' : 'full'
+  }, [collapsed])
+
   useEffect(() => {
     setOpen(false)
   }, [path])

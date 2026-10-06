@@ -4,7 +4,7 @@ The MC mark is drawn flat, in two versions, from the outlines of the original ar
 
 | File | Use on | M | C |
 |---|---|---|---|
-| `public/brand/mc-logo.svg` | white and light surfaces: the staff top bar, the two-factor setup card, receipts and anything printed | club navy `#1B2A4A` | deep gold `#D4A017` |
+| `public/brand/mc-logo.svg` | white and light surfaces: the two-factor setup card, receipts and anything printed | club navy `#1B2A4A` | deep gold `#D4A017` |
 | `public/brand/mc-logo-on-dark.svg` | navy surfaces: the staff sidebar, the member portal bar, both sign-in pages | light `#ECF0F8` | gold `#F5B70A` |
 | `src/app/icon.png` | the browser tab and phone home screen | light | gold, on a navy tile |
 

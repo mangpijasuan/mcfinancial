@@ -71,3 +71,11 @@
     background-attachment: local, local, scroll, scroll;
   }
 }
+
+/* The top bar's role badge: shown on a phone (where the sidebar is folded
+   away) and, from the lg breakpoint, only while the sidebar is collapsed.
+   Unlayered so it applies over the utilities' lg:hidden. */
+.role-in-topbar { display: inline-flex }
+@media (min-width: 64rem) {
+  html:not([data-sidebar='compact']) .role-in-topbar { display: none }
+}
