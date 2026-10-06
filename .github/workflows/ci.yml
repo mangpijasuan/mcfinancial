@@ -200,12 +200,15 @@ jobs:
       # member app.
       - name: Web server and public site
         run: |
+          # Docker options first, then the image, then its command.
           caddy() {
-            docker run "$@" -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" -v "$PWD/apps/web/public:/srv/www:ro" \
-              -e DOMAIN=http://admin.localhost -e APP_DOMAIN=app.example.test -e WWW_DOMAIN=http://www.localhost caddy:2
+            local options=()
+            while [ "$1" != -- ]; do options+=("$1"); shift; done; shift
+            docker run "${options[@]}" -v "$PWD/Caddyfile:/etc/caddy/Caddyfile:ro" -v "$PWD/apps/web/public:/srv/www:ro" \
+              -e DOMAIN=http://admin.localhost -e APP_DOMAIN=app.example.test -e WWW_DOMAIN=http://www.localhost caddy:2 "$@"
           }
-          caddy --rm caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
-          caddy -d --name www -p 8088:80
+          caddy --rm -- caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
+          caddy -d --name www -p 8088:80 --
           get() { curl -s --retry 10 --retry-connrefused --retry-delay 1 -o /dev/null -w "$2" -H 'Host: www.localhost' "http://127.0.0.1:8088$1"; }
           for page in / /about /membership /contact; do test "$(get "$page" '%{http_code}')" = 200 || { echo "$page"; exit 1; }; done
           test "$(get /no-such-page '%{http_code}')" = 404
