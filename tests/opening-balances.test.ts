@@ -187,9 +187,10 @@ describe('posting', () => {
     // A loan already on the loan engine (approved, not paid out yet).
     await createMember('MC-ENG', { monthsActive: 24, archiveLifetime: 2000, overallContributions: 2000 })
     await recordBankBalance(5000_00, '2025-12-31') // the lending capacity before the ledger holds cash (A10)
+    await createMember('MC-ENG-C', { monthsActive: 24 })
     const { createLoan: createEngineLoan } = await import('@/modules/loans/create')
     await prisma.$transaction((tx) => createEngineLoan(tx, {
-      borrowerId: 'MC-ENG', cosignerId: null, loanAmount: 500, termMonths: 5, loanDate: '2026-09-01', notes: null, borrowerAddress: null, borrowerCity: null, borrowerState: null,
+      borrowerId: 'MC-ENG', cosignerId: 'MC-ENG-C', loanAmount: 500, termMonths: 5, loanDate: '2026-09-01', notes: null, borrowerAddress: null, borrowerCity: null, borrowerState: null,
     }, { maker: { id: staffId('treasurer'), email: '' }, checker: null }, { actorType: 'system', actorId: null, actorLabel: 'test' } as never))
     const plan = await prisma.$transaction((tx) => checkOpening(tx, inputs()))
     const { postOpeningBalances } = await import('@/modules/accounting/opening')

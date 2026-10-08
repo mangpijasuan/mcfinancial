@@ -25,5 +25,6 @@ export async function GET(req: NextRequest) {
     select: { entityId: true, publicId: true },
   })
   const awaiting = new Map(pending.map((r) => [r.entityId, r.publicId]))
-  return NextResponse.json({ payments: payments.map((p) => ({ ...p, awaitingApproval: awaiting.get(p.id) ?? null })) })
+  const stripeIssues = await prisma.stripeWebhookEvent.findMany({ where: { status: { in: ['failed', 'review'] } }, orderBy: { updatedAt: 'desc' }, take: 100, select: { eventId: true, type: true, status: true, attempts: true, lastError: true, updatedAt: true } })
+  return NextResponse.json({ stripeIssues, payments: payments.map((p) => ({ ...p, awaitingApproval: awaiting.get(p.id) ?? null })) })
 }

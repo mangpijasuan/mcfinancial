@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     return badRequest('Loan amount must be a dollar amount with at most two decimals.')
   }
   if (amountCents <= 0) return badRequest('Loan amount must be greater than 0.')
-  const termMonths = parseInt(body.termMonths)
+  const termMonths = Number(body.termMonths)
   if (!Number.isInteger(termMonths) || termMonths <= 0) return badRequest('Term must be a whole number of months.')
   const loanDate = parseDate(body.loanDate)
   if (!loanDate) return badRequest('A valid loan date is required.')

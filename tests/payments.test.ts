@@ -121,10 +121,10 @@ describe('Stripe checkout', () => {
     })
 
     const payload = JSON.stringify({
-      id: 'evt_test_1',
+      id: 'evt_test_1', created: Math.floor(Date.now() / 1000),
       object: 'event',
       type: 'checkout.session.completed',
-      data: { object: { id: 'cs_test_1', object: 'checkout.session', payment_status: 'paid', payment_intent: 'pi_test_1', metadata: { portalPaymentId: pending.id } } },
+      data: { object: { id: 'cs_test_1', object: 'checkout.session', created: Math.floor(Date.now() / 1000), currency: 'usd', amount_total: 2500, payment_status: 'paid', payment_intent: 'pi_test_1', metadata: { portalPaymentId: pending.id } } },
     })
     const signature = new Stripe('sk_test_dummy').webhooks.generateTestHeaderString({ payload, secret: WEBHOOK_SECRET })
     const deliver = () => callRoute('webhooks/stripe', 'POST', { rawBody: payload, headers: { 'stripe-signature': signature } })

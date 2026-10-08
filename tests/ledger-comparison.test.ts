@@ -8,7 +8,7 @@ import { createBaseFixtures, createLoan, createMember } from './helpers/factorie
 import { callRoute } from './helpers/routes'
 import { approveAccounts } from '@/modules/accounting/ledger'
 import { checkOpening, postOpeningBalances } from '@/modules/accounting/opening'
-import { postLegacyLoanNow } from '@/modules/accounting/legacyActivity'
+import { postLegacyLoanNow, postWithdrawalNow } from '@/modules/accounting/legacyActivity'
 import { compareLedger, comparisonStatus, runLedgerComparison } from '@/modules/accounting/comparison'
 import { serviceDues } from '@/modules/contributions'
 import { cents } from '@/lib/money'
@@ -103,8 +103,15 @@ describe('dual-write', () => {
     // LN-TEST-A moved onto the loan engine with the opening balances: not an older loan any more.
     expect(await prisma.$transaction((tx) => postLegacyLoanNow(tx, 'LN-TEST-A'))).toEqual([])
 
-    // A withdrawal dated before the cutover is in the opening balances, not posted again.
-    expect((await callRoute('withdrawals', 'POST', { body: { memberId: 'M1', amount: '10', withdrawalDate: '2025-12-20' } })).json.journalEntry).toBeNull()
+    // A withdrawal dated before the cutover would be in neither the opening
+    // balances (already posted) nor the capital since, so it is refused.
+    const early = await callRoute('withdrawals', 'POST', { body: { memberId: 'M1', amount: '10', withdrawalDate: '2025-12-20' } })
+    expect(early.status).toBe(400)
+    expect(early.json.error).toMatch(/dated from the cutover \(2026-01-01\)/)
+    // One that arrives some other way (a data import) is still never posted twice.
+    await prisma.withdrawal.create({ data: { withdrawalId: 'WD-IMPORTED', memberId: 'M1', memberName: 'M1', amount: 10, withdrawalDate: new Date('2025-12-20') } })
+    expect(await prisma.$transaction((tx) => postWithdrawalNow(tx, 'WD-IMPORTED'))).toBeNull()
+    await prisma.withdrawal.delete({ where: { withdrawalId: 'WD-IMPORTED' } })
 
     // The records and the ledger agree; the daily job finds nothing left to post.
     const result = await compareLedger(prisma, TODAY)

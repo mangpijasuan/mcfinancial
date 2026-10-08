@@ -6,7 +6,7 @@ import { type StaffRole, authFile } from './fixtures'
  * (hydration errors included). Contexts made from the `browser` fixture take
  * the config's `use` options (baseURL, time zone).
  */
-export async function signedIn(browser: Browser, role: StaffRole | 'member', viewport = { width: 1280, height: 900 }) {
+export async function signedIn(browser: Browser, role: StaffRole | 'member' | 'cosigner', viewport = { width: 1280, height: 900 }) {
   const context = await browser.newContext({ storageState: authFile(role), viewport })
   const page = await context.newPage()
   const errors: string[] = []
