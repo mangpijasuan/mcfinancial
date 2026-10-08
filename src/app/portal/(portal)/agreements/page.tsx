@@ -120,7 +120,12 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
 
   async function sign() {
     if (!sig.trim()) { setError('Type your full legal name to sign.'); return }
-    if (isBorrower && !address.borrowerCity) { setError('Please fill in your city.'); return }
+    if (isBorrower && !address.borrowerCity) {
+      setError(a.lenderSignature || a.cosignerSignature
+        ? 'The signed terms are missing your city. Ask the club to cancel this undisbursed loan and issue a replacement agreement.'
+        : 'Please fill in your city.')
+      return
+    }
     setSaving(true); setError('')
     const res = await fetch(`/api/agreements/${a.agreementId}`, {
       method: 'PATCH', headers: { 'Content-Type': 'application/json' },
@@ -193,9 +198,9 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
               </p>
               {isBorrower && (
                 <div className="grid grid-cols-3 gap-3">
-                  <input value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
-                  <input value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
-                  <input value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
                 </div>
               )}
               <input value={sig} onChange={e => setSig(e.target.value)} placeholder="Type your full legal name to sign…" aria-label="Your full legal name"

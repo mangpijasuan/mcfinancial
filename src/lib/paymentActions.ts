@@ -21,6 +21,8 @@ export type RecordLoanPaymentParams = {
   receivedBy?: string | null
   comments?: string | null
   source: string
+  /** Verified money already received externally; excess is held in account 2100. */
+  settledExternally?: boolean
 }
 
 /** Why a loan cannot take a repayment right now, or null. */
@@ -44,10 +46,11 @@ export function repaymentBlocker(loan: { lifecycle: string; principalCents: bigi
  * posts to the ledger once the chart is approved.
  */
 export async function recordLoanPayment(tx: Tx, params: RecordLoanPaymentParams) {
+  await tx.$queryRaw`SELECT id FROM "Loan" WHERE "loanId" = ${params.loanId} FOR UPDATE`
   const loan = await tx.loan.findUnique({ where: { loanId: params.loanId } })
   if (!loan) throw new Error('Loan not found')
   const blocked = repaymentBlocker(loan)
-  if (blocked) throw new OperationError(409, blocked)
+  if (blocked && !(params.settledExternally && isEngineLoan(loan) && loan.lifecycle === 'paid_off')) throw new OperationError(409, blocked)
   if (isEngineLoan(loan)) return recordEngineLoanPayment(tx, loan, params)
 
   const newTotal = loan.totalPaid + params.amount

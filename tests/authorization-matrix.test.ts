@@ -52,7 +52,7 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'loans/[id]/disburse': { POST: perm('loans.disburse') },
   'loans/[id]/write-off': { POST: perm('loans.write_off') },
   'loan-fees/[id]/waive': { POST: perm('loan_fees.waive') },
-  'loans/check-policy': { POST: perm('loans.create') },
+  'loans/check-policy': { GET: perm('loans.create'), POST: perm('loans.create') },
   'ledger/accounts': { GET: perm('ledger.read') },
   'ledger/accounts/approve': { POST: perm('ledger.manage_accounts') },
   'ledger/comparison': { GET: perm('ledger.read'), POST: perm('ledger.manage_accounts') },

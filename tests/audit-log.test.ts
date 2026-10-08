@@ -104,11 +104,11 @@ describe('entries are written with the change', () => {
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_only'
     try {
       const pending = await prisma.portalPayment.create({
-        data: { publicId: 'PP-AUDIT', memberId: TEST_IDS.member, type: 'contribution', amount: 25, method: 'stripe' },
+        data: { publicId: 'PP-AUDIT', memberId: TEST_IDS.member, type: 'contribution', amount: 25, method: 'stripe', stripeSessionId: 'cs_audit' },
       })
       const payload = JSON.stringify({
-        id: 'evt_audit', object: 'event', type: 'checkout.session.completed',
-        data: { object: { id: 'cs_audit', object: 'checkout.session', payment_status: 'paid', metadata: { portalPaymentId: pending.id } } },
+        id: 'evt_audit', object: 'event', type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000),
+        data: { object: { id: 'cs_audit', object: 'checkout.session', currency: 'usd', amount_total: 2500, payment_status: 'paid', metadata: { portalPaymentId: pending.id } } },
       })
       const signature = new Stripe('sk_test_dummy').webhooks.generateTestHeaderString({ payload, secret: 'whsec_test_only' })
       const deliver = () => callRoute('webhooks/stripe', 'POST', { rawBody: payload, headers: { 'stripe-signature': signature } })

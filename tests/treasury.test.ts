@@ -12,7 +12,7 @@ import { treasuryPosition } from '@/modules/treasury'
 const enforce = (on: boolean) => { process.env.MAKER_CHECKER_ENFORCED = on ? 'true' : '' }
 const approve = (id: string) => callRoute('approvals/[id]/approve', 'POST', { params: { id }, body: {} })
 const newLoan = (borrowerId: string, loanAmount: string, termMonths: number) =>
-  callRoute('loans', 'POST', { body: { borrowerId, loanAmount, termMonths, loanDate: '2026-09-20' } })
+  callRoute('loans', 'POST', { body: { borrowerId, cosignerId: `${borrowerId}-C`, loanAmount, termMonths, loanDate: '2026-09-20' } })
 
 let seq = 0
 const contribution = (memberId: string, date: string, cents: number, reversed = false) => prisma.contribution.create({
@@ -33,6 +33,8 @@ beforeEach(async () => {
   await createMember('MC-CAPITAL', { overallContributions: 10_000 })
   await createMember('MC-BORROW', { monthsActive: 24, archiveLifetime: 2000, contributions2026: 180 })
   await createMember('MC-BORROW2', { monthsActive: 24, archiveLifetime: 2000, contributions2026: 180 })
+  await createMember('MC-BORROW-C', { monthsActive: 24 })
+  await createMember('MC-BORROW2-C', { monthsActive: 24 })
 })
 afterEach(() => enforce(false))
 

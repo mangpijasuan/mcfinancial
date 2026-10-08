@@ -11,12 +11,28 @@ export const POLICY = {
   LATE_FEE_GRACE_DAYS:       15,      // Days before late fee kicks in
 }
 
+/** The longest term the fee table (policy section 3) covers. */
+export const MAX_TERM_MONTHS = 24
+
+/**
+ * A loan the schedule and the fee table can handle: an amount within the
+ * cap and a whole number of months up to 24. With `termBands` (a rule the
+ * board has not approved yet, LOAN_TERM_BANDS) loans up to $2,500 run at
+ * most 12 months.
+ */
+export function validLoanTerms(amount: number, termMonths: number, termBands = false): boolean {
+  return Number.isFinite(amount) && amount > 0 && amount <= POLICY.MAX_LOAN_AMOUNT
+    && Number.isInteger(termMonths) && termMonths > 0
+    && termMonths <= (termBands && amount <= 2500 ? 12 : MAX_TERM_MONTHS)
+}
+
 // Application fees per policy section 3
 export function calcApplicationFee(amount: number, termMonths: number): number {
-  if (amount <= 2500 && termMonths <= 12) return 30
+  if (!validLoanTerms(amount, termMonths)) throw new RangeError('Unsupported loan amount or term.')
+  if (amount <= 2500) return 30
   if (amount > 2500 && termMonths <= 12)  return 50
   if (amount > 2500 && termMonths <= 24)  return 70
-  return 30 // default
+  return 70
 }
 
 export interface PolicyCheckResult {
@@ -42,7 +58,8 @@ export function checkLoanPolicy(
   },
   requestedAmount: number,
   termMonths: number,
-  lastLoanPaidOffDate?: Date | null
+  lastLoanPaidOffDate?: Date | null,
+  opts: { termBands?: boolean } = {},
 ): PolicyCheckResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -83,7 +100,13 @@ export function checkLoanPolicy(
     }
   }
 
-  const applicationFee = calcApplicationFee(requestedAmount, termMonths)
+  const termsValid = validLoanTerms(requestedAmount, termMonths, opts.termBands)
+  if (!termsValid) {
+    errors.push(opts.termBands
+      ? 'Loans up to $2,500 require 1–12 months; larger loans up to $5,000 require 1–24 months.'
+      : `Loans up to $${POLICY.MAX_LOAN_AMOUNT.toLocaleString()} require a whole number of months from 1 to ${MAX_TERM_MONTHS}.`)
+  }
+  const applicationFee = termsValid ? calcApplicationFee(requestedAmount, termMonths) : 0
 
   if (errors.length === 0 && requestedAmount > maxByContrib * 0.8) {
     warnings.push(`Loan is ${Math.round((requestedAmount / maxByContrib) * 100)}% of the maximum allowed amount.`)

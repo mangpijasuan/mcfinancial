@@ -4,7 +4,7 @@
 import { execSync } from 'node:child_process'
 import fs from 'node:fs'
 import { type FullConfig, chromium, expect } from '@playwright/test'
-import { BASE_URL, MEMBER, STAFF, STAFF_PASSWORD, type StaffRole, authFile, e2eEnv, totp } from './fixtures'
+import { BASE_URL, MEMBER, COSIGNER, STAFF, STAFF_PASSWORD, type StaffRole, authFile, e2eEnv, totp } from './fixtures'
 
 export default async function globalSetup(_config: FullConfig) {
   const env = { ...process.env, ...e2eEnv() }
@@ -28,13 +28,16 @@ export default async function globalSetup(_config: FullConfig) {
     await context.close()
   }
 
+  for (const [role, account] of [['member', MEMBER], ['cosigner', COSIGNER]] as const) {
   const context = await browser.newContext({ baseURL: BASE_URL })
   const page = await context.newPage()
   await page.goto('/portal/login')
-  await page.getByLabel('Member ID').fill(MEMBER.id)
-  await page.getByLabel('Password').fill(MEMBER.password)
+  await page.getByLabel('Member ID').fill(account.id)
+  await page.getByLabel('Password').fill(account.password)
   await page.getByRole('button', { name: /sign in/i }).click()
   await expect(page).toHaveURL(/\/portal\/dashboard/, { timeout: 20_000 })
-  await context.storageState({ path: authFile('member') })
+  await context.storageState({ path: authFile(role) })
+  await context.close()
+  }
   await browser.close()
 }

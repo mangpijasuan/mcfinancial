@@ -28,7 +28,7 @@ async function setToday(date: string) {
 
 const approve = (id: string) => callRoute('approvals/[id]/approve', 'POST', { params: { id }, body: {} })
 
-async function newLoan(amount = '1000', termMonths = 3, loanDate = '2026-01-15', cosignerId?: string) {
+async function newLoan(amount = '1000', termMonths = 3, loanDate = '2026-01-15', cosignerId = 'MC-COSIGN') {
   signInAs('admin')
   const res = await callRoute('loans', 'POST', { body: { borrowerId: BORROWER, cosignerId, loanAmount: amount, termMonths, loanDate } })
   expect(res.status).toBe(201)
@@ -37,13 +37,15 @@ async function newLoan(amount = '1000', termMonths = 3, loanDate = '2026-01-15',
 
 async function signAll(loanId: string) {
   const { agreementId } = await prisma.loanAgreement.findUniqueOrThrow({ where: { loanId } })
-  signInAs('treasurer')
-  expect((await callRoute('agreements/[id]', 'PATCH', { params: { id: agreementId }, body: { signerType: 'lender', signatureText: 'Tess Treasurer' } })).status).toBe(200)
   signInAsMember(BORROWER)
   const res = await callRoute('agreements/[id]', 'PATCH', {
     params: { id: agreementId }, body: { signerType: 'borrower', signatureText: 'Test Member', borrowerAddress: '1 Main St', borrowerCity: 'Tulsa', borrowerState: 'OK' },
   })
   expect(res.status).toBe(200)
+  signInAsMember('MC-COSIGN')
+  expect((await callRoute('agreements/[id]', 'PATCH', { params: { id: agreementId }, body: { signerType: 'cosigner', signatureText: 'Co Signer' } })).status).toBe(200)
+  signInAs('treasurer')
+  expect((await callRoute('agreements/[id]', 'PATCH', { params: { id: agreementId }, body: { signerType: 'lender', signatureText: 'Tess Treasurer' } })).status).toBe(200)
   return agreementId
 }
 
@@ -82,6 +84,7 @@ beforeEach(async () => {
   await createBaseFixtures()
   await createMember(BORROWER, { monthsActive: 24, archiveLifetime: 2000, contributions2026: 180 })
   // Plenty of room to lend (Gate #1 A10); tests/treasury.test.ts covers the limits.
+  await createMember('MC-COSIGN', { monthsActive: 24 })
   await recordBankBalance(1_000_000_00)
 })
 afterEach(() => {
@@ -115,7 +118,7 @@ describe('a new loan', () => {
 
   it('must be larger than the application fee, which is netted from the payout', async () => {
     signInAs('admin')
-    const res = await callRoute('loans', 'POST', { body: { borrowerId: BORROWER, loanAmount: '30', termMonths: 3, loanDate: '2026-01-15' } })
+    const res = await callRoute('loans', 'POST', { body: { borrowerId: BORROWER, cosignerId: 'MC-COSIGN', loanAmount: '30', termMonths: 3, loanDate: '2026-01-15' } })
     expect(res.status).toBe(422)
     expect(res.json.violations).toContain('The loan must be larger than the application fee, which is deducted from the payout.')
   })
@@ -135,10 +138,10 @@ describe('signatures and payout', () => {
     const agreementId = await signAll(loanId)
     const a = await prisma.loanAgreement.findUniqueOrThrow({ where: { agreementId } })
     expect(a.status).toBe('fully_signed')
-    // The club signed the original terms; the borrower's address changed them.
+    // All parties sign the same frozen terms.
     expect(a.lenderSignedHash).toBe(a.termsHash)
     expect(a.borrowerSignedHash).toBe(agreementTermsHash(a))
-    expect(a.borrowerSignedHash).not.toBe(a.termsHash)
+    expect(a.borrowerSignedHash).toBe(a.termsHash)
     expect((await loan(loanId)).lifecycle).toBe('agreement_signed')
   })
 
@@ -199,8 +202,7 @@ describe('signatures and payout', () => {
   })
 
   it('refuses overpayments by staff and marks the loan paid off at zero, freeing the co-signer', async () => {
-    await createMember('MC-COSIGN')
-    const loanId = await newLoan('1000', 3, '2026-01-15', 'MC-COSIGN')
+      const loanId = await newLoan('1000', 3, '2026-01-15', 'MC-COSIGN')
     expect((await prisma.member.findUniqueOrThrow({ where: { id: 'MC-COSIGN' } })).activeAsCosigner).toBe(1)
     const { agreementId } = await prisma.loanAgreement.findUniqueOrThrow({ where: { loanId } })
     await signAll(loanId)
@@ -340,7 +342,7 @@ describe('write-off', () => {
 
     // The borrower cannot borrow again.
     signInAs('admin')
-    const again = await callRoute('loans', 'POST', { body: { borrowerId: BORROWER, loanAmount: '500', termMonths: 5, loanDate: '2026-06-01' } })
+    const again = await callRoute('loans', 'POST', { body: { borrowerId: BORROWER, cosignerId: 'MC-COSIGN', loanAmount: '500', termMonths: 5, loanDate: '2026-06-01' } })
     expect(again.status).toBe(422)
   })
 })

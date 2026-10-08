@@ -164,6 +164,12 @@ async function findMembers(q: string): Promise<any[]> {
 function NewLoanModal({ open, onClose, onSaved }: any) {
   const today = new Date().toISOString().split('T')[0]
   const [form, setForm] = useState({ borrowerId: '', cosignerId: '', loanDate: today, termMonths: '12', loanAmount: '', borrowerAddress: '', borrowerCity: '', borrowerState: '', notes: '' })
+  // Rules the board has not approved yet are off unless the server says otherwise.
+  const [rules, setRules] = useState({ cosignerRequired: false, loanTermBands: false })
+  useEffect(() => {
+    if (!open) return
+    fetch('/api/loans/check-policy').then((r) => (r.ok ? r.json() : null)).then((r) => { if (r) setRules(r) }).catch(() => {})
+  }, [open])
   const [bSearch, setBSearch] = useState(''); const [bList, setBList] = useState<any[]>([]); const [bSelected, setBSelected] = useState<any>(null)
   const [cSearch, setCSearch] = useState(''); const [cList, setCList] = useState<any[]>([]); const [cSelected, setCSelected] = useState<any>(null)
   const [policy, setPolicy]   = useState<any>(null)
@@ -230,6 +236,7 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!form.borrowerId) { setError('Please select a borrower.'); return }
+    if (rules.cosignerRequired && !form.cosignerId) { setError('Please select an eligible co-signer.'); return }
     setSaving(true); setError(''); setViolations([])
     const res = await fetch('/api/loans', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -251,10 +258,10 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-2 gap-4">
           <MemberSearch label="Borrower *" query={bSearch} setQuery={setBSearch} list={bList} setList={setBList} selected={bSelected} setSelected={setBSelected} onPick={(id: string) => setForm(f => ({ ...f, borrowerId: id }))} />
-          <MemberSearch label="Co-signer (optional)" query={cSearch} setQuery={setCSearch} list={cList} setList={setCList} selected={cSelected} setSelected={setCSelected} onPick={(id: string) => setForm(f => ({ ...f, cosignerId: id }))} />
+          <MemberSearch label={rules.cosignerRequired ? 'Co-signer *' : 'Co-signer (optional)'} query={cSearch} setQuery={setCSearch} list={cList} setList={setCList} selected={cSelected} setSelected={setCSelected} onPick={(id: string) => setForm(f => ({ ...f, cosignerId: id }))} />
           <Input label="Loan date *" type="date" value={form.loanDate} onChange={set('loanDate')} required />
           <Select label="Term *" value={form.termMonths} onChange={set('termMonths')} required>
-            {[12, 24].map(t => <option key={t} value={t}>{t} months</option>)}
+            {(rules.loanTermBands && !(Number(form.loanAmount) > 2500) ? [12] : [12, 24]).map(t => <option key={t} value={t}>{t} months</option>)}
           </Select>
           <Input label="Loan amount ($) *" type="number" min="1" max="5000" step="0.01" value={form.loanAmount} onChange={set('loanAmount')} required />
           <div className="flex flex-col gap-1">

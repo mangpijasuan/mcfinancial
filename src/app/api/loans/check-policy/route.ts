@@ -4,6 +4,14 @@ import { checkLoanPolicy } from '@/lib/loanPolicy'
 import { requirePermission } from '@/modules/auth'
 import { badRequest, readJsonObject, requiredString } from '@/lib/http'
 import { forLoanPolicy } from '@/modules/accounting/reads'
+import { boardRuleOn } from '@/modules/policy/boardRules'
+
+// The loan rules waiting for the board that change the new-loan form.
+export async function GET() {
+  const auth = await requirePermission('loans.create')
+  if (auth.error) return auth.error
+  return NextResponse.json({ cosignerRequired: boardRuleOn('cosignerRequired'), loanTermBands: boardRuleOn('loanTermBands') })
+}
 
 export async function POST(req: NextRequest) {
   const auth = await requirePermission('loans.create')
@@ -37,7 +45,8 @@ export async function POST(req: NextRequest) {
     await prisma.$transaction((tx) => forLoanPolicy(tx, member)),
     parseFloat(amount) || 0,
     parseInt(termMonths) || 12,
-    lastPaidLoan?.updatedAt
+    lastPaidLoan?.updatedAt,
+    { termBands: boardRuleOn('loanTermBands') },
   )
 
   return NextResponse.json(result)

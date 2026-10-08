@@ -2,7 +2,7 @@
 // capacity), the loan officer creates a loan within it, the club and the
 // borrower sign, the treasurer pays it out and finance records a repayment.
 import { expect, test } from '@playwright/test'
-import { MEMBER, STAFF } from './fixtures'
+import { MEMBER, COSIGNER, STAFF } from './fixtures'
 import { clubToday, signedIn } from './helpers'
 
 test('a loan from capacity check to first repayment', async ({ browser }) => {
@@ -24,6 +24,8 @@ test('a loan from capacity check to first repayment', async ({ browser }) => {
   await dialog.getByLabel('Borrower *').pressSequentially('Ada Ex', { delay: 50 })
   await expect(dialog.getByLabel('Borrower *')).toHaveValue('Ada Ex')
   await dialog.getByRole('button', { name: new RegExp(MEMBER.name) }).click()
+  await dialog.getByLabel(/^Co-signer/).fill('Cara')
+  await dialog.getByRole('button', { name: new RegExp(COSIGNER.name) }).click()
   await dialog.getByLabel('Loan date *').fill(clubToday())
   await dialog.getByLabel('Term *').selectOption('12')
   await dialog.getByLabel('Loan amount ($) *').fill('500')
@@ -38,6 +40,28 @@ test('a loan from capacity check to first repayment', async ({ browser }) => {
   expect(officer.errors).toEqual([])
   await officer.close()
 
+  // 4. The borrower signs in the portal.
+  const member = await signedIn(browser, 'member')
+  await member.page.goto('/portal/agreements')
+  await member.page.getByRole('button', { name: 'Review & sign' }).click()
+  const portalSign = member.page.getByRole('dialog')
+  await portalSign.getByLabel('City').fill('Tulsa')
+  await portalSign.getByLabel('State').fill('OK')
+  await portalSign.getByLabel('Your full legal name').fill(MEMBER.name)
+  await portalSign.getByRole('button', { name: 'Sign agreement' }).click()
+  await expect(portalSign.getByText(/Signed on/)).toBeVisible()
+  expect(member.errors).toEqual([])
+
+  const cosigner = await signedIn(browser, 'cosigner')
+  await cosigner.page.goto('/portal/agreements')
+  await cosigner.page.getByRole('button', { name: 'Review & sign' }).click()
+  const cosignDialog = cosigner.page.getByRole('dialog')
+  await cosignDialog.getByLabel('Your full legal name').fill(COSIGNER.name)
+  await cosignDialog.getByRole('button', { name: 'Sign agreement' }).click()
+  await expect(cosignDialog.getByText(/Signed on/)).toBeVisible()
+  expect(cosigner.errors).toEqual([])
+  await cosigner.close()
+
   // 3. The treasurer signs the agreement for the club.
   await treasurer.page.goto('/agreements')
   const agreement = treasurer.page.getByRole('row', { name: new RegExp(MEMBER.name) }).first()
@@ -50,18 +74,6 @@ test('a loan from capacity check to first repayment', async ({ browser }) => {
   await agreement.getByRole('button', { name: 'View' }).click()
   await expect(sign.getByText(`${STAFF.treasurer.name} ✓`)).toBeVisible()
   await sign.getByRole('button', { name: 'Close', exact: true }).click()
-
-  // 4. The borrower signs in the portal.
-  const member = await signedIn(browser, 'member')
-  await member.page.goto('/portal/agreements')
-  await member.page.getByRole('button', { name: 'Review & sign' }).click()
-  const portalSign = member.page.getByRole('dialog')
-  await portalSign.getByLabel('City').fill('Tulsa')
-  await portalSign.getByLabel('State').fill('OK')
-  await portalSign.getByLabel('Your full legal name').fill(MEMBER.name)
-  await portalSign.getByRole('button', { name: 'Sign agreement' }).click()
-  await expect(portalSign.getByText(/Signed on/)).toBeVisible()
-  expect(member.errors).toEqual([])
 
   // 5. The treasurer pays it out: the loan less the application fee.
   await treasurer.page.goto(`/loans/${loanId}`)

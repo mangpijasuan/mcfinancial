@@ -14,6 +14,7 @@ const statusVariant: Record<string, 'amber' | 'green' | 'red' | 'gray'> = {
 
 export default function PaymentsPage() {
   const { can } = useStaff()
+  const [stripeIssues, setStripeIssues] = useState<{ eventId: string; type: string; lastError: string | null }[]>([])
   const [rows, setRows] = useState<any[]>([])
   const [status, setStatus] = useState('pending')
   const [loading, setLoading] = useState(true)
@@ -29,6 +30,7 @@ export default function PaymentsPage() {
       const data = await readJsonSafe<any>(res)
       if (!res.ok || !data) throw new Error('Failed to load payments.')
       setRows(data.payments ?? [])
+      setStripeIssues(data.stripeIssues ?? [])
     } catch (err: any) {
       setRows([])
       setLoadError(err?.message || 'Failed to load payments.')
@@ -84,6 +86,13 @@ export default function PaymentsPage() {
         <p className="mb-4 text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{loadError}</p>
       )}
 
+      {stripeIssues.length > 0 && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 p-4" role="alert">
+          <h2 className="font-semibold">Stripe payments needing attention</h2>
+          <p className="text-sm">Failed postings retry automatically when the recovery job runs. Refunds and disputes require Treasurer reconciliation.</p>
+          <ul className="mt-2 space-y-2 text-sm">{stripeIssues.map(issue => <li key={issue.eventId}>{issue.eventId} · {issue.type}: {issue.lastError}</li>)}</ul>
+        </div>
+      )}
       <Card>
         <Table loading={loading} headers={['ID', 'Member', 'Type', 'Amount', 'Method', 'Reference', 'Submitted', 'Status', 'Actions']}>
           {rows.length === 0 && !loading

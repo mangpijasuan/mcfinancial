@@ -25,6 +25,9 @@ beforeEach(async () => {
   // An eligible borrower for loan requests.
   await createMember('MC-BORROW', { monthsActive: 24, archiveLifetime: 2000, contributions2026: 180 })
   // Plenty of room to lend (Gate #1 A10); tests/treasury.test.ts covers the limits.
+  await createMember('MC-COSIGN', { monthsActive: 24 })
+  await createMember('MC-WITHDRAW', { overallContributions: 250 })
+  await prisma.member.update({ where: { id: TEST_IDS.otherMember }, data: { overallContributions: 100 } })
   await recordBankBalance(1_000_000_00)
 })
 afterEach(() => enforce(false))
@@ -35,8 +38,8 @@ describe('switched off (until the officers are named)', () => {
     const claim = await zelleClaim(150)
     signInAs('admin')
     expect((await callRoute('payments/[id]/confirm', 'POST', { params: { id: claim.id } })).status).toBe(200)
-    expect((await callRoute('withdrawals', 'POST', { body: { memberId: TEST_IDS.otherMember, amount: '40', withdrawalDate: '2026-09-20' } })).status).toBe(201)
-    expect((await callRoute('loans', 'POST', { body: { borrowerId: 'MC-BORROW', loanAmount: '1000', termMonths: 10, loanDate: '2026-09-20' } })).status).toBe(201)
+    expect((await callRoute('withdrawals', 'POST', { body: { memberId: 'MC-WITHDRAW', amount: '40', withdrawalDate: '2026-09-20' } })).status).toBe(201)
+    expect((await callRoute('loans', 'POST', { body: { borrowerId: 'MC-BORROW', cosignerId: 'MC-COSIGN', loanAmount: '1000', termMonths: 10, loanDate: '2026-09-20' } })).status).toBe(201)
     expect(await prisma.approvalRequest.count()).toBe(0)
   })
 })
@@ -140,20 +143,20 @@ describe('withdrawals and loans', () => {
     })
     // A member with an active loan cannot fully exit: refused up front, never queued
     expect(queued.status).toBe(409)
-    const partial = await callRoute('withdrawals', 'POST', { body: { memberId: 'MC-BORROW', amount: '250.00', withdrawalDate: '2026-09-20', type: 'Full Exit' } })
+    const partial = await callRoute('withdrawals', 'POST', { body: { memberId: 'MC-WITHDRAW', amount: '250.00', withdrawalDate: '2026-09-20', type: 'Full Exit' } })
     expect(partial.status).toBe(202)
     const { id } = partial.json.approvalRequest
     signInAs('board') // no withdrawals.approve
     expect((await approve(id)).status).toBe(403)
     signInAs('treasurer')
     expect((await approve(id)).json.status).toBe('approved')
-    expect(await prisma.withdrawal.count({ where: { memberId: 'MC-BORROW' } })).toBe(1)
-    expect((await prisma.member.findUniqueOrThrow({ where: { id: 'MC-BORROW' } })).status).toBe('Inactive')
+    expect(await prisma.withdrawal.count({ where: { memberId: 'MC-WITHDRAW' } })).toBe(1)
+    expect((await prisma.member.findUniqueOrThrow({ where: { id: 'MC-WITHDRAW' } })).status).toBe('Inactive')
   })
 
   it('a loan is created only on approval, and re-checked against policy then', async () => {
     signInAs('loan_officer')
-    const queued = await callRoute('loans', 'POST', { body: { borrowerId: 'MC-BORROW', loanAmount: '1000', termMonths: 10, loanDate: '2026-09-20' } })
+    const queued = await callRoute('loans', 'POST', { body: { borrowerId: 'MC-BORROW', cosignerId: 'MC-COSIGN', loanAmount: '1000', termMonths: 10, loanDate: '2026-09-20' } })
     expect(queued.status).toBe(202)
     const { id } = queued.json.approvalRequest
     expect(await prisma.loan.count({ where: { borrowerId: 'MC-BORROW' } })).toBe(0)
@@ -176,7 +179,7 @@ describe('withdrawals and loans', () => {
 
   it('an ineligible loan is refused before it is queued', async () => {
     signInAs('loan_officer')
-    const res = await callRoute('loans', 'POST', { body: { borrowerId: 'MC-BORROW', loanAmount: '9000', termMonths: 10, loanDate: '2026-09-20' } })
+    const res = await callRoute('loans', 'POST', { body: { borrowerId: 'MC-BORROW', cosignerId: 'MC-COSIGN', loanAmount: '9000', termMonths: 10, loanDate: '2026-09-20' } })
     expect(res.status).toBe(422)
     expect(await prisma.approvalRequest.count()).toBe(0)
   })

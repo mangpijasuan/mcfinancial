@@ -4,7 +4,14 @@ import { OperationError } from '@/lib/operationError'
 import { type AuditContext, recordAudit } from '@/modules/audit'
 import { onMemberStatusChange } from '@/modules/contributions'
 import { postWithdrawalNow } from '@/modules/accounting/legacyActivity'
+import { fromLegacyDollars, formatUSD, subtract, sum, ZERO } from '@/lib/money'
+import { dateOnly, isoDateOf, todayIso } from '@/lib/dates'
+import { ledgerOpening } from '@/modules/accounting/autoPost'
+import { accountBalance } from '@/modules/accounting/ledger'
+import { DEFAULT_CUTOVER } from '@/modules/accounting/opening'
+import { treasuryPosition } from '@/modules/treasury'
 import type { Actors } from '@/modules/approvals/actors'
+import { boardRuleOn } from '@/modules/policy/boardRules'
 
 export type WithdrawalInput = {
   memberId: string
@@ -16,20 +23,65 @@ export type WithdrawalInput = {
   notes: string | null
 }
 
-/** Checks that can be made before queueing for approval, and again at execution. */
-export async function checkWithdrawal(db: Prisma.TransactionClient | { member: Prisma.TransactionClient['member'] }, input: WithdrawalInput) {
+/**
+ * Checks that can be made before queueing for approval, and again at
+ * execution. Always: a full exit is blocked by a loan obligation (the
+ * club's rule), and a withdrawal is positive, dated from the cutover to
+ * today, and no larger than the member's capital. The rules the board has
+ * not approved yet (src/modules/policy/boardRules.ts) apply only when on.
+ */
+export async function checkWithdrawal(db: Prisma.TransactionClient, input: WithdrawalInput) {
   const member = await db.member.findUnique({
     where: { id: input.memberId },
-    select: { legalName: true, status: true, activeAsBorrower: true, activeAsCosigner: true, currentLoanBalance: true },
+    select: { legalName: true, status: true, activeAsBorrower: true, activeAsCosigner: true, currentLoanBalance: true, overallContributions: true },
   })
   if (!member) throw new OperationError(404, 'Member not found')
-  if (input.type === 'Full Exit' && (member.activeAsBorrower > 0 || member.activeAsCosigner > 0 || member.currentLoanBalance > 0)) {
-    throw new OperationError(409, 'Member cannot fully exit while they have an active loan or co-signer obligation.')
+  const isFullExit = input.type === 'Full Exit'
+  if (isFullExit || boardRuleOn('withdrawalBlockedByLoans')) {
+    const obligations = member.activeAsBorrower > 0 || member.activeAsCosigner > 0 || member.currentLoanBalance > 0
+      || await db.loan.count({ where: {
+        lifecycle: { in: ['approved', 'agreement_signed', 'disbursed'] },
+        OR: [{ borrowerId: input.memberId }, { cosignerId: input.memberId }],
+      } }) > 0
+    if (obligations) {
+      throw new OperationError(409, isFullExit
+        ? 'Member cannot fully exit while they have an active loan or co-signer obligation.'
+        : 'Member cannot withdraw while they have an active loan or co-signer obligation.')
+    }
+  }
+  const amount = fromLegacyDollars(input.amount)
+  const day = isoDateOf(new Date(input.withdrawalDate))
+  // A withdrawal dated before the cutover would be in neither the opening
+  // balances (already posted) nor the member's capital since: refuse it.
+  const opened = await ledgerOpening(db)
+  const cutover = opened?.cutover ?? DEFAULT_CUTOVER
+  if (amount <= 0 || day > todayIso() || day < cutover) {
+    throw new OperationError(400, `Withdrawal must be positive and dated from the cutover (${cutover}) through today.`)
+  }
+  const prior = await db.withdrawal.aggregate({ where: { memberId: input.memberId, withdrawalDate: { gte: dateOnly(DEFAULT_CUTOVER) } }, _sum: { amount: true } })
+  const withdrawals = opened ? await db.withdrawal.findMany({ where: { memberId: input.memberId, withdrawalDate: { gte: dateOnly(opened.cutover) } }, select: { withdrawalId: true, amount: true } }) : []
+  const posted = new Set((await db.journalEntry.findMany({ where: { idempotencyKey: { in: withdrawals.map(w => `withdrawal:${w.withdrawalId}`) } }, select: { idempotencyKey: true } })).map(e => e.idempotencyKey))
+  const unposted = sum(withdrawals.filter(w => !posted.has(`withdrawal:${w.withdrawalId}`)).map(w => fromLegacyDollars(w.amount)))
+  const capital = opened
+    ? subtract((await accountBalance(db, '2000', { memberId: input.memberId })).balance, unposted)
+    : subtract(fromLegacyDollars(member.overallContributions), fromLegacyDollars(prior._sum.amount ?? 0))
+  if (amount > capital) throw new OperationError(409, `Withdrawal exceeds available member capital (${formatUSD(capital)}).`)
+  if (isFullExit && amount !== capital && boardRuleOn('fullExitWholeBalance')) {
+    throw new OperationError(409, 'A full exit must withdraw the complete available capital balance; use Partial otherwise.')
+  }
+  if (boardRuleOn('withdrawalLiquidity')) {
+    const position = await treasuryPosition(db)
+    // Clearing funds have not reached the bank and cannot fund a bank payout.
+    const cash = opened ? subtract((await accountBalance(db, '1000', { asOf: todayIso() })).balance, position.cash.source === 'ledger' ? position.cash.unpostedWithdrawalsCents : ZERO) : position.cash.cents
+    if (cash === null || amount > subtract(cash, position.committed.cents)) {
+      throw new OperationError(409, 'Insufficient known bank cash after committed loan payouts.')
+    }
   }
   return member
 }
 
 export async function recordWithdrawal(tx: Prisma.TransactionClient, input: WithdrawalInput, actors: Actors, ctx: AuditContext) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('treasury.lending_capacity'))`
   const member = await checkWithdrawal(tx, input)
   const isFullExit = input.type === 'Full Exit'
   const created = await tx.withdrawal.create({
