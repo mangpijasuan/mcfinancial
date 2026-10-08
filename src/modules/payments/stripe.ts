@@ -6,17 +6,24 @@ import { recordContribution, recordLoanPayment } from '@/lib/paymentActions'
 import { recordAudit, systemAuditContext } from '@/modules/audit'
 import { sendEmail, escapeHtml } from '@/lib/email'
 
+/**
+ * A verified event that can never post as it is (no club payment, or a
+ * session, currency or amount that does not match it). Retrying cannot
+ * help: it is kept for review and reported once.
+ */
+export class StripeReviewError extends Error {}
+
 async function completeCheckout(session: Stripe.Checkout.Session, eventId: string, settledAt: number) {
   const portalPaymentId = session.metadata?.portalPaymentId || session.client_reference_id
   // Card payments are "paid" at completion; anything else waits for
   // checkout.session.async_payment_succeeded.
   if (session.payment_status !== 'paid') return
-  if (!portalPaymentId) throw new Error('Paid checkout has no club payment reference.')
+  if (!portalPaymentId) throw new StripeReviewError('Paid checkout has no club payment reference.')
 
   const payment = await prisma.portalPayment.findUnique({ where: { id: portalPaymentId } })
-  if (!payment || payment.method !== 'stripe') throw new Error('Checkout has no matching club payment.')
+  if (!payment || payment.method !== 'stripe') throw new StripeReviewError('Checkout has no matching club payment.')
   if (session.id !== payment.stripeSessionId || session.currency !== 'usd' || session.amount_total !== fromLegacyDollars(payment.amount)) {
-    throw new Error('Checkout session, currency, or amount does not match the club payment.')
+    throw new StripeReviewError('Checkout session, currency, or amount does not match the club payment.')
   }
 
   const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
@@ -92,11 +99,14 @@ async function expireCheckout(session: Stripe.Checkout.Session, eventId: string)
 
 /** Called only with a verified Stripe event, or a previously verified inbox row. */
 export async function processStripeEvent(event: Stripe.Event) {
-  const row = await prisma.stripeWebhookEvent.upsert({
-    where: { eventId: event.id },
-    create: { eventId: event.id, type: event.type, payload: event as unknown as Prisma.InputJsonValue },
-    update: {},
+  // Stripe can deliver one event several times at once. Insert-if-absent is
+  // a single statement (ON CONFLICT DO NOTHING), so simultaneous deliveries
+  // cannot collide here; each then reads the one row.
+  await prisma.stripeWebhookEvent.createMany({
+    data: [{ eventId: event.id, type: event.type, payload: event as unknown as Prisma.InputJsonValue }],
+    skipDuplicates: true,
   })
+  const row = await prisma.stripeWebhookEvent.findUniqueOrThrow({ where: { eventId: event.id } })
   if (row.status === 'processed' || row.status === 'review') return
   // Crash recovery uses the inbox's pending/failed rows. Competing workers
   // remain idempotent on the payment row; no success is acknowledged early.
@@ -128,8 +138,20 @@ export async function processStripeEvent(event: Stripe.Event) {
     await prisma.stripeWebhookEvent.update({ where: { eventId: event.id }, data: { status: 'processed', attempts: { increment: 1 }, lastError: null, processedAt: new Date() } })
   } catch (err) {
     const reason = err instanceof Error ? err.message.slice(0, 500) : 'Stripe posting failed'
-    await prisma.stripeWebhookEvent.updateMany({ where: { eventId: event.id, status: { notIn: ['processed', 'review'] } }, data: { status: 'failed', attempts: { increment: 1 }, lastError: reason } })
-    await alertStripeIssue(event.id, reason)
+    if (err instanceof StripeReviewError) {
+      const held = await prisma.stripeWebhookEvent.updateMany({
+        where: { eventId: event.id, status: { notIn: ['processed', 'review'] } },
+        data: { status: 'review', attempts: { increment: 1 }, lastError: reason },
+      })
+      if (held.count) {
+        await recordAudit(prisma, ctx, { action: 'payment.stripe.review_required', entityType: 'stripe_event', entityId: event.id, metadata: { type: event.type, reason } })
+        await alertStripeIssue(event.id, reason)
+      }
+      return
+    }
+    const failed = await prisma.stripeWebhookEvent.updateMany({ where: { eventId: event.id, status: { notIn: ['processed', 'review'] } }, data: { status: 'failed', attempts: { increment: 1 }, lastError: reason } })
+    // The retry job runs every few minutes: alert on the first failure, not on every retry.
+    if (failed.count && row.status !== 'failed') await alertStripeIssue(event.id, reason)
     throw err
   }
 }
