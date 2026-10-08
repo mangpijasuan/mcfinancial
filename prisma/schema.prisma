@@ -701,3 +701,18 @@ model BankReconciliation {
 
   @@index([period, seq])
 }
+
+/// Durable inbox for verified Stripe deliveries; refunds/disputes remain reviewable evidence.
+model StripeWebhookEvent {
+  eventId     String   @id
+  type        String
+  payload     Json
+  status      String   @default("pending")
+  attempts    Int      @default(0)
+  lastError   String?
+  processedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([status, updatedAt])
+}

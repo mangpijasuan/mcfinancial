@@ -375,3 +375,27 @@ For a production-oriented Hetzner setup with Docker, PostgreSQL, and Caddy, use:
 - [docs/operations/backup-and-restore.md](docs/operations/backup-and-restore.md) — encrypted off-site backups, weekly restore check, disaster recovery
 - `docker-compose.hetzner.yml`
 - `.env.production.example`
+
+## Financial safeguards (2026-10-08)
+
+New loans require a distinct active co-signer with at least six months of membership and no existing borrower/co-signer obligation. Amounts up to $2,500 allow 1–12 months; larger amounts up to $5,000 allow 1–24 months. Unsupported terms are refused, never assigned a fallback fee. Existing loans keep their stored schedules.
+
+Withdrawal payouts cannot exceed remaining member capital or known bank cash after committed loan payouts. Active borrowing or co-sign obligations block withdrawals. A full exit must pay out all remaining capital; smaller payouts use Partial. Payout execution and loan approval share a transaction lock, and queued requests recheck eligibility and balances when approved. Historical import scripts remain separate from new payout operations.
+
+Fill in the borrower's address **before the first signature**. Signed terms and recorded signatures are frozen by the database. All parties must sign the same current terms before payout. Legacy agreements whose signature hashes disagree are refused at payout; cancel an undisbursed loan and issue a replacement agreement rather than editing signed evidence. Already disbursed loans continue servicing.
+
+### Stripe recovery and reconciliation
+
+Apply migrations before deploying. Verified webhook events are retained in `StripeWebhookEvent`. A failed posting returns HTTP 500 so Stripe retries; the local inbox also supports recovery after outages:
+
+```bash
+npm run payments:retry
+```
+
+Schedule this command every five minutes in the production container, using the same secrets and database as the app. It checks up to 100 pending/failed events per run and exits nonzero if any still fail. Configure `PAYMENT_ALERT_EMAIL` (or `SECURITY_ALERT_EMAIL`) and Resend for staff alerts. Include `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, and `charge.dispute.closed` in the Stripe webhook subscription.
+
+Session ID, currency and exact cents must match the original payment. Duplicate deliveries do not duplicate money. For scheduled loans, money that settles after payoff is held as member credit (account 2100) when the chart is approved, rather than lost or credited twice against principal. Failed/unmatched payments appear in Payments for investigation.
+
+Refunds and disputes appear as durable reconciliation issues in Payments. **They do not automatically reverse the books.** The Treasurer must inspect the Stripe event and settlement evidence and use approved journal/reversal procedures; the issue remains visible as evidence (a resolve-with-evidence workflow is follow-up work). Payments on cancelled or charged-off loans require manual reconciliation; retries cannot resolve a policy conflict by themselves.
+
+Before production rollout, rehearse migrations on a confidential copy, name officers and enable maker/checker, confirm opening balances and cash, and verify the retry job and alert delivery. Deployment, production settings, existing website PR #23, and Web3 architecture decisions are separate from this change.

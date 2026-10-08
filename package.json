@@ -31,7 +31,8 @@
     "loans:service": "tsx scripts/jobs/service-loans.ts",
     "loans:schedule-report": "tsx scripts/data/loan-schedule-report.ts",
     "ledger:opening": "tsx scripts/data/opening-balances.ts",
-    "ledger:compare": "tsx scripts/jobs/compare-ledger.ts"
+    "ledger:compare": "tsx scripts/jobs/compare-ledger.ts",
+    "payments:retry": "tsx scripts/jobs/retry-stripe.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

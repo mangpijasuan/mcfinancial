@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { encryptSecret } from '@/modules/auth/mfa'
 import { resetDatabase } from '../tests/helpers/db'
-import { MEMBER, NAMESAKE, OTHER_MEMBER, STAFF, STAFF_PASSWORD, TOTP_SECRET } from './fixtures'
+import { MEMBER, COSIGNER, NAMESAKE, OTHER_MEMBER, STAFF, STAFF_PASSWORD, TOTP_SECRET } from './fixtures'
 
 async function main() {
   // This empties the database: refuse anything not named as a test database.
@@ -28,6 +28,8 @@ async function main() {
       monthsActive: 24, archiveLifetime: 2000, contributions2026: 180, overallContributions: 2000,
     },
   })
+  await prisma.member.create({ data: { id: COSIGNER.id, legalName: COSIGNER.name, joinDate: new Date('2024-01-01'), status: 'Active', monthsActive: 24 } })
+  await prisma.user.create({ data: { kind: 'member', memberId: COSIGNER.id, name: COSIGNER.name, passwordHash: await bcrypt.hash(COSIGNER.password, 4) } })
   // Ada's portal login (M8: a member user).
   await prisma.user.create({
     data: { kind: 'member', memberId: MEMBER.id, name: MEMBER.name, passwordHash: await bcrypt.hash(MEMBER.password, 4) },

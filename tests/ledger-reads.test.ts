@@ -54,11 +54,12 @@ describe('before opening balances', () => {
 describe('after opening balances', () => {
   beforeEach(async () => {
     await openLedger()
-    await createLoan('LAPP', 'M1', { loanDate: new Date('2026-09-01'), loanAmount: 500, balanceRemaining: 500, lifecycle: 'approved' })
     // A contribution and a withdrawal recorded in the app post to the ledger as they are saved (M5).
     signInAs('finance')
     expect((await callRoute('contributions', 'POST', { body: { memberId: 'M1', amount: '20', paymentDate: '2026-09-15', paymentMethod: 'Cash', receivedBy: 'Fin' } })).status).toBe(201)
     expect((await callRoute('withdrawals', 'POST', { body: { memberId: 'M1', amount: '50', withdrawalDate: '2026-09-20' } })).status).toBe(201)
+    // The approved obligation exists after the historical withdrawal.
+    await createLoan('LAPP', 'M1', { loanDate: new Date('2026-09-21'), loanAmount: 500, balanceRemaining: 500, lifecycle: 'approved' })
   })
 
   it('finds the records and the ledger in agreement', async () => {
@@ -149,7 +150,9 @@ describe('after opening balances', () => {
     it('applies the same rules when a loan is created', async () => {
       ledgerOn()
       const { checkLoan } = await import('@/modules/loans/create')
-      const over = { borrowerId: 'M1', cosignerId: null, loanDate: '2026-09-30', termMonths: 12, loanAmount: 4500, notes: null, borrowerAddress: null, borrowerCity: null, borrowerState: null }
+      await createMember('POLICY-C', { monthsActive: 24 })
+      await prisma.loan.update({ where: { loanId: 'LAPP' }, data: { lifecycle: 'cancelled' } })
+      const over = { borrowerId: 'M1', cosignerId: 'POLICY-C', loanDate: '2026-09-30', termMonths: 12, loanAmount: 4500, notes: null, borrowerAddress: null, borrowerCity: null, borrowerState: null }
       await expect(prisma.$transaction((tx) => checkLoan(tx, over))).rejects.toThrow()
       delete process.env.LEDGER_READS
       await expect(prisma.$transaction((tx) => checkLoan(tx, over))).resolves.toBeTruthy()

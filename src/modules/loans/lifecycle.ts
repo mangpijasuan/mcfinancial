@@ -83,6 +83,13 @@ export async function checkDisbursement(tx: Tx, input: DisburseInput) {
   const loan = await engineLoan(tx, input.loanId)
   if (loan.lifecycle === 'approved') throw new OperationError(409, 'The agreement must be signed by every party before the loan is paid out.')
   if (loan.lifecycle !== 'agreement_signed') throw new OperationError(409, `This loan is already ${loan.lifecycle.replace('_', ' ')}.`)
+  const agreement = await tx.loanAgreement.findUnique({ where: { loanId: input.loanId } })
+  const hash = agreement && agreementTermsHash(agreement)
+  if (!agreement || !agreement.borrowerSignature || !agreement.lenderSignature
+    || agreement.borrowerSignedHash !== hash || agreement.lenderSignedHash !== hash
+    || (agreement.cosignerId && (!agreement.cosignerSignature || agreement.cosignerSignedHash !== hash))) {
+    throw new OperationError(409, 'Every party must sign the same current agreement terms before payout.')
+  }
   if (input.disbursedOn > todayIso()) throw new OperationError(400, 'The payout date cannot be in the future.')
   return loan
 }
@@ -92,6 +99,7 @@ export async function checkDisbursement(tx: Tx, input: DisburseInput) {
  * minus the application fee (Gate #1 A8) and repays the full principal.
  */
 export async function disburseLoan(tx: Tx, input: DisburseInput, actors: Actors, ctx: AuditContext) {
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('treasury.lending_capacity'))`
   const loan = await checkDisbursement(tx, input)
   const principal = fromBigInt(loan.principalCents!)
   const paidOut = subtract(principal, fromBigInt(loan.applicationFeeCents ?? BigInt(0)))

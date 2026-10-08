@@ -25,8 +25,6 @@ async function engineLoan() {
 
 async function signAndPayOut(loanId: string) {
   const { agreementId } = await prisma.loanAgreement.findUniqueOrThrow({ where: { loanId } })
-  signInAs('treasurer')
-  expect((await callRoute('agreements/[id]', 'PATCH', { params: { id: agreementId }, body: { signerType: 'lender', signatureText: 'Tess Treasurer' } })).status).toBe(200)
   signInAsMember(BORROWER)
   expect((await callRoute('agreements/[id]', 'PATCH', {
     params: { id: agreementId }, body: { signerType: 'borrower', signatureText: 'Test Member', borrowerAddress: '1 Main St', borrowerCity: 'Tulsa', borrowerState: 'OK' },
@@ -34,6 +32,7 @@ async function signAndPayOut(loanId: string) {
   signInAsMember(COSIGNER)
   expect((await callRoute('agreements/[id]', 'PATCH', { params: { id: agreementId }, body: { signerType: 'cosigner', signatureText: 'Co Signer' } })).status).toBe(200)
   signInAs('treasurer')
+  expect((await callRoute('agreements/[id]', 'PATCH', { params: { id: agreementId }, body: { signerType: 'lender', signatureText: 'Tess Treasurer' } })).status).toBe(200)
   expect((await callRoute('loans/[id]/disburse', 'POST', { params: { id: loanId }, body: { disbursedOn: '2026-01-15', method: 'Zelle', reference: 'ZL-1' } })).status).toBe(200)
 }
 

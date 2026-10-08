@@ -28,6 +28,8 @@ export type LoanInput = {
 
 /** Eligibility and policy checks: before queueing for approval, and again at execution. */
 export async function checkLoan(db: Db, input: LoanInput) {
+  if (!input.cosignerId) throw new OperationError(422, 'An eligible co-signer is required.')
+  if (input.cosignerId === input.borrowerId) throw new OperationError(422, 'The borrower cannot co-sign their own loan.')
   const borrower = await db.member.findUnique({
     where: { id: input.borrowerId },
     select: {
@@ -38,9 +40,18 @@ export async function checkLoan(db: Db, input: LoanInput) {
   })
   if (!borrower) throw new OperationError(404, 'Borrower not found')
   const cosigner = input.cosignerId
-    ? await db.member.findUnique({ where: { id: input.cosignerId }, select: { id: true, legalName: true } })
+    ? await db.member.findUnique({ where: { id: input.cosignerId }, select: { id: true, legalName: true, status: true, monthsActive: true, activeAsBorrower: true, activeAsCosigner: true } })
     : null
   if (input.cosignerId && !cosigner) throw new OperationError(404, 'Co-signer not found')
+
+  if (cosigner && (cosigner.status !== 'Active' || cosigner.monthsActive < POLICY.MIN_MONTHS_ACTIVE || cosigner.activeAsBorrower > 0 || cosigner.activeAsCosigner > 0)) {
+    throw new OperationError(422, 'Co-signer must be active for six months and have no active loan or co-sign obligation.')
+  }
+  const obligations = await db.loan.count({ where: {
+    lifecycle: { in: ['approved', 'agreement_signed', 'disbursed'] },
+    OR: [{ borrowerId: { in: [input.borrowerId, input.cosignerId] } }, { cosignerId: { in: [input.borrowerId, input.cosignerId] } }],
+  } })
+  if (obligations > 0) throw new OperationError(422, 'Borrower or co-signer already has an active loan obligation.')
 
   const lastPaidLoan = await db.loan.findFirst({
     where: { borrowerId: input.borrowerId, status: 'Paid Off' },
@@ -50,7 +61,7 @@ export async function checkLoan(db: Db, input: LoanInput) {
   const check = checkLoanPolicy(await forLoanPolicy(db, borrower), input.loanAmount, input.termMonths, lastPaidLoan?.updatedAt)
   const writtenOff = await db.loan.count({ where: { borrowerId: input.borrowerId, lifecycle: 'charged_off' } })
   if (writtenOff > 0) check.errors.push('Member has a loan that was written off.')
-  if (parseDollars(check.applicationFee) >= fromLegacyDollars(input.loanAmount)) {
+  if (check.errors.length === 0 && parseDollars(check.applicationFee) >= fromLegacyDollars(input.loanAmount)) {
     check.errors.push('The loan must be larger than the application fee, which is deducted from the payout.')
   }
   if (check.errors.length > 0) {
@@ -65,6 +76,9 @@ export async function checkLoan(db: Db, input: LoanInput) {
  * party has signed the agreement.
  */
 export async function createLoan(tx: Prisma.TransactionClient, input: LoanInput, actors: Actors, ctx: AuditContext) {
+  // The same lock protects withdrawal payouts. Acquire it before eligibility
+  // reads so competing approvals cannot reuse the same member or cash.
+  await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('treasury.lending_capacity'))`
   const { borrower, cosigner } = await checkLoan(tx, input)
   const { borrowerId, cosignerId, loanAmount, termMonths } = input
   const loanDay = isoDateOf(new Date(input.loanDate))

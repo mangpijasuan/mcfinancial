@@ -11,12 +11,20 @@ export const POLICY = {
   LATE_FEE_GRACE_DAYS:       15,      // Days before late fee kicks in
 }
 
+/** Terms up to 12 months; amounts above $2,500 may run up to 24. */
+export function validLoanTerms(amount: number, termMonths: number): boolean {
+  return Number.isFinite(amount) && amount > 0 && amount <= POLICY.MAX_LOAN_AMOUNT
+    && Number.isInteger(termMonths) && termMonths > 0
+    && termMonths <= (amount <= 2500 ? 12 : 24)
+}
+
 // Application fees per policy section 3
 export function calcApplicationFee(amount: number, termMonths: number): number {
-  if (amount <= 2500 && termMonths <= 12) return 30
+  if (!validLoanTerms(amount, termMonths)) throw new RangeError('Unsupported loan amount or term.')
+  if (amount <= 2500) return 30
   if (amount > 2500 && termMonths <= 12)  return 50
   if (amount > 2500 && termMonths <= 24)  return 70
-  return 30 // default
+  return 70
 }
 
 export interface PolicyCheckResult {
@@ -83,7 +91,9 @@ export function checkLoanPolicy(
     }
   }
 
-  const applicationFee = calcApplicationFee(requestedAmount, termMonths)
+  const termsValid = validLoanTerms(requestedAmount, termMonths)
+  if (!termsValid) errors.push('Loans up to $2,500 require 1–12 months; larger loans up to $5,000 require 1–24 months.')
+  const applicationFee = termsValid ? calcApplicationFee(requestedAmount, termMonths) : 0
 
   if (errors.length === 0 && requestedAmount > maxByContrib * 0.8) {
     warnings.push(`Loan is ${Math.round((requestedAmount / maxByContrib) * 100)}% of the maximum allowed amount.`)

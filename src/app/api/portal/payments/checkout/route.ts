@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { repaymentBlocker } from '@/lib/paymentActions'
 import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
+import { parseDollars, toLegacyDollars, cents } from '@/lib/money'
 import { nextPublicId } from '@/lib/publicIds'
 import { getStripe } from '@/lib/stripe'
 import { memberAppOrigin } from '@/lib/hosts'
@@ -18,7 +19,10 @@ export async function POST(req: NextRequest) {
   if (!body) return badRequest('Invalid request body.')
   const type = body.type === 'loan_payment' ? 'loan_payment' : body.type === 'contribution' ? 'contribution' : null
   const method = body.method === 'zelle' ? 'zelle' : body.method === 'stripe' ? 'stripe' : null
-  const amount = parseFloat(body.amount)
+  let amountCents: number
+  try { amountCents = parseDollars(typeof body.amount === 'number' ? body.amount : String(body.amount ?? '')) }
+  catch { return badRequest('Amount must be a dollar amount with at most two decimals.') }
+  const amount = toLegacyDollars(cents(amountCents))
 
   if (!type) return NextResponse.json({ error: 'Invalid payment type.' }, { status: 400 })
   if (!method) return NextResponse.json({ error: 'Invalid payment method.' }, { status: 400 })
@@ -81,7 +85,7 @@ export async function POST(req: NextRequest) {
         price_data: {
           currency: 'usd',
           product_data: { name: `Millionaires Club - ${description}` },
-          unit_amount: Math.round(amount * 100),
+          unit_amount: amountCents,
         },
         quantity: 1,
       }],
