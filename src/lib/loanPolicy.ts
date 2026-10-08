@@ -11,11 +11,19 @@ export const POLICY = {
   LATE_FEE_GRACE_DAYS:       15,      // Days before late fee kicks in
 }
 
-/** Terms up to 12 months; amounts above $2,500 may run up to 24. */
-export function validLoanTerms(amount: number, termMonths: number): boolean {
+/** The longest term the fee table (policy section 3) covers. */
+export const MAX_TERM_MONTHS = 24
+
+/**
+ * A loan the schedule and the fee table can handle: an amount within the
+ * cap and a whole number of months up to 24. With `termBands` (a rule the
+ * board has not approved yet, LOAN_TERM_BANDS) loans up to $2,500 run at
+ * most 12 months.
+ */
+export function validLoanTerms(amount: number, termMonths: number, termBands = false): boolean {
   return Number.isFinite(amount) && amount > 0 && amount <= POLICY.MAX_LOAN_AMOUNT
     && Number.isInteger(termMonths) && termMonths > 0
-    && termMonths <= (amount <= 2500 ? 12 : 24)
+    && termMonths <= (termBands && amount <= 2500 ? 12 : MAX_TERM_MONTHS)
 }
 
 // Application fees per policy section 3
@@ -50,7 +58,8 @@ export function checkLoanPolicy(
   },
   requestedAmount: number,
   termMonths: number,
-  lastLoanPaidOffDate?: Date | null
+  lastLoanPaidOffDate?: Date | null,
+  opts: { termBands?: boolean } = {},
 ): PolicyCheckResult {
   const errors: string[] = []
   const warnings: string[] = []
@@ -91,8 +100,12 @@ export function checkLoanPolicy(
     }
   }
 
-  const termsValid = validLoanTerms(requestedAmount, termMonths)
-  if (!termsValid) errors.push('Loans up to $2,500 require 1–12 months; larger loans up to $5,000 require 1–24 months.')
+  const termsValid = validLoanTerms(requestedAmount, termMonths, opts.termBands)
+  if (!termsValid) {
+    errors.push(opts.termBands
+      ? 'Loans up to $2,500 require 1–12 months; larger loans up to $5,000 require 1–24 months.'
+      : `Loans up to $${POLICY.MAX_LOAN_AMOUNT.toLocaleString()} require a whole number of months from 1 to ${MAX_TERM_MONTHS}.`)
+  }
   const applicationFee = termsValid ? calcApplicationFee(requestedAmount, termMonths) : 0
 
   if (errors.length === 0 && requestedAmount > maxByContrib * 0.8) {

@@ -24,7 +24,7 @@ test('a loan from capacity check to first repayment', async ({ browser }) => {
   await dialog.getByLabel('Borrower *').pressSequentially('Ada Ex', { delay: 50 })
   await expect(dialog.getByLabel('Borrower *')).toHaveValue('Ada Ex')
   await dialog.getByRole('button', { name: new RegExp(MEMBER.name) }).click()
-  await dialog.getByLabel('Co-signer *').fill('Cara')
+  await dialog.getByLabel(/^Co-signer/).fill('Cara')
   await dialog.getByRole('button', { name: new RegExp(COSIGNER.name) }).click()
   await dialog.getByLabel('Loan date *').fill(clubToday())
   await dialog.getByLabel('Term *').selectOption('12')

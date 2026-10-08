@@ -376,26 +376,42 @@ For a production-oriented Hetzner setup with Docker, PostgreSQL, and Caddy, use:
 - `docker-compose.hetzner.yml`
 - `.env.production.example`
 
-## Financial safeguards (2026-10-08)
+## Financial safeguards
 
-New loans require a distinct active co-signer with at least six months of membership and no existing borrower/co-signer obligation. Amounts up to $2,500 allow 1–12 months; larger amounts up to $5,000 allow 1–24 months. Unsupported terms are refused, never assigned a fallback fee. Existing loans keep their stored schedules.
+### Always on: keeping the books right
 
-Withdrawal payouts cannot exceed remaining member capital or known bank cash after committed loan payouts. Active borrowing or co-sign obligations block withdrawals. A full exit must pay out all remaining capital; smaller payouts use Partial. Payout execution and loan approval share a transaction lock, and queued requests recheck eligibility and balances when approved. Historical import scripts remain separate from new payout operations.
+- **Agreements:** fill in the borrower's address **before the first signature**. Once anyone has signed, the database refuses any change to the terms or to a recorded signature. A loan is paid out only when every party signed the same, current terms. An undisbursed loan whose signatures disagree is cancelled and reissued, never edited.
+- **Withdrawals:** a withdrawal is positive, dated from the cutover through today, and never larger than the member's capital (from the ledger once opening balances are posted). A full exit is refused while the member has a loan or co-signing obligation (the club's rule), counting loans approved but not yet paid out. Payouts and loan approvals take the same lock, so two of them cannot spend the same capital or cash; a queued request is checked again when it is approved.
+- **Loans:** the borrower has no loan obligation (the club's rule, now also counting loans approved but not yet paid out), and cannot co-sign their own loan. The amount is within the $5,000 cap and the term is a whole number of months up to 24 (the longest the fee table covers).
+- **Card payments (Stripe):** the session, currency and exact cents must match the club's payment record. Money that settles after a scheduled loan is paid off is held as member credit (account 2100), not applied twice.
 
-Fill in the borrower's address **before the first signature**. Signed terms and recorded signatures are frozen by the database. All parties must sign the same current terms before payout. Legacy agreements whose signature hashes disagree are refused at payout; cancel an undisbursed loan and issue a replacement agreement rather than editing signed evidence. Already disbursed loans continue servicing.
+### Waiting for the board: off until switched on
 
-### Stripe recovery and reconciliation
+These rules were proposed with the safeguards but are not in the club's approved policy. Each is off unless its setting is `"true"` in `.env.production`, so the existing rules apply until the board decides (the list is in `src/modules/policy/boardRules.ts`):
 
-Apply migrations before deploying. Verified webhook events are retained in `StripeWebhookEvent`. A failed posting returns HTTP 500 so Stripe retries; the local inbox also supports recovery after outages:
+| Setting | When `"true"` |
+|---|---|
+| `LOAN_COSIGNER_REQUIRED` | Every loan needs a co-signer (today a co-signer is optional). |
+| `LOAN_COSIGNER_ELIGIBILITY` | A co-signer must be an active member of six months with no loan or co-signing of their own. |
+| `LOAN_TERM_BANDS` | Loans up to $2,500 run at most 12 months; larger loans at most 24. |
+| `WITHDRAWAL_BLOCKED_BY_LOANS` | A member with a loan or co-signing obligation cannot make a partial withdrawal either. |
+| `WITHDRAWAL_LIQUIDITY_CHECK` | A withdrawal needs a recorded bank balance and must fit within bank cash after committed loan payouts. |
+| `FULL_EXIT_WHOLE_BALANCE` | A full exit pays out the member's whole available capital. |
+
+### Stripe: recording, retries and reconciliation
+
+Apply the migrations before deploying. Every verified webhook event is kept in `StripeWebhookEvent`, and each is handled once however many times, or how simultaneously, Stripe delivers it.
+
+- **Posted:** the event is marked processed.
+- **Needs a person** (no club payment, or a session, currency or amount that does not match; a refund; a dispute): held for review, reported once, shown under *Payments*, and Stripe is told it was received, since retrying cannot fix it. **Refunds and disputes do not reverse the books automatically**: the Treasurer checks the Stripe evidence and uses the approved reversal procedures.
+- **Temporary failure** (for example, the database is unavailable): Stripe receives HTTP 500 and retries, and the club's own retry job tries again:
 
 ```bash
 npm run payments:retry
 ```
 
-Schedule this command every five minutes in the production container, using the same secrets and database as the app. It checks up to 100 pending/failed events per run and exits nonzero if any still fail. Configure `PAYMENT_ALERT_EMAIL` (or `SECURITY_ALERT_EMAIL`) and Resend for staff alerts. Include `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created`, and `charge.dispute.closed` in the Stripe webhook subscription.
+Run it every five minutes in the production container, with the app's settings and database. It retries up to 100 failed events per run and exits non-zero while any still fail. An alert goes to `PAYMENT_ALERT_EMAIL` (or `SECURITY_ALERT_EMAIL`) through Resend when an event first fails or is held for review, not on every retry.
 
-Session ID, currency and exact cents must match the original payment. Duplicate deliveries do not duplicate money. For scheduled loans, money that settles after payoff is held as member credit (account 2100) when the chart is approved, rather than lost or credited twice against principal. Failed/unmatched payments appear in Payments for investigation.
+Subscribe the Stripe webhook to `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `checkout.session.async_payment_failed`, `checkout.session.expired`, `charge.refunded`, `charge.dispute.created` and `charge.dispute.closed`.
 
-Refunds and disputes appear as durable reconciliation issues in Payments. **They do not automatically reverse the books.** The Treasurer must inspect the Stripe event and settlement evidence and use approved journal/reversal procedures; the issue remains visible as evidence (a resolve-with-evidence workflow is follow-up work). Payments on cancelled or charged-off loans require manual reconciliation; retries cannot resolve a policy conflict by themselves.
-
-Before production rollout, rehearse migrations on a confidential copy, name officers and enable maker/checker, confirm opening balances and cash, and verify the retry job and alert delivery. Deployment, production settings, existing website PR #23, and Web3 architecture decisions are separate from this change.
+Before rollout: rehearse both migrations and a restore on a confidential copy, check undisbursed agreements whose signatures disagree, and confirm in staging that the retry job runs and an alert arrives.
