@@ -11,3 +11,27 @@
   reverse_proxy app:3000
 }
 
+# The public site (apps/web/public, mounted at /srv/www): static pages, no
+# scripts, no cookies, nothing collected. It never reaches the app or the
+# database. Set WWW_DOMAIN in .env (e.g. "mcfinancial.us www.mcfinancial.us")
+# to publish it; until then it answers only on http://www.localhost.
+{$WWW_DOMAIN:http://www.localhost} {
+  encode gzip zstd
+  root * {$WWW_ROOT:/srv/www}
+  header {
+    Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Content-Security-Policy "default-src 'none'; img-src 'self'; style-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
+    X-Content-Type-Options nosniff
+    Referrer-Policy strict-origin-when-cross-origin
+    -Server
+  }
+  # Members sign in on the member app.
+  redir /sign-in https://{$APP_DOMAIN}/portal/login 302
+  # Clean addresses: /about serves about.html.
+  try_files {path} {path}.html
+  file_server
+  handle_errors {
+    rewrite * /404.html
+    file_server
+  }
+}

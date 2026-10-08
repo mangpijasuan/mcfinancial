@@ -234,7 +234,7 @@ mcfinancial/
 | Step | Creates | Trigger (do it when…) | Why then |
 |---|---|---|---|
 | 1 | `src/modules/*` with target names (above) | Stage 2 starts | Organisation now; zero operational cost |
-| 2 | `apps/web` (static public site) | the public site is wanted and its copy is cleared by counsel | Independent, low-risk, keeps the public away from the app |
+| 2 | `apps/web` (static public site) | the public site is wanted and its copy is cleared by counsel | Independent, low-risk, keeps the public away from the app. ✅ **Built** (plain HTML and CSS served by Caddy; published once its copy is cleared). It has no build or dependencies, so it is not yet the second deployable that triggers step 3 |
 | 3 | Monorepo tooling (npm/pnpm workspaces + Turborepo or Nx); the existing app moves to `apps/member-portal`; modules move to `packages/*` | step 2 creates a second deployable | Workspaces pay off once there are two apps |
 | 4 | `apps/admin` split from the member portal | RBAC and MFA are stable (Stage 2 exit) | Real security boundary: separate deployment behind an access gateway |
 | 5 | `services/*` (one at a time) | a job outgrows the app process (runtime, schedule, or failure isolation) | Until then, scheduled jobs inside the app are simpler and safer |
