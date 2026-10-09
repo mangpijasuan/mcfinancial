@@ -40,7 +40,7 @@ Checked and fine: no page scrolls sideways on a phone, every page has one `h1`, 
 
 ## Outcome
 
-Fixed in the UI branch: every P1 and P2 item above. The same audit script, run again on the same data, finds nothing left (before: 85 findings across the pages: unlabelled controls, small targets, console errors). Before-and-after screenshots: [screenshots/README.md](screenshots/README.md).
+Fixed in the UI branch: every P1 and P2 item above. The same audit script, run again on the same data, finds nothing left (before: 84 findings across the pages: unlabelled controls, small targets, console errors). Before-and-after screenshots: [screenshots/README.md](screenshots/README.md).
 
 Two checks now run in the browser tests (`e2e/07-usability.spec.ts`) so these do not come back:
 
