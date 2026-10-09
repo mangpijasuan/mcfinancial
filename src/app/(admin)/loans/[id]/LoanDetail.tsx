@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
-import { Card, LoanStatusBadge, Badge, Button, Spinner, Input, Select, Modal, Textarea } from '@/components/ui'
+import { Card, LoanStatusBadge, Badge, Button, Spinner, Input, Select, Modal, Textarea, ScrollArea } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { formatUSD, type Cents } from '@/lib/money'
 
@@ -209,7 +209,7 @@ export default function LoanDetail({ id, can }: { id: string; can: { disburse: b
             <h2 className="text-sm font-semibold text-gray-700">Repayment schedule</h2>
             <p className="text-xs text-gray-400">Due on the {loan.dueDay ?? 10}th of each month; the last installment absorbs any rounding. Policy {s.policyVersion}.</p>
           </div>
-          <div className="overflow-x-auto">
+          <ScrollArea label="Repayment schedule">
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                 <tr><th className="px-4 py-2 text-left">#</th><th className="px-4 py-2 text-left">Due</th><th className="px-4 py-2 text-right">Amount</th><th className="px-4 py-2 text-right">Paid</th><th className="px-4 py-2 text-left">Status</th></tr>
@@ -229,7 +229,7 @@ export default function LoanDetail({ id, can }: { id: string; can: { disburse: b
                 })}
               </tbody>
             </table>
-          </div>
+          </ScrollArea>
         </Card>
       )}
 

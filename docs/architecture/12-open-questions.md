@@ -20,7 +20,7 @@ Grouped by who can answer them. Items marked ★ block the start of the financia
 | Q-7 ★ | How does collector cash flow today: who collects, how often it is deposited, and who checks it? | Cash-custody design (F-11) |
 | Q-8 | Are application fees actually collected? Where are they recorded today? | They are missing from the system (F-5); affects the opening surplus |
 | Q-9 | Have late fees ever been charged? Should they be? | Policy says $5; the code never applies it |
-| Q-10 ★ | What is the true status and balance of the 30 historical loans marked "Active" ($70,343)? Has `sync-active-historical-loans.js` been run in production? | Up to $70k of receivables unaccounted for or double-counted (F-8). *Answered on Loan History → Link older loans (M9): the Treasurer confirms each balance before opening balances* |
+| Q-10 ★ | What is the true status and balance of the 30 historical loans marked "Active" ($70,343)? Has `sync-active-historical-loans.js` been run in production? | Up to $70k of receivables unaccounted for or double-counted (F-8). *Answered on Loans → 2021–2025 records → Link older loans (M9): the Treasurer confirms each balance before opening balances* |
 | Q-11 | Who absorbs Stripe processing fees: the member (surcharge) or the club? | Ledger posting and member-facing price. Surcharging has its own rules |
 | Q-12 ★ | Who are the officers for maker/checker? At least three distinct active people are needed (Finance, Treasurer, Board) | D-06 cannot work with fewer |
 | Q-13 | Is an accountant engaged, or can one be? | Chart of accounts sign-off; member-capital classification |

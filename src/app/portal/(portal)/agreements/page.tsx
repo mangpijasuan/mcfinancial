@@ -65,9 +65,9 @@ export default function PortalAgreements() {
 
             return (
               <div key={a.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <span className="font-mono text-xs text-indigo-600">{a.agreementId}</span>
                       <span className="font-mono text-xs text-gray-400">· Loan {a.loanId}</span>
                       {mySigned
@@ -81,7 +81,9 @@ export default function PortalAgreements() {
                   </div>
                   <button
                     onClick={() => setSelected(a)}
-                    className="text-sm text-indigo-600 hover:underline font-medium flex items-center gap-1"
+                    className={mySigned
+                      ? 'inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50'
+                      : 'inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#1B2A4A] px-4 text-sm font-semibold text-white hover:bg-[#243660]'}
                   >
                     <FileSignature size={14}/> {mySigned ? 'View' : 'Review & sign'}
                   </button>

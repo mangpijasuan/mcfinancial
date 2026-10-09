@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import Sidebar from '@/components/layout/Sidebar'
 import AdminTopbar from '@/components/layout/AdminTopbar'
 import { StaffProvider } from '@/components/staff/StaffContext'
+import PageAccess from '@/components/staff/PageAccess'
 import { getPrincipal } from '@/modules/auth'
 import { roleLabel } from '@/modules/permissions'
 
@@ -25,7 +26,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
         <div className="contents print:hidden"><Sidebar permissions={permissions} roleSummary={roleSummary} /></div>
         <main className="flex-1 overflow-auto pt-14 lg:pt-0 print:pt-0">
           <div className="contents print:hidden"><AdminTopbar roleSummary={roleSummary} canSearchMembers={permissions.includes('members.read')} /></div>
-          {children}
+          <PageAccess>{children}</PageAccess>
         </main>
       </div>
     </StaffProvider>

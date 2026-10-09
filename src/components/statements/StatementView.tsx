@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { ScrollArea } from '@/components/ui'
 import Link from 'next/link'
 import { formatUSD, type Cents } from '@/lib/money'
 import { fmtDate } from '@/lib/utils'
@@ -98,7 +99,7 @@ export default function StatementView({ api, historyHref }: { api: string; histo
                   <h3 className="text-sm font-semibold text-gray-800">{s.title}</h3>
                   <p className="text-xs text-gray-500">{s.note}</p>
                 </div>
-                <div className="overflow-x-auto">
+                <ScrollArea label={`${s.title}: movements`}>
                   <table className="w-full text-sm tabular-nums">
                     <thead>
                       <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
@@ -133,7 +134,7 @@ export default function StatementView({ api, historyHref }: { api: string; histo
                       </tr>
                     </tbody>
                   </table>
-                </div>
+                </ScrollArea>
               </section>
             ))}
           </div>

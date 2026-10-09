@@ -1,9 +1,12 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { FileSignature, Eye } from 'lucide-react'
-import { Card, Table, EmptyState, Badge, Button, Modal, PageHeader, FilterBar, SearchInput, Select } from '@/components/ui'
+import { Card, Table, EmptyState, Badge, Button, Modal, PageHeader, FilterBar, SearchInput, Select, plural } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
+
+// Shown on wide screens only, so status and actions stay in view on a laptop.
+const SECONDARY = 'hidden 2xl:table-cell'
 
 async function readJsonSafe<T>(res: Response): Promise<T | null> {
   try {
@@ -63,13 +66,13 @@ export default function AgreementsPage() {
   return (
     <div className="p-4 sm:p-8">
       <PageHeader
-        title="Loan Application"
-        sub={`${rows.length} agreements · ${rows.filter(r => r.status === 'fully_signed').length} fully signed`}
+        title="Loan Agreements"
+        sub={`${plural(rows.length, 'agreement')} · ${rows.filter(r => r.status === 'fully_signed').length} fully signed`}
       />
 
       <FilterBar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search borrower or ID…" />
-        <Select value={status} onChange={e => setStatus(e.target.value)}>
+        <Select aria-label="Agreement status" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           <option value="pending">Pending</option>
           <option value="borrower_signed">Borrower signed</option>
@@ -84,18 +87,18 @@ export default function AgreementsPage() {
       )}
 
       <Card>
-        <Table loading={loading} headers={['Agreement ID', 'Loan ID', 'Borrower', 'Co-signer', 'Amount', 'Fee', 'Created', 'Status', 'Actions']}>
+        <Table loading={loading} headers={['Agreement ID', 'Loan ID', 'Borrower', { label: 'Co-signer', className: SECONDARY }, 'Amount', { label: 'Fee', className: SECONDARY }, { label: 'Created', className: SECONDARY }, 'Status', 'Actions']}>
           {rows.length === 0 && !loading
             ? <EmptyState message="No agreements yet." />
             : rows.map(a => (
               <tr key={a.id} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-indigo-600">{a.agreementId}</td>
-                <td className="px-4 py-3 font-mono text-xs text-purple-600">{a.loanId}</td>
+                <td className="px-4 py-3 font-mono text-xs text-indigo-600 whitespace-nowrap">{a.agreementId}</td>
+                <td className="px-4 py-3 font-mono text-xs text-purple-600 whitespace-nowrap">{a.loanId}</td>
                 <td className="px-4 py-3 font-medium text-gray-900">{a.borrowerName}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{a.cosignerName || '—'}</td>
-                <td className="px-4 py-3 font-semibold text-gray-900">{fmt$(a.loanAmount)}</td>
-                <td className="px-4 py-3 text-amber-700 font-medium">{fmt$(a.applicationFee)}</td>
-                <td className="px-4 py-3 text-gray-400 text-xs whitespace-nowrap">{fmtDate(a.createdAt)}</td>
+                <td className={`px-4 py-3 text-gray-500 text-xs ${SECONDARY}`}>{a.cosignerName || '—'}</td>
+                <td className="px-4 py-3 font-semibold text-gray-900 whitespace-nowrap">{fmt$(a.loanAmount)}</td>
+                <td className={`px-4 py-3 text-gray-700 ${SECONDARY}`}>{fmt$(a.applicationFee)}</td>
+                <td className={`px-4 py-3 text-gray-500 text-xs whitespace-nowrap ${SECONDARY}`}>{fmtDate(a.createdAt)}</td>
                 <td className="px-4 py-3">{statusBadge(a.status)}</td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-2">

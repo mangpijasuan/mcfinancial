@@ -76,9 +76,9 @@ export default function LedgerView({ canApprove }: { canApprove: boolean }) {
         sub="The club’s double-entry books in exact cents. Posted entries are final; corrections are reversing entries."
         action={
           <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <a href="/ledger/opening" className="text-sm text-indigo-700 underline">Opening balances (M4) →</a>
-            <a href="/ledger/comparison" className="text-sm text-indigo-700 underline">Nightly comparison (M5) →</a>
-            <a href="/ledger/reads" className="text-sm text-indigo-700 underline">Ledger reads (M6) →</a>
+            <a href="/ledger/opening" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">Opening balances (M4) →</a>
+            <a href="/ledger/comparison" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">Nightly comparison (M5) →</a>
+            <a href="/ledger/reads" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">Ledger reads (M6) →</a>
           </div>
         }
       />

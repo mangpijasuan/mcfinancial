@@ -1,6 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
-import { Card, Table, EmptyState, Badge, Button, PageHeader, Select } from '@/components/ui'
+import { Card, Table, EmptyState, Badge, Button, PageHeader, Select, statusLabel } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
 
@@ -68,7 +68,7 @@ export default function PaymentsPage() {
   return (
     <div className="p-4 sm:p-8">
       <PageHeader
-        title="Pending Payments"
+        title="Online Payment Review"
         sub="Member-initiated Zelle claims awaiting confirmation, plus card payment history."
       />
 
@@ -109,7 +109,7 @@ export default function PaymentsPage() {
                 <td className="px-4 py-3 text-gray-500 text-xs max-w-[200px] truncate">{p.zelleReference || '—'}</td>
                 <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(p.createdAt)}</td>
                 <td className="px-4 py-3">
-                  <Badge variant={statusVariant[p.status] || 'gray'}>{p.status}</Badge>
+                  <Badge variant={statusVariant[p.status] || 'gray'}>{statusLabel(p.status)}</Badge>
                   {p.status === 'rejected' && p.rejectionReason && (
                     <p className="text-xs text-gray-400 mt-1">{p.rejectionReason}</p>
                   )}

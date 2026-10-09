@@ -46,7 +46,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <img src="/brand/mc-logo-on-dark.svg" alt={APP_NAME} className="inline-block w-28 h-16 mb-4 object-contain" />
           <h1 className="text-2xl font-bold text-white">{APP_NAME}</h1>
-          <p className="text-white/50 text-sm mt-1">Staff sign-in</p>
+          <p className="text-white/75 text-sm mt-1">Staff sign-in</p>
         </div>
 
         <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-2xl space-y-4">

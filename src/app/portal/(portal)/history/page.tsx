@@ -57,7 +57,7 @@ export default function PortalHistory() {
                 : 'bg-gray-50 border-gray-200'
             }`}>
               <p className={`text-xs font-semibold ${
-                y.amount > 0 ? (y.type === 'live' ? 'text-blue-500' : 'text-green-500') : 'text-gray-400'
+                y.amount > 0 ? (y.type === 'live' ? 'text-blue-700' : 'text-green-700') : 'text-gray-400'
               }`}>{y.year}</p>
               <p className={`text-sm font-bold mt-0.5 ${
                 y.amount > 0 ? (y.type === 'live' ? 'text-blue-800' : 'text-green-800') : 'text-gray-400'

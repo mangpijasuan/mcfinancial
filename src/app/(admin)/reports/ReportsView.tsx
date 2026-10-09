@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { Download, Printer } from 'lucide-react'
-import { Button, Card, Input, PageHeader } from '@/components/ui'
+import { Button, Card, Input, PageHeader, ScrollArea } from '@/components/ui'
 import { cn } from '@/lib/utils'
 import { formatUSD, toDecimalString, type Cents } from '@/lib/money'
 import type { BalanceSheet, CashFlow, IncomeStatement, LoanPortfolio, ReportLine } from '@/modules/accounting/reports'
@@ -225,7 +225,7 @@ function PortfolioReport({ r }: { r: LoanPortfolio }) {
         </div>
       ))}
     </div>
-    <div className="overflow-x-auto">
+    <ScrollArea label="Loans">
       <table className="w-full text-sm tabular-nums">
         <thead>
           <tr className="text-left text-xs uppercase tracking-wide text-gray-500">
@@ -254,7 +254,7 @@ function PortfolioReport({ r }: { r: LoanPortfolio }) {
           </tr>
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
     <p className="mt-2 text-xs text-gray-500">Days late count from the oldest unpaid installment, with the payments made by that date. The total equals Loans receivable on the balance sheet.</p>
   </>
 }

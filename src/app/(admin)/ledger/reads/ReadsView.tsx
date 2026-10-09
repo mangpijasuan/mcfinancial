@@ -30,7 +30,7 @@ export default function ReadsView() {
       .catch((e) => setError(e.message))
   }, [])
 
-  const back = <Link href="/ledger" className="text-sm text-indigo-700 underline">← Ledger</Link>
+  const back = <Link href="/ledger" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">← Ledger</Link>
   const p = reads?.parity
   const differences = p ? p.members.length + p.loans.length : 0
   return (

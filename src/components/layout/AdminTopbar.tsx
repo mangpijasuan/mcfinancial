@@ -11,7 +11,7 @@ const pageTitles: Record<string, string> = {
   '/loans': 'Loans',
   '/agreements': 'Loan Agreements',
   '/loan-payments': 'Repayments',
-  '/loan-history': 'Loan History',
+  '/loan-history': 'Loans',
   '/withdrawals': 'Withdrawals',
   '/dues': 'Dues',
   '/treasury': 'Treasury',
@@ -81,11 +81,12 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
           <label className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition-colors focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100">
             <Search size={16} className="shrink-0 text-slate-400 group-focus-within:text-indigo-500" />
             <input
-              type="text"
+              type="search"
+              aria-label="Quick search members by name or ID"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Quick search members by name or ID"
-              className="w-full bg-transparent text-sm text-slate-700 outline-hidden placeholder:text-slate-400"
+              className="h-6 w-full bg-transparent text-sm text-slate-700 outline-hidden placeholder:text-slate-500"
             />
           </label>
         </form>}

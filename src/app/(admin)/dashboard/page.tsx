@@ -1,8 +1,8 @@
 'use client'
 import { useEffect, useState } from 'react'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
-import { StatCard, Card, Table, EmptyState, LoanStatusBadge, Badge } from '@/components/ui'
-import { fmt$, fmtDate } from '@/lib/utils'
+import { StatCard, Card, Table, EmptyState, LoanStatusBadge, Badge, plural } from '@/components/ui'
+import { fmt$, fmtCompact$, fmtDate } from '@/lib/utils'
 import { Users, Landmark, TrendingUp, ShieldCheck, AlertTriangle, Receipt, Trophy, ArrowDownLeft } from 'lucide-react'
 
 export default function DashboardPage() {
@@ -76,15 +76,15 @@ export default function DashboardPage() {
       </div>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        <StatCard label="Active members"       value={stats.activeMembers}            color="navy"   icon={<Users size={18}/>} />
-        <StatCard label="Total members"        value={stats.totalMembers}             color="teal"   sub={stats.inactiveMembers + " inactive"} />
-        <StatCard label="Total contributions"  value={fmt$(stats.totalContributions)} color="green"  icon={<TrendingUp size={18}/>} />
-        <StatCard label="Eligible for loan"    value={stats.eligibleMembers}          color="blue"   icon={<ShieldCheck size={18}/>} />
-        <StatCard label="Active loans"         value={stats.activeLoans}              color="amber"  icon={<Landmark size={18}/>} />
-        <StatCard label="Outstanding balance"  value={fmt$(stats.outstandingBalance)} color="purple" />
-        <StatCard label="Overdue loans"        value={stats.overdueLoans}             color={stats.overdueLoans > 0 ? "red" : "teal"} icon={<AlertTriangle size={18}/>} />
-        <StatCard label="Contributions logged" value={fmt$(stats.contributionsLogged ?? 0)} color="navy"   icon={<Receipt size={18}/>} />
-        <StatCard label="Total withdrawn"      value={fmt$(stats.totalWithdrawn ?? 0)}    color="red"    icon={<ArrowDownLeft size={18}/>} sub={`${stats.withdrawalCount ?? 0} withdrawals`} />
+        {/* Grouped by area. Red only where something needs attention now. */}
+        <StatCard tone="plain" label="Active members"       value={stats.activeMembers}            icon={<Users size={18}/>} sub={`of ${stats.totalMembers} · ${stats.inactiveMembers} inactive`} />
+        <StatCard tone="plain" label="Eligible for a loan"  value={stats.eligibleMembers}          icon={<ShieldCheck size={18}/>} />
+        <StatCard tone="plain" label="Total contributions"  value={fmt$(stats.totalContributions)} icon={<TrendingUp size={18}/>} />
+        <StatCard tone="plain" label="Contributions logged" value={fmt$(stats.contributionsLogged ?? 0)} icon={<Receipt size={18}/>} sub="Recorded in this app" />
+        <StatCard tone="plain" label="Active loans"         value={stats.activeLoans}              icon={<Landmark size={18}/>} />
+        <StatCard tone="plain" label="Outstanding balance"  value={fmt$(stats.outstandingBalance)} sub="Principal still owed" />
+        <StatCard tone={stats.overdueLoans > 0 ? 'alert' : 'plain'} label="Overdue loans" value={stats.overdueLoans} icon={<AlertTriangle size={18}/>} sub={stats.overdueLoans > 0 ? 'Need follow-up' : 'None overdue'} />
+        <StatCard tone="plain" label="Total withdrawn"      value={fmt$(stats.totalWithdrawn ?? 0)}    icon={<ArrowDownLeft size={18}/>} sub={plural(stats.withdrawalCount ?? 0, 'withdrawal')} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -97,7 +97,7 @@ export default function DashboardPage() {
               <BarChart data={monthlyBreakdown} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="monthYear" tick={{ fontSize: 11 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => "$" + v} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtCompact$} />
                 <Tooltip formatter={(v: number) => fmt$(v)} />
                 <Bar dataKey="_sum.amount" name="Contributions" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
               </BarChart>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
                 <BarChart data={history.byYear} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                   <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={v => "$" + (v/1000).toFixed(0) + "k"} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtCompact$} />
                   <Tooltip formatter={(v: number) => [fmt$(v), "Total lent"]} labelFormatter={(l: any) => "Year " + l} />
                   <Bar dataKey="_sum.loanAmount" name="Total lent" fill="#C9A84C" radius={[4, 4, 0, 0]} />
                 </BarChart>
@@ -140,7 +140,7 @@ export default function DashboardPage() {
                 {history.byYear.map((r: any) => (
                   <div key={r.year} className="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-center">
                     <p className="text-xs text-gray-400 font-semibold">{r.year}</p>
-                    <p className="text-sm font-bold text-gray-800">{r._count?.id || 0} loans</p>
+                    <p className="text-sm font-bold text-gray-800">{plural(r._count?.id || 0, 'loan')}</p>
                     <p className="text-xs text-amber-700 font-semibold">{fmt$(r._sum.loanAmount)}</p>
                   </div>
                 ))}

@@ -7,6 +7,10 @@ import { Card, Table, EmptyState, LoanStatusBadge, Badge, Button, Modal, Input, 
          PageHeader, FilterBar, SearchInput } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
+import LoanTabs from '@/components/staff/LoanTabs'
+
+// Shown on wide screens only, so balance, next due date and status stay in view on a laptop.
+const SECONDARY = 'hidden 2xl:table-cell'
 
 export default function LoansPage() {
   const { can } = useStaff()
@@ -65,10 +69,11 @@ export default function LoansPage() {
         sub={`${loans.filter(l => l.status === 'Active').length} active · ${fmt$(totalOutstanding)} outstanding`}
         action={can('loans.create') ? <Button onClick={() => setShowNew(true)}><Plus size={15} /> New loan</Button> : undefined}
       />
+      <LoanTabs current="/loans" />
 
       <FilterBar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search borrower or loan ID…" />
-        <Select value={status} onChange={e => setStatus(e.target.value)}>
+        <Select aria-label="Loan status" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           <option value="Active">Active</option>
           <option value="Paid Off">Paid off</option>
@@ -85,21 +90,21 @@ export default function LoansPage() {
       <Card>
         {/* Desktop / tablet table */}
         <div className="hidden md:block">
-          <Table loading={loading} headers={['Loan ID','Borrower','Co-signer','Amount','Monthly due','Paid','Balance','Date','Term','Next due','Status','Agreement','']}>
+          <Table loading={loading} headers={['Loan ID', 'Borrower', { label: 'Co-signer', className: SECONDARY }, 'Amount', { label: 'Monthly due', className: SECONDARY }, { label: 'Paid', className: SECONDARY }, 'Balance', { label: 'Date', className: SECONDARY }, { label: 'Term', className: SECONDARY }, 'Next due', 'Status', 'Agreement', { label: 'Open', className: 'sr-only' }]}>
             {loans.length === 0 && !loading
               ? <EmptyState message="No loans found." />
               : loans.map(l => (
                 <tr key={l.id} className="hover:bg-gray-50 transition-colors cursor-pointer" onClick={() => router.push(`/loans/${l.loanId}`)}>
-                  <td className="px-4 py-3 font-mono text-xs text-indigo-600">{l.loanId}</td>
+                  <td className="px-4 py-3 font-mono text-xs text-indigo-600 whitespace-nowrap">{l.loanId}</td>
                   <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">{l.borrowerName}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{l.cosignerName || '—'}</td>
-                  <td className="px-4 py-3 text-gray-700">{fmt$(l.loanAmount)}</td>
-                  <td className="px-4 py-3 text-gray-700">{fmt$(l.monthlyDue)}</td>
-                  <td className="px-4 py-3 text-green-700 font-medium">{fmt$(l.totalPaid)}</td>
-                  <td className="px-4 py-3 font-bold text-gray-900">{fmt$(l.balanceRemaining)}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(l.loanDate)}</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs">{l.termMonths} mo.</td>
-                  <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(l.nextDueDate)}</td>
+                  <td className={`px-4 py-3 text-gray-500 text-xs whitespace-nowrap ${SECONDARY}`}>{l.cosignerName || '—'}</td>
+                  <td className="px-4 py-3 text-gray-700 whitespace-nowrap">{fmt$(l.loanAmount)}</td>
+                  <td className={`px-4 py-3 text-gray-700 whitespace-nowrap ${SECONDARY}`}>{fmt$(l.monthlyDue)}</td>
+                  <td className={`px-4 py-3 text-gray-700 whitespace-nowrap ${SECONDARY}`}>{fmt$(l.totalPaid)}</td>
+                  <td className="px-4 py-3 font-bold text-gray-900 whitespace-nowrap">{fmt$(l.balanceRemaining)}</td>
+                  <td className={`px-4 py-3 text-gray-500 text-xs whitespace-nowrap ${SECONDARY}`}>{fmtDate(l.loanDate)}</td>
+                  <td className={`px-4 py-3 text-gray-500 text-xs whitespace-nowrap ${SECONDARY}`}>{l.termMonths} mo.</td>
+                  <td className="px-4 py-3 text-gray-600 text-xs whitespace-nowrap">{fmtDate(l.nextDueDate)}</td>
                   <td className="px-4 py-3"><LoanStatusBadge status={l.status} overdue={l.overdue} /></td>
                   <td className="px-4 py-3">
                     {l.agreement

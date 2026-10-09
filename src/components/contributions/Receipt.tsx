@@ -49,7 +49,7 @@ export default function Receipt({ id, backHref }: { id: string; backHref: string
   return (
     <div className="mx-auto max-w-xl p-4 sm:p-8">
       <div className="mb-4 flex justify-between gap-2 print:hidden">
-        <a href={backHref} className="text-sm text-indigo-700 underline">← Back</a>
+        <a href={backHref} className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">← Back</a>
         <button type="button" onClick={() => window.print()} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">Print</button>
       </div>
       <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs print:border-none print:shadow-none">

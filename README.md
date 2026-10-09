@@ -329,14 +329,14 @@ Loans made **before** this change keep working the old way (hand-kept balance an
 
 ### Older loans (2021–2025): linked by member ID (M9)
 
-The 2021–2025 loan records name the borrower and co-signer but do not say which member they are. **Loan History → Link older loans** (`/loan-history/review`) links them by member ID, once, and nothing matches names afterwards:
+The 2021–2025 loan records name the borrower and co-signer but do not say which member they are. **Loans → 2021–2025 records → Link older loans** (`/loan-history/review`) links them by member ID, once, and nothing matches names afterwards:
 
 - **Exact matches**, in one click: a name links automatically only when exactly one member has it (legal name or nickname, ignoring case, punctuation and anything in brackets). Never a partial match.
 - **Names to review**: a name several members share is decided loan by loan; a name no member has is linked to the right member or recorded as *no member record* (someone who has left, a co-signer who was never a member). One decision can cover every loan with the same name.
 - **Loans still marked Active**: the Treasurer confirms what each still owed at the end of a day **before the cutover**, from the club's own records. A balance still owed moves the loan to the live loans (marked *moved from the 2021–2025 records*). Everything repaid before that day is recorded as one *brought forward* repayment, so the ledger opens the loan at exactly the confirmed figure. A loan the old `sync-active-historical-loans.js` script already copied is brought to the same figure, and moved, with its repayments, to the members you linked (the script may have picked the wrong one of a shared name). A balance of $0 records the loan as repaid.
 - **Opening balances cannot be proposed** until every loan marked Active has a confirmed balance, and confirming is closed once they are posted.
 
-The member page, the portal's history and the Loan History use these links. Before, the portal matched names, so a member could see the older loans of anyone sharing their name.
+The member page, the portal's history and the 2021–2025 records tab use these links. Before, the portal matched names, so a member could see the older loans of anyone sharing their name.
 
 ## Treasury: cash reserve and lending capacity
 
