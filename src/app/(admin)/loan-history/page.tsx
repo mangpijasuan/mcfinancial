@@ -3,8 +3,9 @@ import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts'
 import { Trophy, TrendingUp } from 'lucide-react'
-import { Card, Table, EmptyState, LoanStatusBadge, PageHeader, FilterBar, SearchInput, Select, Badge } from '@/components/ui'
-import { fmt$, fmtDate } from '@/lib/utils'
+import { Card, Table, EmptyState, LoanStatusBadge, PageHeader, FilterBar, SearchInput, Select, Badge, plural } from '@/components/ui'
+import LoanTabs from '@/components/staff/LoanTabs'
+import { fmt$, fmtCompact$, fmtDate } from '@/lib/utils'
 
 const START_YEAR = 2021
 
@@ -34,10 +35,11 @@ export default function LoanHistoryPage() {
   return (
     <div className="p-4 sm:p-8">
       <PageHeader
-        title="Loan History"
-        sub={`${totalLoans} loans · ${fmt$(totalLent)} lent ${START_YEAR}–${currentYear}`}
+        title="Loans"
+        sub={`Older loans · ${plural(totalLoans, 'loan')} · ${fmt$(totalLent)} lent`}
         action={<Link href="/loan-history/review" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">Link older loans to members</Link>}
       />
+      <LoanTabs current="/loan-history" />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
         {/* Year-by-year chart */}
@@ -50,7 +52,7 @@ export default function LoanHistoryPage() {
               <BarChart data={data.byYear} margin={{ top: 0, right: 0, left: -10, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="year" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${(v/1000).toFixed(0)}k`} />
+                <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtCompact$} />
                 <Tooltip
                   formatter={(v: number) => [fmt$(v), 'Total lent']}
                   labelFormatter={l => `Year ${l}`}
@@ -65,7 +67,7 @@ export default function LoanHistoryPage() {
               {data.byYear.map((r: any) => (
                 <button key={r.year} onClick={() => setYear(year === String(r.year) ? '' : String(r.year))}
                   className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${year === String(r.year) ? 'bg-[#1B2A4A] text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-                  {r.year} · {r._count?.id || 0} loans · {fmt$(r._sum.loanAmount)}
+                  {r.year} · {plural(r._count?.id || 0, 'loan')} · {fmt$(r._sum.loanAmount)}
                 </button>
               ))}
             </div>
@@ -88,7 +90,7 @@ export default function LoanHistoryPage() {
                 }`}>{i + 1}</span>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{r.borrowerName}{r.borrowerId && <span className="ml-1 text-xs font-normal text-gray-400">{r.borrowerId}</span>}</p>
-                  <p className="text-xs text-gray-400">{r._count?.id || 0} loans · {fmt$(r._sum.loanAmount)}</p>
+                  <p className="text-xs text-gray-400">{plural(r._count?.id || 0, 'loan')} · {fmt$(r._sum.loanAmount)}</p>
                 </div>
                 <Badge variant={(r._count?.id || 0) >= 3 ? 'red' : (r._count?.id || 0) >= 2 ? 'amber' : 'gray'}>
                   ×{r._count?.id || 0}

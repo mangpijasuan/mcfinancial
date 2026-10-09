@@ -11,7 +11,7 @@ const pageTitles: Record<string, string> = {
   '/loans': 'Loans',
   '/agreements': 'Loan Agreements',
   '/loan-payments': 'Repayments',
-  '/loan-history': 'Loan History',
+  '/loan-history': 'Loans',
   '/withdrawals': 'Withdrawals',
   '/dues': 'Dues',
   '/treasury': 'Treasury',

@@ -7,6 +7,7 @@ import { Card, Table, EmptyState, LoanStatusBadge, Badge, Button, Modal, Input, 
          PageHeader, FilterBar, SearchInput } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
+import LoanTabs from '@/components/staff/LoanTabs'
 
 // Shown on wide screens only, so balance, next due date and status stay in view on a laptop.
 const SECONDARY = 'hidden 2xl:table-cell'
@@ -68,6 +69,7 @@ export default function LoansPage() {
         sub={`${loans.filter(l => l.status === 'Active').length} active · ${fmt$(totalOutstanding)} outstanding`}
         action={can('loans.create') ? <Button onClick={() => setShowNew(true)}><Plus size={15} /> New loan</Button> : undefined}
       />
+      <LoanTabs current="/loans" />
 
       <FilterBar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search borrower or loan ID…" />

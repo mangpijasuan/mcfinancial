@@ -49,4 +49,6 @@ Two checks now run in the browser tests (`e2e/07-usability.spec.ts`) so these do
 
 Along the way the checks found, and this branch fixes: grey secondary text below the 4.5:1 contrast minimum (Tailwind's `gray-400` now takes `gray-500`'s value), wide tables that keyboard users could not scroll (`ScrollArea`), and amounts rounded to whole dollars on screen while the pay form used cents (`fmt$` now shows cents when there are any).
 
+Menu: at the club's request, *Loan History* is now a tab inside *Loans* (**Current loans** · **2021–2025 records**), so Lending has three entries: Loans, Loan Agreements, Repayments. Old `/loan-history` links still work, the same permission (`loans.read`) applies, and *Loans* stays highlighted on either tab. Repayments and Loan Agreements stay as their own entries: each is a daily work queue for a different role. The records tab now gets the same fixes as the dashboard: distinct axis labels, "1 loan", and a subtitle that no longer claims the records run to the current year.
+
 Not changed: links inside sentences (a receipt number in a line of text) keep their text size, as WCAG 2.5.8 allows.

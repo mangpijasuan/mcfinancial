@@ -1,6 +1,6 @@
 # Before and after
 
-Screenshots from the browser-test demo data, taken with the same script before and after the changes in this branch (`docs/ui/usability-audit.md` lists every finding).
+Screenshots from the browser-test demo data, taken with the same script before and after the changes in this branch (`docs/ui/usability-audit.md` lists every finding). The dashboard, Loans and 2021–2025 records shots show the final three-entry Lending menu; the other staff shots were taken just before *Loan History* moved into Loans and still list it in the menu.
 
 ## Staff dashboard (desktop)
 
@@ -25,6 +25,14 @@ Balance, next due, status and agreement in view at 1280 px; secondary columns on
 | Before | After |
 |---|---|
 | ![before](before/treasurer-desktop_loans.png) | ![after](after/treasurer-desktop_loans.png) |
+
+## Loans → 2021–2025 records (was *Loan History*)
+
+A tab under Loans, so Lending has three menu entries; *Loans* stays highlighted; "1 loan"; axis $0…$1k instead of $1k, $1k, $1k.
+
+| Before | After |
+|---|---|
+| ![before](before/treasurer-desktop_loan-history.png) | ![after](after/treasurer-desktop_loan-history.png) |
 
 ## Loan Agreements
 

@@ -12,7 +12,9 @@ import { expectNoOverflow, signedIn } from './helpers'
 const SUB_PAGES: Partial<Record<StaffRole, string[]>> = { treasurer: ['/ledger/opening', '/ledger/comparison', '/ledger/reads', '/loan-history/review'] }
 
 function screensFor(role: StaffRole): string[] {
-  return [...visibleNav([...permissionsForRoles([STAFF[role].role])]).map((item) => item.href), ...(SUB_PAGES[role] ?? [])]
+  const nav = visibleNav([...permissionsForRoles([STAFF[role].role])])
+  // Tabs inside a menu entry (Loans → 2021–2025 records) are screens too.
+  return [...nav.flatMap((item) => [item.href, ...(item.also ?? [])]), ...(SUB_PAGES[role] ?? [])]
 }
 
 for (const role of Object.keys(STAFF) as StaffRole[]) {

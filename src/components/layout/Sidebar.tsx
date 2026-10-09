@@ -8,6 +8,7 @@ import { LogOut, Menu, PanelLeftClose, PanelLeftOpen, Plus, X } from 'lucide-rea
 import { cn } from '@/lib/utils'
 import {
   STAFF_NAV_GROUPS,
+  navItemActive,
   visibleNav,
   type GroupedStaffNavItem,
   type StaffNavBadge,
@@ -30,7 +31,7 @@ function badgeLabel(count: number) {
 // Defined at module level: a component declared inside another is a new
 // type on every render, so React would remount it (and its links) each time.
 function NavLink({ item, compact, path, badges }: { item: GroupedStaffNavItem; compact: boolean; path: string; badges: BadgeCounts }) {
-  const active = path === item.href || path.startsWith(`${item.href}/`)
+  const active = navItemActive(item, path)
   const count = item.badge ? badges[item.badge] : 0
   const Icon = item.icon
   return (
@@ -53,7 +54,7 @@ function NavLink({ item, compact, path, badges }: { item: GroupedStaffNavItem; c
         <span className={cn(
           'inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-amber-950',
           compact && 'absolute right-0.5 top-0.5 min-w-4 px-1'
-        )} aria-label={`${count} items need attention`}>
+        )} aria-label={count === 1 ? '1 item needs attention' : `${count} items need attention`}>
           {badgeLabel(count)}
         </span>
       )}

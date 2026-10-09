@@ -26,6 +26,28 @@ test('staff: the whole menu fits a laptop screen, and the current page is marked
   await close()
 })
 
+test('staff: Lending has three entries; the older records are a tab under Loans', async ({ browser }) => {
+  const { page, errors, close } = await signedIn(browser, 'treasurer')
+  await page.goto('/loans')
+  const menu = page.getByRole('navigation', { name: 'Staff navigation' })
+  // Once it loads, the Loans entry also announces its overdue count ("Loans 1 item needs attention").
+  const loans = menu.getByRole('link', { name: /^Loans\b/ })
+  await expect(loans).toBeVisible()
+  for (const name of ['Loan Agreements', 'Repayments']) await expect(menu.getByRole('link', { name, exact: true })).toBeVisible()
+  await expect(menu.getByRole('link', { name: 'Loan History' })).toHaveCount(0)
+
+  const tabs = page.getByRole('navigation', { name: 'Loans' })
+  await expect(tabs.getByRole('link', { name: 'Current loans' })).toHaveAttribute('aria-current', 'page')
+  await tabs.getByRole('link', { name: '2021–2025 records' }).click()
+  await expect(page).toHaveURL(/\/loan-history$/)
+  await expect(tabs.getByRole('link', { name: '2021–2025 records' })).toHaveAttribute('aria-current', 'page')
+  // Still under Loans in the menu.
+  await expect(loans).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('link', { name: 'Link older loans to members' })).toBeVisible()
+  expect(errors).toEqual([])
+  await close()
+})
+
 test('staff: every search box and filter has a name', async ({ browser }) => {
   const { page, errors, close } = await signedIn(browser, 'treasurer')
   const lists: [string, string, string][] = [
