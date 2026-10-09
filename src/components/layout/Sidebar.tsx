@@ -20,6 +20,7 @@ const EMPTY_BADGES: BadgeCounts = {
   overdueLoans: 0,
   pendingPayments: 0,
   notificationTasks: 0,
+  approvalsToDecide: 0,
 }
 
 function badgeLabel(count: number) {
@@ -39,7 +40,7 @@ function NavLink({ item, compact, path, badges }: { item: GroupedStaffNavItem; c
       aria-label={compact ? item.label : undefined}
       title={compact ? item.label : undefined}
       className={cn(
-        'relative flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors',
+        'relative flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors lg:min-h-8 lg:py-1.5',
         compact && 'justify-center px-2',
         active
           ? 'bg-white/15 font-medium text-white'
@@ -60,6 +61,32 @@ function NavLink({ item, compact, path, badges }: { item: GroupedStaffNavItem; c
   )
 }
 
+/**
+ * The scrolling part of the menu. When it does not fit, a fade at the
+ * bottom edge shows there is more below, and the current page is scrolled
+ * into view rather than hidden under the fold.
+ */
+function ScrollingMenu({ path, children }: { path: string; children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [moreBelow, setMoreBelow] = useState(false)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const update = () => setMoreBelow(el.scrollTop + el.clientHeight < el.scrollHeight - 16)
+    el.querySelector('[aria-current="page"]')?.scrollIntoView({ block: 'nearest' })
+    update()
+    el.addEventListener('scroll', update, { passive: true })
+    window.addEventListener('resize', update)
+    return () => { el.removeEventListener('scroll', update); window.removeEventListener('resize', update) }
+  }, [path])
+  return (
+    <div className="relative min-h-0 flex-1">
+      <div ref={ref} className="h-full overflow-y-auto overscroll-contain px-2 py-3">{children}</div>
+      {moreBelow && <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-[#1B2A4A] to-transparent" />}
+    </div>
+  )
+}
+
 type NavProps = {
   path: string
   badges: BadgeCounts
@@ -73,7 +100,7 @@ type NavProps = {
 function NavContent({ compact = false, desktop = false, path, badges, roleSummary, quickAction, mainItems, accountItems, onToggleCollapsed }: NavProps & { compact?: boolean; desktop?: boolean }) {
   return (
     <>
-      <div className="shrink-0 border-b border-white/10 px-3 py-4">
+      <div className="shrink-0 border-b border-white/10 px-3 py-4 lg:py-3">
         <div className={cn('flex min-w-0 items-center', compact ? 'justify-center' : 'gap-3')}>
           {desktop && (
             <button
@@ -94,20 +121,20 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
           {!compact && (
             <div className="min-w-0 text-left">
               <p className="text-sm font-semibold leading-tight text-white">{APP_NAME}</p>
-              <p className="truncate text-xs text-white/45">{roleSummary || 'Staff'}</p>
+              <p className="truncate text-xs text-white/70">{roleSummary || 'Staff'}</p>
             </div>
           )}
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 py-3">
+      <ScrollingMenu path={path}>
         {quickAction && (
           <Link
             href={quickAction.href}
             title={compact ? quickAction.label : undefined}
             aria-label={compact ? quickAction.label : undefined}
             className={cn(
-              'mb-4 flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-[#1B2A4A] transition-colors hover:bg-amber-300',
+              'mb-4 flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-[#1B2A4A] transition-colors hover:bg-amber-300 lg:mb-3 lg:min-h-9',
               compact && 'px-2'
             )}
           >
@@ -121,8 +148,8 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
             const groupItems = mainItems.filter((item) => item.group === group)
             if (!groupItems.length) return null
             return (
-              <div key={group} className={cn('mb-4', compact && 'border-b border-white/10 pb-3 last:border-0')}>
-                {!compact && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/35">{group}</p>}
+              <div key={group} className={cn('mb-4 lg:mb-2.5', compact && 'border-b border-white/10 pb-3 last:border-0')}>
+                {!compact && <p className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.16em] text-white/65">{group}</p>}
                 <div className="space-y-0.5">
                   {groupItems.map((item) => <NavLink key={item.href} item={item} compact={compact} path={path} badges={badges} />)}
                 </div>
@@ -130,14 +157,14 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
             )
           })}
         </nav>
-      </div>
+      </ScrollingMenu>
 
       <div className="shrink-0 space-y-0.5 border-t border-white/10 p-2">
         {accountItems.map((item) => <NavLink key={item.href} item={item} compact={compact} path={path} badges={badges} />)}
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className={cn(
-            'flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white',
+            'flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:min-h-8 lg:py-1.5',
             compact && 'justify-center px-2'
           )}
           aria-label={compact ? 'Sign out' : undefined}
@@ -236,6 +263,12 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
         requests.push(fetch('/api/payments?status=pending', { cache: 'no-store', signal: controller.signal })
           .then((res) => res.ok ? res.json() : null)
           .then((data) => { next.pendingPayments = Array.isArray(data?.payments) ? data.payments.length : 0 }))
+      }
+      if (permitted.has('approvals.view')) {
+        // Only the requests this person can decide: not their own, and within their roles.
+        requests.push(fetch('/api/approvals', { cache: 'no-store', signal: controller.signal })
+          .then((res) => res.ok ? res.json() : null)
+          .then((data) => { next.approvalsToDecide = Array.isArray(data?.requests) ? data.requests.filter((r: { canDecide?: boolean }) => r.canDecide).length : 0 }))
       }
       if (permitted.has('notifications.read')) {
         requests.push(fetch('/api/notifications', { cache: 'no-store', signal: controller.signal })

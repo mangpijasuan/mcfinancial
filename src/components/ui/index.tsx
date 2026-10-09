@@ -1,5 +1,5 @@
 'use client'
-import { cn } from '@/lib/utils'
+import { cn, eligibilityText } from '@/lib/utils'
 import { X } from 'lucide-react'
 import { useEffect, useId, useRef, useState } from 'react'
 
@@ -29,7 +29,7 @@ export function StatusBadge({ status }: { status: string }) {
 }
 export function EligibleBadge({ eligible }: { eligible: string }) {
   const v: BadgeVariant = eligible === 'YES' ? 'green' : 'red'
-  return <Badge variant={v}>{eligible === 'YES' ? '✓ Eligible' : eligible}</Badge>
+  return <Badge variant={v}>{eligible === 'YES' ? '✓ Eligible' : eligibilityText(eligible, true)}</Badge>
 }
 export function RiskBadge({ risk }: { risk: string }) {
   return <Badge variant={risk === 'HIGH' ? 'red' : 'green'}>{risk}</Badge>
@@ -37,12 +37,25 @@ export function RiskBadge({ risk }: { risk: string }) {
 export function PaidBadge({ paid }: { paid: string }) {
   return <Badge variant={paid === 'PAID' ? 'green' : 'red'}>{paid === 'PAID' ? '✓ Paid' : 'Not paid'}</Badge>
 }
+// Colour carries meaning: red needs action, amber is waiting on someone,
+// blue is in progress as expected, green is done, grey is closed.
 export function LoanStatusBadge({ status, overdue }: { status: string; overdue?: boolean }) {
   if (overdue) return <Badge variant="red">⚠ Overdue</Badge>
-  if (status === 'Active') return <Badge variant="amber">Active</Badge>
+  if (status === 'Active') return <Badge variant="blue">Active</Badge>
   if (status === 'Paid Off') return <Badge variant="green">Paid Off</Badge>
   if (status === 'Charged Off') return <Badge variant="red">Written off</Badge>
   return <Badge variant="gray">{status}</Badge>
+}
+
+/** A status word from the API ("completed", "pending_review") as shown on screen: "Completed", "Pending review". */
+export function statusLabel(status: string): string {
+  const words = status.replace(/[_-]+/g, ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1).toLowerCase()
+}
+
+/** "1 loan", "3 loans". */
+export function plural(count: number, one: string, many = `${one}s`): string {
+  return `${count} ${count === 1 ? one : many}`
 }
 
 /* ── Button ─────────────────────────────────────────────── */
@@ -134,16 +147,36 @@ export function Textarea({ label, error, className, id, ...props }: React.Textar
   )
 }
 
-/* ── Table ──────────────────────────────────────────────── */
-export function Table({ headers, children, loading }: { headers: string[]; children: React.ReactNode; loading?: boolean }) {
+/* ── Scroll area ────────────────────────────────────────── */
+/**
+ * A box that scrolls sideways (a wide table on a phone). It can take focus,
+ * so keyboard users can scroll it too, and is named for screen readers.
+ */
+export function ScrollArea({ label, children, className }: { label: string; children: React.ReactNode; className?: string }) {
   return (
-    <div className="overflow-x-auto scroll-shadow-x">
+    <div role="region" aria-label={label} tabIndex={0} className={cn('overflow-x-auto focus:outline-hidden focus-visible:ring-2 focus-visible:ring-indigo-500', className)}>
+      {children}
+    </div>
+  )
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+/**
+ * A column heading, optionally with classes (e.g. `hidden xl:table-cell` for
+ * a secondary column the matching cells also hide), so the columns that
+ * matter (status, balance, actions) stay in view on narrower screens.
+ */
+export type TableHeader = string | { label: string; className?: string }
+export function Table({ headers, children, loading, label = 'Table' }: { headers: TableHeader[]; children: React.ReactNode; loading?: boolean; label?: string }) {
+  return (
+    <ScrollArea label={label} className="scroll-shadow-x">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b border-gray-200 bg-gray-50/80">
-            {headers.map(h => (
-              <th key={h} className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap">{h}</th>
-            ))}
+            {headers.map(h => {
+              const { label, className } = typeof h === 'string' ? { label: h, className: undefined } : h
+              return <th key={label} scope="col" className={cn('text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap', className)}>{label}</th>
+            })}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
@@ -152,7 +185,7 @@ export function Table({ headers, children, loading }: { headers: string[]; child
           ) : children}
         </tbody>
       </table>
-    </div>
+    </ScrollArea>
   )
 }
 
@@ -232,9 +265,27 @@ const statColors: Record<string, string> = {
   blue:   'bg-blue-600',
   purple: 'bg-purple-600',
 }
-export function StatCard({ label, value, sub, color = 'navy', icon }: {
-  label: string; value: string | number; sub?: string; color?: string; icon?: React.ReactNode
+/**
+ * A headline figure. `tone` (preferred) keeps colour meaningful: "plain"
+ * for an ordinary figure, "alert" for one that needs attention now. The
+ * older `color` fills remain for pages not yet moved over.
+ */
+export function StatCard({ label, value, sub, color = 'navy', icon, tone }: {
+  label: string; value: string | number; sub?: string; color?: string; icon?: React.ReactNode; tone?: 'plain' | 'alert'
 }) {
+  if (tone) {
+    const alert = tone === 'alert'
+    return (
+      <div className={cn('rounded-xl border p-5 shadow-xs', alert ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white')}>
+        <div className="flex items-start justify-between gap-2">
+          <p className={cn('text-sm font-medium', alert ? 'text-red-800' : 'text-gray-600')}>{label}</p>
+          {icon && <span aria-hidden className={cn('text-lg', alert ? 'text-red-500' : 'text-gray-400')}>{icon}</span>}
+        </div>
+        <p className={cn('mt-2 text-3xl font-bold tracking-tight tabular-nums', alert ? 'text-red-700' : 'text-gray-900')}>{value}</p>
+        {sub && <p className={cn('mt-1 text-xs', alert ? 'text-red-700' : 'text-gray-500')}>{sub}</p>}
+      </div>
+    )
+  }
   return (
     <div className={cn('rounded-xl p-5 text-white', statColors[color] || statColors.navy)}>
       <div className="flex items-start justify-between">
@@ -280,7 +331,7 @@ export function FilterBar({ children }: { children: React.ReactNode }) {
 }
 
 /* ── Search input ───────────────────────────────────────── */
-export function SearchInput({ value, onChange, placeholder = 'Search…' }: { value: string; onChange: (v: string) => void; placeholder?: string }) {
+export function SearchInput({ value, onChange, placeholder = 'Search…', label }: { value: string; onChange: (v: string) => void; placeholder?: string; label?: string }) {
   const [draft, setDraft] = useState(value)
   const first = useRef(true)
 
@@ -299,11 +350,13 @@ export function SearchInput({ value, onChange, placeholder = 'Search…' }: { va
 
   return (
     <input
-      type="text" value={draft} onChange={e => setDraft(e.target.value)}
+      type="search" value={draft} onChange={e => setDraft(e.target.value)}
       placeholder={placeholder}
+      // A placeholder is not a label: screen readers need a name that stays.
+      aria-label={label ?? placeholder.replace(/…$/, '')}
       autoComplete="off"
       spellCheck={false}
-      className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white w-56"
+      className="min-h-10 px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 bg-white w-full sm:w-56"
     />
   )
 }

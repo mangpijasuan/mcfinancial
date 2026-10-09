@@ -153,11 +153,11 @@ export default function ContributionsPage() {
 
         <FilterBar>
           <SearchInput value={search} onChange={setSearch} placeholder="Search member or ID…" />
-          <Select value={month} onChange={e => setMonth(e.target.value)}>
+          <Select aria-label="Month" value={month} onChange={e => setMonth(e.target.value)}>
             <option value="">All months</option>
             {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
           </Select>
-          <Select value={method} onChange={e => setMethod(e.target.value)}>
+          <Select aria-label="Payment method" value={method} onChange={e => setMethod(e.target.value)}>
             <option value="">All methods</option>
             {METHODS.map(m => <option key={m} value={m}>{m}</option>)}
           </Select>
@@ -222,7 +222,7 @@ export default function ContributionsPage() {
               <p className="text-xs text-gray-500 mt-0.5">Full member list for {reportMonth}</p>
             </div>
             <div className="flex items-center gap-2 print:hidden">
-              <Select value={reportMonth} onChange={e => setReportMonth(e.target.value)}>
+              <Select aria-label="Report month" value={reportMonth} onChange={e => setReportMonth(e.target.value)}>
                 {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
               </Select>
               <Button variant="secondary" onClick={() => window.print()}>Print</Button>

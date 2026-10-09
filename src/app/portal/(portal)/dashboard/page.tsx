@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { fmt$, fmtDate } from '@/lib/utils'
+import { eligibilityText, fmt$, fmtDate } from '@/lib/utils'
 import { formatUSD } from '@/lib/money'
 import { DuesMonths, DuesSummary, type DuesData } from '@/components/contributions/DuesPanel'
 
@@ -32,8 +32,8 @@ function StatusPill({ paid }: { paid: string }) {
     </span>
   )
   return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-red-100 text-red-800">
-      <span className="w-2 h-2 rounded-full bg-red-500 inline-block" /> Not paid this month
+    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-900">
+      <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> This month not paid yet
     </span>
   )
 }
@@ -73,9 +73,11 @@ export default function PortalDashboard() {
       {/* KPI cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <InfoCard label="Member since"     value={fmtDate(member.joinDate)}          color="white" />
-        <InfoCard label="Months active"    value={member.monthsActive}               color="navy" />
-        <InfoCard label="Lifetime contributions" value={fmt$(member.archiveLifetime + member.contributions2026)} color="teal" />
-        <InfoCard label="Max loan amount"  value={fmt$(member.maxLoanAmount)}        color="white" />
+        <InfoCard label="Months active"    value={member.monthsActive}               color="white" />
+        <InfoCard label="Lifetime contributions" value={fmt$(member.archiveLifetime + member.contributions2026)} color="white" />
+        {eligible
+          ? <InfoCard label="You can borrow up to" value={fmt$(member.maxLoanAmount)} color="white" />
+          : <InfoCard label="Borrowing" value="Not now" sub={eligibilityText(member.eligible, true)} color="white" />}
       </div>
 
       {/* Monthly dues */}
@@ -83,7 +85,7 @@ export default function PortalDashboard() {
         <div className="bg-white rounded-xl p-5 shadow-xs border border-gray-200 space-y-3">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 className="text-sm font-semibold text-gray-700">Monthly dues{dues.monthlyCents !== null ? ` · ${formatUSD(dues.monthlyCents)} a month` : ''}</h2>
-            <Link href="/portal/history" className="text-xs text-indigo-600 underline">Receipts</Link>
+            <Link href="/portal/history" className="inline-flex min-h-6 items-center text-xs text-indigo-700 underline">Receipts</Link>
           </div>
           <DuesSummary d={dues} />
           <DuesMonths d={{ ...dues, obligations: dues.obligations.slice(0, 6) }} />
@@ -107,7 +109,7 @@ export default function PortalDashboard() {
             </div>
           ) : (
             <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">{member.eligible}</p>
+              <p className="text-sm font-semibold text-gray-700 mb-1">{eligibilityText(member.eligible)}</p>
               {member.currentLoanBalance > 0 && (
                 <p className="text-xs text-gray-500">Current loan balance: <strong>{fmt$(member.currentLoanBalance)}</strong></p>
               )}
@@ -122,7 +124,7 @@ export default function PortalDashboard() {
             <div>
               <div className="flex justify-between items-start mb-3">
                 <div>
-                  <p className="font-mono text-xs text-indigo-600">{activeLoan.loanId}</p>
+                  <p className="font-mono text-xs text-indigo-600 whitespace-nowrap">{activeLoan.loanId}</p>
                   <p className="text-2xl font-bold text-gray-900 mt-0.5">{fmt$(activeLoan.balanceRemaining)}</p>
                   <p className="text-xs text-gray-500">remaining of {fmt$(activeLoan.loanAmount)}</p>
                 </div>
@@ -148,7 +150,7 @@ export default function PortalDashboard() {
             <p className="text-sm text-gray-400">No active loan.</p>
           )}
           {activeLoan && activeLoan.status === 'Active' && (
-            <Link href="/portal/loan" className="mt-3 inline-block text-sm text-indigo-600 underline">See the schedule and payoff →</Link>
+            <Link href="/portal/loan" className="mt-3 inline-flex min-h-6 items-center text-sm text-indigo-700 underline">See the schedule and payoff →</Link>
           )}
         </div>
       </div>
@@ -179,7 +181,7 @@ export default function PortalDashboard() {
           </div>
         )}
         <div className="px-5 py-3 border-t border-gray-100">
-          <a href="/portal/history" className="text-sm text-indigo-600 hover:underline">View full payment history →</a>
+          <a href="/portal/history" className="inline-flex min-h-6 items-center text-sm text-indigo-700 hover:underline">View full payment history →</a>
         </div>
       </div>
     </div>

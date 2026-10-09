@@ -75,17 +75,17 @@ export default function MembersPage() {
 
       <FilterBar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search name or ID…" />
-        <Select value={status} onChange={e => setStatus(e.target.value)}>
+        <Select aria-label="Member status" value={status} onChange={e => setStatus(e.target.value)}>
           <option value="">All statuses</option>
           <option value="Active">Active</option>
           <option value="Inactive">Inactive</option>
         </Select>
-        <Select value={risk} onChange={e => setRisk(e.target.value)}>
+        <Select aria-label="Risk" value={risk} onChange={e => setRisk(e.target.value)}>
           <option value="">All risk levels</option>
           <option value="LOW">Low risk</option>
           <option value="HIGH">High risk</option>
         </Select>
-        <Select value={paid} onChange={e => setPaid(e.target.value)}>
+        <Select aria-label="Paid this month" value={paid} onChange={e => setPaid(e.target.value)}>
           <option value="">All payment status</option>
           <option value="PAID">Paid this month</option>
           <option value="NOT PAID">Not paid</option>

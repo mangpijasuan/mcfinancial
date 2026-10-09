@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useId, useState } from 'react'
+import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
 import { fmt$, fmtDate } from '@/lib/utils'
 import { CreditCard, Landmark, Clock, CheckCircle, XCircle } from 'lucide-react'
@@ -15,7 +16,7 @@ function StatusBadge({ status }: { status: string }) {
     rejected: 'bg-red-100 text-red-800',
     failed: 'bg-gray-100 text-gray-600',
   }
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] || map.failed}`}>{status}</span>
+  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] || map.failed}`}>{statusLabel(status)}</span>
 }
 
 type Zelle = { name: string; email: string } | null
@@ -233,7 +234,7 @@ export default function PortalPayPage() {
                     </p>
                     <p className="text-xs text-gray-400">{fmtDate(p.createdAt)}</p>
                     {p.status === 'rejected' && p.rejectionReason && (
-                      <p className="text-xs text-red-500 mt-0.5">Reason: {p.rejectionReason}</p>
+                      <p className="text-xs text-red-700 mt-0.5">Reason: {p.rejectionReason}</p>
                     )}
                   </div>
                 </div>

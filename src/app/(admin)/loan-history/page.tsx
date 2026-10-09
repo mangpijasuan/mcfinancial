@@ -36,7 +36,7 @@ export default function LoanHistoryPage() {
       <PageHeader
         title="Loan History"
         sub={`${totalLoans} loans · ${fmt$(totalLent)} lent ${START_YEAR}–${currentYear}`}
-        action={<Link href="/loan-history/review" className="text-sm text-indigo-700 underline">Link older loans to members</Link>}
+        action={<Link href="/loan-history/review" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">Link older loans to members</Link>}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
@@ -129,7 +129,7 @@ export default function LoanHistoryPage() {
                   }>{l.year}</Badge>
                 </td>
                 <td className="px-4 py-3 font-medium text-gray-900 whitespace-nowrap">
-                  {l.borrowerId ? <Link href={`/members/${l.borrowerId}`} className="hover:underline">{l.borrowerName}</Link> : l.borrowerName}
+                  {l.borrowerId ? <Link href={`/members/${l.borrowerId}`} className="inline-flex min-h-6 items-center hover:underline">{l.borrowerName}</Link> : l.borrowerName}
                 </td>
                 <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">
                   {l.cosignerId ? <Link href={`/members/${l.cosignerId}`} className="hover:underline">{l.cosignerName}</Link> : l.cosignerName || '—'}
@@ -140,7 +140,7 @@ export default function LoanHistoryPage() {
                 <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(l.loanDate)}</td>
                 <td className="px-4 py-3">
                   {l.importedLoanId
-                    ? <Link href={`/loans/${l.importedLoanId}`} className="text-xs text-indigo-700 underline whitespace-nowrap">In live loans</Link>
+                    ? <Link href={`/loans/${l.importedLoanId}`} className="inline-flex min-h-6 items-center text-xs text-indigo-700 underline whitespace-nowrap">In live loans</Link>
                     : <LoanStatusBadge status={l.status} />}
                 </td>
               </tr>

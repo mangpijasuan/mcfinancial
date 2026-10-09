@@ -44,7 +44,7 @@ export default function ComparisonView({ canRun }: { canRun: boolean }) {
     setStatus(body)
   }
 
-  const back = <Link href="/ledger" className="text-sm text-indigo-700 underline">← Ledger</Link>
+  const back = <Link href="/ledger" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">← Ledger</Link>
   if (status && !status.started) {
     return (
       <div className="p-4 sm:p-8 space-y-6">

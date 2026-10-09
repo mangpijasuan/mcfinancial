@@ -60,7 +60,7 @@ export default function WithdrawalsPage() {
 
       <FilterBar>
         <SearchInput value={search} onChange={setSearch} placeholder="Search member…" />
-        <Select value={type} onChange={e => setType(e.target.value)}>
+        <Select aria-label="Withdrawal type" value={type} onChange={e => setType(e.target.value)}>
           <option value="">All types</option>
           <option value="Partial">Partial</option>
           <option value="Full Exit">Full exit</option>

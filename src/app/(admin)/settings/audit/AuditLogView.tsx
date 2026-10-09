@@ -140,7 +140,7 @@ export default function AuditLogView() {
       />
 
       <FilterBar>
-        <Select value={action} onChange={(e) => setAction(e.target.value)}>
+        <Select aria-label="Action" value={action} onChange={(e) => setAction(e.target.value)}>
           {ACTION_GROUPS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
         </Select>
         <SearchInput value={actor} onChange={setActor} placeholder="Who (email or member ID)…" />

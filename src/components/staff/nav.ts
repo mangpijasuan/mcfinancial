@@ -7,7 +7,7 @@ import type { Permission } from '@/modules/permissions'
 export type StaffNavItem = { href: string; label: string; icon: LucideIcon; permission: Permission | null }
 
 export type StaffNavGroup = 'Overview' | 'Members' | 'Money' | 'Lending' | 'Operations' | 'Administration' | 'Account'
-export type StaffNavBadge = 'overdueLoans' | 'pendingPayments' | 'notificationTasks'
+export type StaffNavBadge = 'overdueLoans' | 'pendingPayments' | 'notificationTasks' | 'approvalsToDecide'
 export type GroupedStaffNavItem = StaffNavItem & { group: StaffNavGroup; badge?: StaffNavBadge }
 
 export const STAFF_NAV_GROUPS: StaffNavGroup[] = [
@@ -31,7 +31,7 @@ export const STAFF_NAV: GroupedStaffNavItem[] = [
   { group: 'Lending',        href: '/agreements',     label: 'Loan Agreements',       icon: FileText,        permission: 'agreements.read' },
   { group: 'Lending',        href: '/loan-payments',  label: 'Repayments',            icon: CreditCard,      permission: 'loan_payments.read' },
   { group: 'Lending',        href: '/loan-history',   label: 'Loan History',          icon: History,         permission: 'loans.read' },
-  { group: 'Operations',     href: '/approvals',      label: 'Approvals',             icon: CheckSquare,     permission: 'approvals.view' },
+  { group: 'Operations',     href: '/approvals',      label: 'Approvals',             icon: CheckSquare,     permission: 'approvals.view', badge: 'approvalsToDecide' },
   { group: 'Operations',     href: '/notifications',  label: 'Notifications',         icon: Bell,            permission: 'notifications.read', badge: 'notificationTasks' },
   { group: 'Administration', href: '/settings/staff', label: 'Staff & Roles',         icon: Shield,          permission: 'staff.read' },
   { group: 'Administration', href: '/settings/audit', label: 'Audit Log',             icon: ScrollText,      permission: 'audit.read' },
@@ -40,6 +40,18 @@ export const STAFF_NAV: GroupedStaffNavItem[] = [
 
 export function visibleNav(permissions: readonly string[]) {
   return STAFF_NAV.filter((item) => item.permission === null || permissions.includes(item.permission))
+}
+
+/**
+ * The permission a staff page needs, from the menu entry it belongs to
+ * (the longest matching path, so /members/MC-1/statements needs
+ * members.read). Null for pages outside the menu.
+ */
+export function pagePermission(path: string): Permission | null {
+  const item = STAFF_NAV
+    .filter((entry) => path === entry.href || path.startsWith(`${entry.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]
+  return item?.permission ?? null
 }
 
 /** Where to send someone after sign-in: their first permitted screen. */

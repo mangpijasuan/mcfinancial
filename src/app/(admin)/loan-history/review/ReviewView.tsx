@@ -50,7 +50,7 @@ export default function ReviewView({ canLink }: { canLink: boolean }) {
       <PageHeader
         title="Link older loans"
         sub="Migration step M9: the 2021–2025 loans, linked to members by member ID. Once linked, nothing matches names again."
-        action={<Link href="/loan-history" className="text-sm text-indigo-700 underline">← Loan History</Link>}
+        action={<Link href="/loan-history" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">← Loan History</Link>}
       />
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {message && <p role="status" className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</p>}

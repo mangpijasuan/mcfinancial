@@ -16,7 +16,7 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
     { href: '/portal/history',      label: 'Payment History' },
     { href: '/portal/loan',         label: 'My Loan' },
     { href: '/portal/statements',   label: 'Statements' },
-    { href: '/portal/agreements',   label: 'Loan Application' },
+    { href: '/portal/agreements',   label: 'Loan Agreements' },
   ]
 
   return (
@@ -25,7 +25,7 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
         <div className="flex items-center gap-6 min-w-0">
           <div className="flex items-center gap-2.5 min-w-0">
             <img src="/brand/mc-logo-on-dark.svg" alt={APP_NAME} className="w-11 h-7 object-contain shrink-0" />
-            <span className="text-white font-semibold text-sm truncate lg:hidden xl:inline">{APP_NAME}</span>
+            <span className="text-white font-semibold text-sm truncate lg:hidden 2xl:inline">{APP_NAME}</span>
           </div>
           <nav className="hidden lg:flex items-center gap-1">
             {nav.map(item => (

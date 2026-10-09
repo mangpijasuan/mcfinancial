@@ -44,7 +44,7 @@ export default function OpeningView({ canPropose }: { canPropose: boolean }) {
       <PageHeader
         title="Opening balances"
         sub="Migration step M4: the ledger's starting point at the cutover, then everything recorded since. Nothing is posted until a second person approves."
-        action={<Link href="/ledger" className="text-sm text-indigo-700 underline">← Ledger</Link>}
+        action={<Link href="/ledger" className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">← Ledger</Link>}
       />
       {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-700">{error}</p>}
       {message && <p className="rounded-lg bg-emerald-50 px-3 py-2 text-sm text-emerald-800">{message}</p>}

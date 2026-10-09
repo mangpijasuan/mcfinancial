@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState } from 'react'
+import { ScrollArea } from '@/components/ui'
 import Link from 'next/link'
 import { fmtDate } from '@/lib/utils'
 import { formatUSD, type Cents } from '@/lib/money'
@@ -29,7 +30,7 @@ function Tile({ label, value, tone = 'plain' }: { label: string; value: string; 
   const look = tone === 'navy' ? 'bg-[#1B2A4A] text-white' : tone === 'teal' ? 'bg-teal-700 text-white' : 'bg-white border border-gray-200 text-gray-900'
   return (
     <div className={`rounded-xl p-4 shadow-xs ${look}`}>
-      <p className={`text-xs font-semibold uppercase tracking-wide ${tone === 'plain' ? 'text-gray-500' : 'text-white/75'}`}>{label}</p>
+      <p className={`text-xs font-semibold uppercase tracking-wide ${tone === 'plain' ? 'text-gray-500' : 'text-white/90'}`}>{label}</p>
       <p className="text-xl font-bold mt-1 tabular-nums">{value}</p>
     </div>
   )
@@ -95,7 +96,7 @@ function LoanCard({ loan }: { loan: MemberLoan }) {
             <h3 className="text-sm font-semibold text-gray-700">Repayment schedule</h3>
             <p className="text-xs text-gray-500 mt-0.5">Interest-free. Each payment pays the oldest unpaid month first; the last month absorbs any rounding.</p>
           </div>
-          <div className="overflow-x-auto">
+          <ScrollArea label="Repayment schedule">
             <table className="w-full text-sm tabular-nums">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-gray-500 border-b border-gray-100">
@@ -118,7 +119,7 @@ function LoanCard({ loan }: { loan: MemberLoan }) {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollArea>
         </div>
       ) : loan.stage !== 'awaiting_payout' && (
         <p className="text-xs text-gray-500">This loan was made before the club kept month-by-month schedules, so only its totals are shown.</p>
