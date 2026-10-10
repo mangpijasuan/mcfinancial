@@ -1,5 +1,6 @@
 // Shared constants for the browser tests. The accounts are synthetic and
 // exist only in the e2e database (never real member data, S-7).
+import path from 'node:path'
 import * as OTPAuth from 'otpauth'
 
 export const PORT = Number(process.env.E2E_PORT || 3300)
@@ -56,5 +57,7 @@ export function e2eEnv(): Record<string, string> {
     // What the portal shows members to send a Zelle payment to.
     ZELLE_RECIPIENT_NAME: 'Millionaires Club',
     ZELLE_RECIPIENT_EMAIL: 'payments@e2e.test',
+    // A QR code standing in for the club's (it encodes a test address, not a Zelle code).
+    ZELLE_QR_FILE: path.resolve('e2e/assets/zelle-qr.png'),
   }
 }

@@ -26,7 +26,13 @@ A visual refresh of the member portal: the same pages, figures, permissions and 
 
 **Make a Payment:** a larger amount field, and *Card* / *Zelle* as two clear choices with a line under each.
 
-**Paying by Zelle:** Zelle has no web link that opens a payment: members send it from their own bank's app. So the portal does the next best thing. It shows three steps, and gives the club's name, its Zelle email or phone, and the amount each a **Copy** button, to paste straight into the bank's app (`ZELLE_RECIPIENT_NAME` and `ZELLE_RECIPIENT_EMAIL` in `.env.production`). The claim is still confirmed by an admin against the bank account.
+**Paying by Zelle:** Zelle has no web link that opens a payment: members send it from their own bank's app. So the portal makes that as short as it can, in three steps:
+
+1. **The club's Zelle details.** Members scan the club's **QR code** with their bank app (or save it and pick the photo in the app's Zelle scanner). They can also tap **Copy** beside the club's name, its Zelle email or phone, and the amount.
+2. **Open your bank.** The member picks their bank once, and the choice is remembered on that device. **Open Chase** (for example) then opens the bank's official website, which on a phone often opens the bank's app. Only the fixed addresses in `src/components/portal/banks.ts` are linked; "Other bank" opens nothing.
+3. **Submit the claim.** It is still confirmed by an admin against the club's bank account.
+
+The details come from `ZELLE_RECIPIENT_NAME` and `ZELLE_RECIPIENT_EMAIL`, and the QR code from `club/zelle-qr.png` on the server. The QR code is served only to signed-in members, and only when the file really is a PNG, JPEG or WebP image.
 
 **Payment History**
 
@@ -60,11 +66,11 @@ Taken from the browser-test data (a member with a loan, two contributions and a 
 | Loan Agreements | ![](portal/before/desktop_agreements.png) | ![](portal/after/desktop_agreements.png) |
 | Sign-in, phone | ![](portal/before/phone_login.png) | ![](portal/after/phone_login.png) |
 | Phone tab bar, *More* open | | ![](portal/after/phone_menu.png) |
-| Zelle: steps and copy buttons | | ![](portal/after/zelle_steps.png) |
+| Zelle: QR code, copy buttons, open your bank | | ![](portal/after/zelle_steps.png) |
 
 ## Checks
 
-- **Browser tests:** every browser test passes. One wording check now matches the shorter eligibility sentence, and the Zelle test now also copies the club's email and the amount. That covers signing in, paying by Zelle, signing a loan agreement, the loan schedule, statements, and receipts in the history.
+- **Browser tests:** every browser test passes. One wording check now matches the shorter eligibility sentence, and the Zelle test now also copies the club's email and the amount, shows the QR code, and opens the chosen bank at its official address. A new test checks that the QR code is refused to anyone not signed in. That covers signing in, paying by Zelle, signing a loan agreement, the loan schedule, statements, and receipts in the history.
 - **Accessibility:** the automated WCAG 2.1 A/AA checks pass on every portal page, including colour contrast.
 - **Phone layout:** no portal page scrolls sideways on a phone.
 - **Same data and permissions:** the pages call the same APIs, with the same permissions, as before.

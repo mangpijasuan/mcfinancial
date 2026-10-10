@@ -3,8 +3,9 @@ import { useEffect, useId, useState } from 'react'
 import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
 import { cn, fmt$, fmtDate } from '@/lib/utils'
-import { Check, CreditCard, Copy, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
+import { Check, CreditCard, Copy, Download, ExternalLink, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
 import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, surface, type Tone } from '@/components/portal/kit'
+import { BANKS, BANK_STORAGE_KEY, findBank } from '@/components/portal/banks'
 
 async function readJsonSafe(res: Response) {
   try { return await res.json() } catch { return null }
@@ -13,6 +14,43 @@ async function readJsonSafe(res: Response) {
 const STATUS_TONE: Record<string, Tone> = { pending: 'amber', completed: 'green', rejected: 'red', failed: 'gray' }
 
 type Zelle = { name: string; email: string } | null
+
+/**
+ * The member picks their bank once (remembered on this device only), then
+ * one tap opens the bank's official website, which on a phone often opens
+ * the bank's app. Only the fixed addresses in banks.ts are linked.
+ */
+function BankOpener() {
+  const [bankId, setBankId] = useState('')
+  const selectId = useId()
+  useEffect(() => {
+    try { setBankId(window.localStorage.getItem(BANK_STORAGE_KEY) ?? '') } catch { /* storage blocked: choose each time */ }
+  }, [])
+  function choose(id: string) {
+    setBankId(id)
+    try { window.localStorage.setItem(BANK_STORAGE_KEY, id) } catch { /* storage blocked: choose each time */ }
+  }
+  const bank = findBank(bankId)
+  return (
+    <div className="space-y-2">
+      <label htmlFor={selectId} className="sr-only">Your bank</label>
+      <div className="flex flex-wrap gap-2">
+        <select id={selectId} value={bankId} onChange={(e) => choose(e.target.value)} className={cn(field, 'w-auto min-w-0 flex-1 py-2')}>
+          <option value="">Choose your bank…</option>
+          {BANKS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          <option value="other">Other bank</option>
+        </select>
+        {bank && (
+          <a href={bank.url} target="_blank" rel="noopener noreferrer" className={cn(button.secondary, 'min-h-10')}>
+            Open {bank.name} <ExternalLink size={14} aria-hidden /><span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
+      </div>
+      {bank && <p className="text-xs text-gray-600">Opens {bank.name}’s own website. On a phone with its app installed, it may open the app.</p>}
+      {bankId === 'other' && <p className="text-xs text-gray-600">Open your bank’s app the usual way and look for Zelle.</p>}
+    </div>
+  )
+}
 
 function Step({ n }: { n: number }) {
   return <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-semibold text-white" aria-hidden>{n}</span>
@@ -46,12 +84,13 @@ function CopyLine({ label, value, display, copyLabel }: { label: string; value: 
   )
 }
 
-function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
+function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: {
   type: 'contribution' | 'loan_payment'
   loanId?: string
   defaultAmount: number
   maxAmount?: number
   zelle: Zelle
+  qr: boolean
   onDone: () => void
 }) {
   const [amount, setAmount] = useState(String(defaultAmount))
@@ -149,22 +188,43 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
 
       {method === 'zelle' && (
         <div className="space-y-4 rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-900/5">
-          {zelleConfigured ? (
-              <ol className="space-y-3 text-sm text-gray-700">
+          {zelleConfigured || qr ? (
+              <ol className="space-y-4 text-sm text-gray-700">
                 <li className="flex gap-3">
                   <Step n={1} />
                   <div className="min-w-0 flex-1 space-y-2">
-                    <p>Copy the club’s Zelle details:</p>
-                    <div className="divide-y divide-gray-100 rounded-xl bg-white ring-1 ring-inset ring-gray-900/10">
-                      {zelleName && <CopyLine label="Send to" value={zelleName} copyLabel="Copy name" />}
-                      {zelleEmail && <CopyLine label="Zelle email or phone" value={zelleEmail} copyLabel="Copy email" />}
-                      {Number(amount) > 0 && <CopyLine label="Amount" value={Number(amount).toFixed(2)} display={fmt$(Number(amount))} copyLabel="Copy amount" />}
-                    </div>
+                    {qr && (
+                      <>
+                        <p>Scan the club’s Zelle QR code with your bank’s app:</p>
+                        <div className="flex flex-col items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-inset ring-gray-900/10 sm:flex-row sm:items-center sm:gap-4">
+                          <img src="/api/portal/zelle-qr" alt="The club’s Zelle QR code" width={160} height={160} className="size-40 rounded-lg object-contain sm:size-32" />
+                          <div className="w-full min-w-0 flex-1 space-y-2 text-center text-xs text-gray-600 sm:text-left">
+                            <p>On a computer, scan it with your phone. On a phone, save it, then choose the photo in your bank app’s Zelle scanner (most banks can).</p>
+                            <a href="/api/portal/zelle-qr" download="millionaires-club-zelle-qr.png" className={cn(button.secondary, 'min-h-9 w-full px-3 text-xs sm:w-auto')}>
+                              <Download size={14} aria-hidden /> Save QR code
+                            </a>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {zelleConfigured && (
+                      <>
+                        <p>{qr ? 'Or copy the club’s Zelle details:' : 'Copy the club’s Zelle details:'}</p>
+                        <div className="divide-y divide-gray-100 rounded-xl bg-white ring-1 ring-inset ring-gray-900/10">
+                          {zelleName && <CopyLine label="Send to" value={zelleName} copyLabel="Copy name" />}
+                          {zelleEmail && <CopyLine label="Zelle email or phone" value={zelleEmail} copyLabel="Copy email" />}
+                          {Number(amount) > 0 && <CopyLine label="Amount" value={Number(amount).toFixed(2)} display={fmt$(Number(amount))} copyLabel="Copy amount" />}
+                        </div>
+                      </>
+                    )}
                   </div>
                 </li>
                 <li className="flex gap-3">
                   <Step n={2} />
-                  <p className="pt-0.5">Open your bank’s app, choose <strong>Zelle</strong>, and paste them in to send the payment.</p>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="pt-0.5">Open your bank’s app, choose <strong>Zelle</strong>, and send the payment.</p>
+                    <BankOpener />
+                  </div>
                 </li>
                 <li className="flex gap-3">
                   <Step n={3} />
@@ -200,6 +260,7 @@ export default function PortalPayPage() {
   const [member, setMember] = useState<any>(null)
   const [payments, setPayments] = useState<any[]>([])
   const [zelle, setZelle] = useState<Zelle>(null)
+  const [zelleQr, setZelleQr] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const status = searchParams.get('status')
@@ -215,6 +276,7 @@ export default function PortalPayPage() {
     if (paymentsData) {
       setPayments(paymentsData.payments || [])
       setZelle(paymentsData.zelle ?? null)
+      setZelleQr(paymentsData.zelleQr === true)
     }
     setLoading(false)
   }
@@ -248,7 +310,7 @@ export default function PortalPayPage() {
             <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Wallet size={18} aria-hidden /></span>
             Pay monthly contribution
           </h2>
-          <PayForm type="contribution" defaultAmount={20} zelle={zelle} onDone={load} />
+          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} onDone={load} />
         </section>
 
         <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
@@ -263,6 +325,7 @@ export default function PortalPayPage() {
               defaultAmount={Math.min(activeLoan.monthlyDue, activeLoan.balanceRemaining)}
               maxAmount={activeLoan.balanceRemaining}
               zelle={zelle}
+              qr={zelleQr}
               onDone={load}
             />
           ) : (

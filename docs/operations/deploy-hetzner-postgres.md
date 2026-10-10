@@ -104,6 +104,12 @@ In `.env.production`:
 - `SECURITY_ALERT_EMAIL` (receives an alert on every Super Admin sign-in)
 - `RESEND_API_KEY`, `ADMIN_EMAIL`, `EMAIL_FROM` for email
 - `STRIPE_*` and `ZELLE_RECIPIENT_NAME` / `ZELLE_RECIPIENT_EMAIL` for online payments, if used (the Zelle details are shown on the member's payment page; a server that still has the old `NEXT_PUBLIC_ZELLE_*` names must rename them)
+- Optional, the club's **Zelle QR code**, for members to scan in their bank app. In the club's bank app, open Zelle, choose to show the club's QR code, save the image, and copy it to the server; no restart is needed:
+  ```bash
+  # from the computer where the image is saved
+  scp zelle-qr.png root@SERVER_IP:~/mcfinancial/club/zelle-qr.png
+  ```
+  PNG, JPEG or WebP, under 2 MB. It is read from `club/` on the server (mounted read-only into the app, never part of the code) and shown only to signed-in members. Delete the file to stop showing it.
 - leave `MAKER_CHECKER_ENFORCED` and `LATE_FEES_ENABLED` at `"false"` until Gate #1 A4 and A7 are settled
 
 ## 6. Bring up the stack

@@ -26,6 +26,10 @@ services:
         condition: service_healthy
     env_file:
       - .env.production
+    volumes:
+      # Club files kept on the server, outside the code: the Zelle QR code
+      # (club/zelle-qr.png), read-only for the app.
+      - ./club:/app/club:ro
     environment:
       # Members and staff on separate addresses once APP_DOMAIN is set in .env.
       ADMIN_HOST: ${DOMAIN:?Set DOMAIN in .env}
