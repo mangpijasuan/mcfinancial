@@ -96,6 +96,10 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'portal/me': { GET: { member: true } },
   'portal/payments': { GET: { member: true } },
   'portal/zelle-qr': { GET: { member: true } },
+  'quickbooks': { GET: perm('payments.manage_quickbooks'), PATCH: perm('payments.manage_quickbooks'), DELETE: perm('payments.manage_quickbooks') },
+  'quickbooks/connect': { GET: perm('payments.manage_quickbooks') },
+  'quickbooks/callback': { GET: perm('payments.manage_quickbooks') },
+  'quickbooks/sync': { POST: perm('payments.manage_quickbooks') },
   'portal/payments/checkout': { POST: { member: true } },
   'staff': { GET: perm('staff.read'), POST: perm('staff.manage') },
   'staff/[id]': { PATCH: perm('staff.manage') }, // no DELETE: accounts are disabled, not deleted

@@ -9,6 +9,7 @@ import { memberAppOrigin } from '@/lib/hosts'
 import { badRequest, readJsonObject } from '@/lib/http'
 import { auditContext, recordAudit } from '@/modules/audit'
 import { withLoanBalances } from '@/modules/accounting/reads'
+import { createAchInvoice, quickBooksStatus } from '@/modules/payments/quickbooks'
 
 export async function POST(req: NextRequest) {
   const auth = await requireMember()
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
   const body = await readJsonObject(req)
   if (!body) return badRequest('Invalid request body.')
   const type = body.type === 'loan_payment' ? 'loan_payment' : body.type === 'contribution' ? 'contribution' : null
-  const method = body.method === 'zelle' ? 'zelle' : body.method === 'stripe' ? 'stripe' : null
+  const method = body.method === 'zelle' ? 'zelle' : body.method === 'stripe' ? 'stripe' : body.method === 'ach' ? 'ach' : null
   let amountCents: number
   try { amountCents = parseDollars(typeof body.amount === 'number' ? body.amount : String(body.amount ?? '')) }
   catch { return badRequest('Amount must be a dollar amount with at most two decimals.') }
@@ -47,6 +48,11 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Paying by bank needs the club's QuickBooks connected, with its products chosen.
+  if (method === 'ach' && !(await quickBooksStatus()).ready) {
+    return NextResponse.json({ error: 'Paying by bank is not available yet. Please use card or Zelle.' }, { status: 409 })
+  }
+
   const ctx = auditContext(req, auth.principal)
   const portalPayment = await prisma.$transaction(async (tx) => {
     const created = await tx.portalPayment.create({
@@ -69,6 +75,23 @@ export async function POST(req: NextRequest) {
 
   if (method === 'zelle') {
     return NextResponse.json({ portalPayment }, { status: 201 })
+  }
+
+  if (method === 'ach') {
+    try {
+      const member = await prisma.member.findUniqueOrThrow({ where: { id: memberId }, select: { id: true, legalName: true, email: true } })
+      const invoice = await createAchInvoice(portalPayment, member)
+      await prisma.portalPayment.update({
+        where: { id: portalPayment.id },
+        data: { qboInvoiceId: invoice.invoiceId, qboInvoiceLink: invoice.link },
+      })
+      // The member pays on QuickBooks' own page: their bank details never reach this app.
+      return NextResponse.json({ url: invoice.link }, { status: 201 })
+    } catch (err: any) {
+      await prisma.portalPayment.update({ where: { id: portalPayment.id }, data: { status: 'failed', rejectionReason: err?.message?.slice(0, 500) ?? null } })
+      console.error('QuickBooks invoice failed:', err?.message ?? err)
+      return NextResponse.json({ error: 'Paying by bank is not working right now. Please try again later, or use card or Zelle.' }, { status: 502 })
+    }
   }
 
   // Stripe

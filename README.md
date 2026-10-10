@@ -198,13 +198,15 @@ npm run loans:audit             # compare historical loan data against the sourc
 | `/loan-history` | The 2021–2025 loans; **Link older loans** links them to members by ID (M9) |
 | `/payments` | Pending Zelle claims to confirm/reject, plus card payment history |
 | `/reports` | From the ledger: balance sheet and loan portfolio with aging (as of any date), income statement and cash flow (any range); print and CSV download |
-| `/portal/pay` | Member-facing: pay a contribution or loan by card (Stripe) or Zelle |
+| `/portal/pay` | Member-facing: pay a contribution or loan by card (Stripe), bank transfer (ACH, through QuickBooks) or Zelle |
 | `/portal/loan` | Member-facing: My Loan. The member's loans with the month-by-month schedule, what is paid and late, the amount that pays it off today, payments, and the loans they co-sign; the same figures as the staff loan page |
 | `/portal/statements` | Member-facing: monthly and annual statements from the ledger, from the cutover on: the balance at the start and end and every movement on the member's capital, loans, fees and held money. Final once the month is closed (provisional until then); printable. Staff see the same statement at `/members/[id]/statements` |
 
 ---
 
-## Online payments (Stripe + Zelle)
+## Online payments (Stripe + Zelle + ACH)
+
+**Bank transfers (ACH)** go through the club's QuickBooks Online: members pay a QuickBooks invoice on QuickBooks' own page, and paid invoices are recorded automatically. Setup and how it works: [docs/operations/quickbooks.md](docs/operations/quickbooks.md).
 
 Members can pay their monthly contribution or an active loan from `/portal/pay`, by card or Zelle.
 

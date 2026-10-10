@@ -128,14 +128,15 @@ model Member {
   contributions             Contribution[]
   duesPlans                 DuesPlan[]
   duesObligations           DuesObligation[]
-  loansAsBorrower           Loan[]           @relation("Borrower")
-  loansAsCosigner           Loan[]           @relation("Cosigner")
-  historicalLoansAsBorrower HistoricalLoan[] @relation("HistoricalBorrower")
-  historicalLoansAsCosigner HistoricalLoan[] @relation("HistoricalCosigner")
+  loansAsBorrower           Loan[]              @relation("Borrower")
+  loansAsCosigner           Loan[]              @relation("Cosigner")
+  historicalLoansAsBorrower HistoricalLoan[]    @relation("HistoricalBorrower")
+  historicalLoansAsCosigner HistoricalLoan[]    @relation("HistoricalCosigner")
   loanPayments              LoanPayment[]
   yearlyTotals              YearlyTotal[]
   withdrawals               Withdrawal[]
   portalPayments            PortalPayment[]
+  quickBooksCustomer        QuickBooksCustomer?
   users                     User[]
 }
 
@@ -451,10 +452,16 @@ model PortalPayment {
   type                  String // "contribution" | "loan_payment"
   loanId                String?
   amount                Float
-  method                String // "stripe" | "zelle"
+  method                String // "stripe" | "zelle" | "ach" (a QuickBooks invoice paid by bank transfer)
   status                String    @default("pending") // "pending" | "completed" | "rejected" | "failed"
   stripeSessionId       String?   @unique
   stripePaymentIntentId String?
+  qboInvoiceId          String?   @unique
+  qboInvoiceLink        String?
+  qboPaymentId          String?
+  qboCheckedAt          DateTime?
+  /// Set when QuickBooks shows a recorded ACH payment's invoice unpaid again (a likely return), for the Treasurer.
+  qboReturnFlaggedAt    DateTime?
   zelleReference        String?
   rejectionReason       String?
   reviewedBy            String?
@@ -702,17 +709,46 @@ model BankReconciliation {
   @@index([period, seq])
 }
 
+/// The club's QuickBooks Online company, connected by the Treasurer (one row,
+/// id "club"). Tokens are encrypted with MFA_ENCRYPTION_KEY, like TOTP secrets.
+model QuickBooksConnection {
+  id                    String    @id @default("club")
+  realmId               String
+  environment           String // "sandbox" | "production"
+  accessTokenEnc        String
+  accessTokenExpiresAt  DateTime
+  refreshTokenEnc       String
+  refreshTokenExpiresAt DateTime?
+  duesItemId            String?
+  duesItemName          String?
+  loanItemId            String?
+  loanItemName          String?
+  connectedBy           String
+  connectedAt           DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+/// The QuickBooks customer each member's ACH invoices are made out to.
+model QuickBooksCustomer {
+  memberId   String   @id
+  realmId    String
+  customerId String
+  createdAt  DateTime @default(now())
+
+  member Member @relation(fields: [memberId], references: [id])
+}
+
 /// Durable inbox for verified Stripe deliveries; refunds/disputes remain reviewable evidence.
 model StripeWebhookEvent {
-  eventId     String   @id
+  eventId     String    @id
   type        String
   payload     Json
-  status      String   @default("pending")
-  attempts    Int      @default(0)
+  status      String    @default("pending")
+  attempts    Int       @default(0)
   lastError   String?
   processedAt DateTime?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   @@index([status, updatedAt])
 }

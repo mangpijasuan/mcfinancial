@@ -5,6 +5,8 @@ import * as OTPAuth from 'otpauth'
 
 export const PORT = Number(process.env.E2E_PORT || 3300)
 export const BASE_URL = `http://localhost:${PORT}`
+export const FAKE_QBO_PORT = Number(process.env.FAKE_QBO_PORT || 3399)
+export const FAKE_QBO = `http://localhost:${FAKE_QBO_PORT}`
 
 export const STAFF_PASSWORD = 'correct horse battery staple'
 export const TOTP_SECRET = 'JBSWY3DPEHPK3PXPJBSWY3DPEHPK3PXP'
@@ -59,5 +61,13 @@ export function e2eEnv(): Record<string, string> {
     ZELLE_RECIPIENT_EMAIL: 'payments@e2e.test',
     // A QR code standing in for the club's (it encodes a test address, not a Zelle code).
     ZELLE_QR_FILE: path.resolve('e2e/assets/zelle-qr.png'),
+    // QuickBooks (ACH): a stand-in on this machine, e2e/fake-quickbooks.mjs.
+    QBO_CLIENT_ID: 'e2e-client',
+    QBO_CLIENT_SECRET: 'e2e-secret', // gitleaks:allow (test-only, for the stand-in)
+    QBO_REDIRECT_URI: `${BASE_URL}/api/quickbooks/callback`,
+    QBO_AUTHORIZE_URL: `${FAKE_QBO}/connect`,
+    QBO_TOKEN_URL: `${FAKE_QBO}/token`,
+    QBO_REVOKE_URL: `${FAKE_QBO}/revoke`,
+    QBO_API_BASE: FAKE_QBO,
   }
 }

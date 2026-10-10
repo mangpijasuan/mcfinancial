@@ -103,6 +103,7 @@ In `.env.production`:
 - `DATABASE_URL`: replace `change-me` with the database password from `.env`
 - `SECURITY_ALERT_EMAIL` (receives an alert on every Super Admin sign-in)
 - `RESEND_API_KEY`, `ADMIN_EMAIL`, `EMAIL_FROM` for email
+- `QBO_*` for bank payments (ACH) through QuickBooks Online, if used: [quickbooks.md](quickbooks.md)
 - `STRIPE_*` and `ZELLE_RECIPIENT_NAME` / `ZELLE_RECIPIENT_EMAIL` for online payments, if used (the Zelle details are shown on the member's payment page; a server that still has the old `NEXT_PUBLIC_ZELLE_*` names must rename them)
 - Optional, the club's **Zelle QR code**, for members to scan in their bank app. In the club's bank app, open Zelle, choose to show the club's QR code, save the image, and copy it to the server; no restart is needed:
   ```bash
@@ -252,6 +253,8 @@ crontab -e
 # 20 6 * * * cd /path/to/mcfinancial && docker compose -f docker-compose.hetzner.yml exec -T app npm run dues:service >> /var/log/mc-dues.log 2>&1
 # 30 6 * * * cd /path/to/mcfinancial && docker compose -f docker-compose.hetzner.yml exec -T app npm run loans:service >> /var/log/mc-loans.log 2>&1
 # 45 6 * * * cd /path/to/mcfinancial && docker compose -f docker-compose.hetzner.yml exec -T app npm run ledger:compare >> /var/log/mc-ledger-compare.log 2>&1
+# Only with QuickBooks connected (quickbooks.md): record paid ACH invoices every five minutes
+# */5 * * * * cd /path/to/mcfinancial && docker compose -f docker-compose.hetzner.yml exec -T app npm run quickbooks:sync >> /var/log/mc-quickbooks.log 2>&1
 ```
 
 A non-zero exit means a member or loan could not be processed; the log names it.
