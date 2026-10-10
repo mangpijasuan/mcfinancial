@@ -13,7 +13,6 @@ import { ABOUT_TAB, GoogleSheetsError, PROTECTION_NOTE, exportToGoogleSheets, se
 
 const ctx = systemAuditContext('sheets-export')
 let google: ReturnType<typeof fakeGoogleSheets>
-let started: Date
 const GOOGLE_KEYS = ['GOOGLE_SHEETS_EXPORT_ID', 'GOOGLE_SERVICE_ACCOUNT_EMAIL', 'GOOGLE_SERVICE_ACCOUNT_KEY', 'GOOGLE_TOKEN_URL', 'GOOGLE_SHEETS_API']
 
 function setEnv(values: Record<string, string | undefined>) {
@@ -24,7 +23,6 @@ function setEnv(values: Record<string, string | undefined>) {
 }
 
 beforeEach(async () => {
-  started = new Date()
   await resetDatabase()
   await createBaseFixtures()
   google = fakeGoogleSheets()
@@ -118,12 +116,14 @@ describe('export tables', () => {
 
 describe('CSV downloads', () => {
   it('lets the Treasurer and Auditor download a table, records each download, and nobody else', async () => {
+    const downloads = () => prisma.auditLog.count({ where: { action: 'data.export', entityId: 'members' } })
+    const before = await downloads()
     signInAs('treasurer')
     const res = await callRoute('data/export/[table]', 'GET', { params: { table: 'members' } })
     expect(res.status).toBe(200)
     expect(String(res.json)).toContain('Member ID,Legal name')
     expect(String(res.json)).toContain(TEST_IDS.member)
-    expect(await prisma.auditLog.count({ where: { action: 'data.export', entityId: 'members', at: { gte: started } } })).toBe(1)
+    expect(await downloads()).toBe(before + 1)
     expect((await callRoute('data/export/[table]', 'GET', { params: { table: 'users' } })).status).toBe(404)
 
     signInAs('auditor')
@@ -156,6 +156,8 @@ describe('the Google Sheets copy', () => {
   })
 
   it('writes every table to its own tab, locks the tabs, and records the copy', async () => {
+    const copies = () => prisma.auditLog.count({ where: { action: 'data.sheets_export', entityId: SHEETS_TEST_ID } })
+    const before = await copies()
     await prisma.$transaction((tx) => recordContribution(tx, { memberId: TEST_IDS.member, amount: 20, paymentDate: new Date('2026-02-03T12:00:00Z'), paymentMethod: '=cmd|calc', comments: 't', source: 'Test' }))
     const now = new Date('2026-10-10T02:30:00Z')
     const result = await exportToGoogleSheets(ctx, now)
@@ -177,7 +179,7 @@ describe('the Google Sheets copy', () => {
     const about = google.state.values.get(ABOUT_TAB)!
     expect(about[1]).toEqual(['Copied at (UTC)', '2026-10-10 02:30'])
     expect(about).toContainEqual(['Members', 2, expect.any(String)])
-    expect(await prisma.auditLog.count({ where: { action: 'data.sheets_export', entityId: SHEETS_TEST_ID, at: { gte: started } } })).toBe(1)
+    expect(await copies()).toBe(before + 1)
 
     // The next copy replaces the values without adding or re-locking tabs.
     google.state.values.set('Members', [['typed by someone'], ['x'], ['y'], ['z']])
@@ -196,6 +198,9 @@ describe('the Google Sheets copy', () => {
   })
 
   it('says what is wrong, in words the Treasurer can act on', async () => {
+    // Counted before and after, not by time: the database's clock and the test's can differ slightly.
+    const copies = () => prisma.auditLog.count({ where: { action: 'data.sheets_export' } })
+    const before = await copies()
     setEnv({ GOOGLE_SHEETS_EXPORT_ID: undefined })
     await expect(exportToGoogleSheets(ctx)).rejects.toThrow('The Google Sheets copy is not set up on this server.')
     setEnv(google.env)
@@ -218,7 +223,7 @@ describe('the Google Sheets copy', () => {
     await expect(exportToGoogleSheets(ctx)).rejects.toThrow(/does not have permission.*shared with the service account/)
     google.state.failures.push({ match: /values:batchClear/, status: 500 })
     await expect(exportToGoogleSheets(ctx)).rejects.toThrow(/^Google Sheets: HTTP 500\.$/)
-    expect(await prisma.auditLog.count({ where: { action: 'data.sheets_export', at: { gte: started } } })).toBe(0)
+    expect(await copies()).toBe(before) // nothing failed was recorded as a copy
   })
 
   it('reports whether it is set up and when it last ran', async () => {
@@ -229,7 +234,9 @@ describe('the Google Sheets copy', () => {
       url: `https://docs.google.com/spreadsheets/d/${SHEETS_TEST_ID}`,
     })
     await exportToGoogleSheets(ctx)
-    expect((await sheetsStatus()).lastExportAt!.getTime()).toBeGreaterThanOrEqual(started.getTime())
+    // The newest copy's own audit entry: both times come from the database's clock.
+    const newest = await prisma.auditLog.findFirstOrThrow({ where: { action: 'data.sheets_export' }, orderBy: { id: 'desc' } })
+    expect((await sheetsStatus()).lastExportAt).toEqual(newest.at)
     setEnv({ GOOGLE_SHEETS_EXPORT_ID: undefined })
     expect(await sheetsStatus()).toMatchObject({ configured: false, serviceAccount: null, url: null })
   })
