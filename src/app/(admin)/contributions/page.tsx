@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus } from 'lucide-react'
+import { Plus, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { Card, Table, EmptyState, Button, Modal, Input, Select, PageHeader,
          FilterBar, SearchInput, Badge, Textarea } from '@/components/ui'
@@ -146,6 +146,7 @@ export default function ContributionsPage() {
           action={
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => window.print()}>Print monthly report</Button>
+              {can('contributions.record') && <Link href="/contributions/import" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50"><Upload size={15} aria-hidden /> Import</Link>}
               {can('contributions.record') && <Button onClick={() => setShowAdd(true)}><Plus size={15} /> Record payment</Button>}
             </div>
           }

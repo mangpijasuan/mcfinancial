@@ -1,5 +1,7 @@
 # Data export: spreadsheets and the Google Sheets copy
 
+(Bringing records **into** the app from a spreadsheet: [data-import.md](data-import.md).)
+
 The club's records stay in the app's database, PostgreSQL, which is the official record. To read them in a spreadsheet, there are two ways:
 
 - **Download a spreadsheet:** **Administration → Data Export** downloads any table as a CSV file. It opens in Excel, Numbers or Google Sheets.

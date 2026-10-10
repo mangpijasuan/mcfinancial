@@ -26,7 +26,7 @@ export default defineConfig({
         'src/modules/accounting/reconciliation.ts', 'src/modules/loans/history.ts',
         'src/modules/accounting/reads.ts',
         'src/modules/auth/memberLogins.ts', 'src/modules/membership/numbers.ts', 'src/modules/data/fileCheck.ts', 'src/lib/hosts.ts', 'src/modules/loans/memberView.ts', 'src/modules/accounting/statements.ts', 'src/modules/accounting/reports.ts',
-        'src/modules/payments/stripe.ts', 'src/modules/payments/complete.ts', 'src/modules/payments/quickbooks.ts', 'src/modules/data/export.ts', 'src/modules/data/exportTables.ts', 'src/modules/data/googleSheets.ts', 'src/modules/policy/boardRules.ts',
+        'src/modules/payments/stripe.ts', 'src/modules/payments/complete.ts', 'src/modules/payments/quickbooks.ts', 'src/modules/data/export.ts', 'src/modules/data/exportTables.ts', 'src/modules/data/googleSheets.ts', 'src/modules/data/csv.ts', 'src/modules/data/import.ts', 'src/lib/importRoute.ts', 'src/modules/policy/boardRules.ts',
       ],
       exclude: ['**/*.test.ts'],
       thresholds: { statements: 100, branches: 100, functions: 100, lines: 100 },
