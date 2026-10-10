@@ -126,7 +126,7 @@ test('staff: the main workflow pages pass automated accessibility checks', async
 test('member: plain-language loan eligibility, figures to the cent, no sideways scrolling', async ({ browser }) => {
   const { page, errors, close } = await signedIn(browser, 'member', { width: 390, height: 844 })
   await page.goto('/portal/dashboard')
-  await expect(page.getByText('Not now: you have a loan, or co-sign one, still being repaid.')).toBeVisible()
+  await expect(page.getByText('You have a loan, or co-sign one, still being repaid.')).toBeVisible()
   await expect(page.getByText(/NO - /)).toHaveCount(0)
   for (const path of ['/portal/dashboard', '/portal/pay', '/portal/loan', '/portal/agreements', '/portal/history']) {
     await page.goto(path)

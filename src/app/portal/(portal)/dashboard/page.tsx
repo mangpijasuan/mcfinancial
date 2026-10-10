@@ -1,41 +1,30 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, HandCoins, Landmark, Receipt, Undo2, Wallet } from 'lucide-react'
 import { eligibilityText, fmt$, fmtDate } from '@/lib/utils'
 import { formatUSD } from '@/lib/money'
-import { DuesMonths, DuesSummary, type DuesData } from '@/components/contributions/DuesPanel'
+import { periodLabel } from '@/modules/contributions/dues'
+import type { DuesData } from '@/components/contributions/DuesPanel'
+import { Empty, PageSkeleton, Panel, Pill, Progress, Row, Rows, Stat, button, surface, type Tone } from '@/components/portal/kit'
+import { cn } from '@/lib/utils'
 
-function InfoCard({ label, value, sub, color = 'white' }: { label: string; value: string | number; sub?: string; color?: string }) {
-  const colors: Record<string, string> = {
-    white:  'bg-white border border-gray-200',
-    green:  'bg-green-600 text-white',
-    amber:  'bg-amber-500 text-white',
-    red:    'bg-red-600 text-white',
-    navy:   'bg-[#1B2A4A] text-white',
-    teal:   'bg-teal-600 text-white',
-  }
-  const textColor = color === 'white' ? 'text-gray-900' : 'text-white'
-  const subColor  = color === 'white' ? 'text-gray-500' : 'text-white/70'
-  return (
-    <div className={`rounded-xl p-5 shadow-xs ${colors[color]}`}>
-      <p className={`text-xs font-semibold uppercase tracking-wide ${color === 'white' ? 'text-gray-400' : 'text-white/70'}`}>{label}</p>
-      <p className={`text-2xl font-bold mt-1 ${textColor}`}>{value}</p>
-      {sub && <p className={`text-xs mt-0.5 ${subColor}`}>{sub}</p>}
-    </div>
-  )
+const DUES_STATUS: Record<string, { tone: Tone; label: string }> = {
+  paid: { tone: 'green', label: 'Paid' },
+  partly_paid: { tone: 'amber', label: 'Part paid' },
+  overdue: { tone: 'red', label: 'Unpaid' },
+  due: { tone: 'gray', label: 'Due' },
+  upcoming: { tone: 'gray', label: 'Upcoming' },
 }
 
-function StatusPill({ paid }: { paid: string }) {
-  if (paid === 'PAID') return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-800">
-      <span className="w-2 h-2 rounded-full bg-green-500 inline-block" /> Paid this month
-    </span>
-  )
-  return (
-    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-amber-100 text-amber-900">
-      <span className="w-2 h-2 rounded-full bg-amber-500 inline-block" /> This month not paid yet
-    </span>
-  )
+function DuesLine({ d }: { d: DuesData }) {
+  if (d.overdueMonths > 0) {
+    return <p className="text-sm text-red-800"><strong>{formatUSD(d.arrearsCents)}</strong> unpaid for {d.overdueMonths} past {d.overdueMonths === 1 ? 'month' : 'months'}.</p>
+  }
+  if (d.coveredThrough && d.coveredThrough >= d.currentPeriod) {
+    return <p className="text-sm text-emerald-800">Paid through <strong>{periodLabel(d.coveredThrough)}</strong>{d.creditCents > 0 ? ` · ${formatUSD(d.creditCents)} credit` : ''}.</p>
+  }
+  return <p className="text-sm text-gray-700">{periodLabel(d.currentPeriod)} is due.</p>
 }
 
 export default function PortalDashboard() {
@@ -47,143 +36,135 @@ export default function PortalDashboard() {
     fetch('/api/portal/dues').then(r => (r.ok ? r.json() : null)).then(setDues).catch(() => setDues(null))
   }, [])
 
-  if (!member) return (
-    <div className="space-y-4">
-      <div className="h-8 bg-gray-200 rounded-lg w-48 animate-pulse" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {[...Array(4)].map((_, i) => <div key={i} className="h-24 bg-gray-200 rounded-xl animate-pulse" />)}
-      </div>
-    </div>
-  )
+  if (!member) return <PageSkeleton />
 
   const activeLoan = member.loansAsBorrower?.[0]
+  const hasLoan = activeLoan && activeLoan.status === 'Active'
   const eligible = member.eligible === 'YES'
+  const paidThisMonth = member.thisMonth === 'PAID'
+  const lifetime = member.archiveLifetime + member.contributions2026
+  // Join dates are stored as midnight UTC: read the year in UTC, or it slips back a year west of London.
+  const joinYear = new Date(member.joinDate).getUTCFullYear()
+  const repaid = hasLoan && activeLoan.loanAmount > 0 ? (activeLoan.totalPaid / activeLoan.loanAmount) * 100 : 0
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">{member.legalName}</h1>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-sm text-gray-500">{member.id} {member.nickname && `· "${member.nickname}"`}</span>
-          <StatusPill paid={member.thisMonth} />
-        </div>
-      </div>
-
-      {/* KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <InfoCard label="Member since"     value={fmtDate(member.joinDate)}          color="white" />
-        <InfoCard label="Months active"    value={member.monthsActive}               color="white" />
-        <InfoCard label="Lifetime contributions" value={fmt$(member.archiveLifetime + member.contributions2026)} color="white" />
-        {eligible
-          ? <InfoCard label="You can borrow up to" value={fmt$(member.maxLoanAmount)} color="white" />
-          : <InfoCard label="Borrowing" value="Not now" sub={eligibilityText(member.eligible, true)} color="white" />}
-      </div>
-
-      {/* Monthly dues */}
-      {dues && dues.obligations.length > 0 && (
-        <div className="bg-white rounded-xl p-5 shadow-xs border border-gray-200 space-y-3">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="text-sm font-semibold text-gray-700">Monthly dues{dues.monthlyCents !== null ? ` · ${formatUSD(dues.monthlyCents)} a month` : ''}</h2>
-            <Link href="/portal/history" className="inline-flex min-h-6 items-center text-xs text-indigo-700 underline">Receipts</Link>
+      {/* Who, where they stand, and what to do next. */}
+      <section className="relative overflow-hidden rounded-3xl bg-navy bg-[radial-gradient(130%_140%_at_100%_0%,#2f4778_0%,#1b2a4a_55%,#15213b_100%)] p-6 text-white shadow-lg shadow-navy/20 sm:p-8">
+        {/* A thin gold line along the top: the club's colours, decoration only. */}
+        <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-gold via-gold/60 to-transparent" />
+        <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+          <div className="min-w-0 space-y-3">
+            <div>
+              <p className="text-sm text-white/80">Welcome back</p>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{member.legalName}</h1>
+              <p className="mt-1 text-sm text-white/80">
+                {member.id}{member.nickname && ` · “${member.nickname}”`} · Member since {fmtDate(member.joinDate)}
+              </p>
+            </div>
+            <span className={cn(
+              'inline-flex items-center gap-2 rounded-full px-3 py-1 text-sm font-medium ring-1 ring-inset',
+              paidThisMonth ? 'bg-emerald-400/15 text-emerald-100 ring-emerald-300/30' : 'bg-gold/15 text-amber-100 ring-gold/40',
+            )}>
+              <span className={cn('size-2 rounded-full', paidThisMonth ? 'bg-emerald-300' : 'bg-gold')} aria-hidden />
+              {paidThisMonth ? 'Paid this month' : 'This month not paid yet'}
+            </span>
           </div>
-          <DuesSummary d={dues} />
-          <DuesMonths d={{ ...dues, obligations: dues.obligations.slice(0, 6) }} />
-          <p className="text-xs text-gray-400">Each payment counts towards your oldest unpaid month first; anything extra covers the months ahead.</p>
+          <div className="md:text-right">
+            <p className="text-sm text-white/80">Total contributed</p>
+            <p className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{fmt$(lifetime)}</p>
+            <div className="mt-4 flex flex-wrap gap-2 md:justify-end">
+              <Link href="/portal/pay" className={button.gold}><CreditCard size={16} aria-hidden /> Make a payment</Link>
+              <Link href="/portal/statements" className={button.ghostDark}><FileText size={16} aria-hidden /> Statements</Link>
+            </div>
+          </div>
         </div>
+      </section>
+
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3">
+        <Stat icon={CalendarCheck} label="Months active" value={member.monthsActive} hint={`Since ${joinYear}`} />
+        <Stat icon={Coins} label="Paid this year" value={fmt$(member.contributions2026)} hint="Contributions in 2026" />
+        <div className="col-span-2 md:col-span-1">
+          {/* The full reason, in plain words, when the member cannot borrow now. */}
+          <Stat icon={HandCoins} label="Borrowing"
+            value={eligible ? `Up to ${fmt$(member.maxLoanAmount)}` : 'Not now'}
+            hint={eligible ? 'Interest-free. Contact your club admin to apply.' : eligibilityText(member.eligible)} />
+        </div>
+      </div>
+
+      {dues && dues.obligations.length > 0 && (
+        <Panel title="Monthly dues" icon={Wallet}
+          sub={dues.monthlyCents !== null ? `${formatUSD(dues.monthlyCents)} a month` : undefined}
+          action={<Link href="/portal/history" className={button.link}>Receipts <ArrowRight size={14} aria-hidden /></Link>}>
+          <div className="space-y-4">
+            <DuesLine d={dues} />
+            <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {dues.obligations.slice(0, 6).map((o) => {
+                const s = DUES_STATUS[o.status] ?? DUES_STATUS.due
+                return (
+                  <li key={o.period} className="rounded-xl bg-gray-50 px-2 py-3 text-center ring-1 ring-inset ring-gray-900/5">
+                    <p className="text-xs font-medium text-gray-500">{periodLabel(o.period)}</p>
+                    <p className="my-1 text-sm font-semibold text-gray-900 tabular-nums">{formatUSD(o.amountCents)}</p>
+                    <Pill tone={s.tone}>{s.label}</Pill>
+                  </li>
+                )
+              })}
+            </ul>
+            <p className="text-xs text-gray-500">Each payment counts towards your oldest unpaid month first; anything extra covers the months ahead.</p>
+          </div>
+        </Panel>
       )}
 
-      {/* Status + recent contributions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-        {/* Loan eligibility */}
-        <div className={`rounded-xl p-5 shadow-xs border ${eligible ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Loan eligibility</h2>
-          {eligible ? (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-2xl font-bold text-green-700">✓ Eligible</span>
+      <Panel title="Your loan" icon={Landmark}
+        action={hasLoan && activeLoan.overdue ? <Pill tone="red" dot>Overdue</Pill> : hasLoan ? <Pill tone="blue" dot>Being repaid</Pill> : undefined}>
+        {hasLoan ? (
+          <div className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
+            <div className="space-y-3">
+              <p className="font-mono text-xs text-gray-500">{activeLoan.loanId}</p>
+              <div>
+                <p className="text-3xl font-semibold tracking-tight text-gray-900 tabular-nums">{fmt$(activeLoan.balanceRemaining)}</p>
+                <p className="text-sm text-gray-500">left to repay of {fmt$(activeLoan.loanAmount)}</p>
               </div>
-              <p className="text-sm text-green-700">You can borrow up to <strong>{fmt$(member.maxLoanAmount)}</strong></p>
-              <p className="text-xs text-green-600 mt-1">Contact your club admin to apply.</p>
+              <Progress value={repaid} label="Share of the loan repaid" />
+              <Link href="/portal/loan" className={button.link}>See the schedule and payoff →</Link>
             </div>
-          ) : (
-            <div>
-              <p className="text-sm font-semibold text-gray-700 mb-1">{eligibilityText(member.eligible)}</p>
-              {member.currentLoanBalance > 0 && (
-                <p className="text-xs text-gray-500">Current loan balance: <strong>{fmt$(member.currentLoanBalance)}</strong></p>
-              )}
-            </div>
-          )}
-        </div>
+            <dl className="grid grid-cols-2 content-center gap-x-4 gap-y-4 border-t border-gray-100 pt-5 text-sm md:border-l md:border-t-0 md:pl-6 md:pt-0">
+              <div><dt className="text-xs text-gray-500">Monthly payment</dt><dd className="font-semibold text-gray-900 tabular-nums">{fmt$(activeLoan.monthlyDue)}</dd></div>
+              <div><dt className="text-xs text-gray-500">Next payment</dt><dd className="font-semibold text-gray-900">{fmtDate(activeLoan.nextDueDate)}</dd></div>
+              <div><dt className="text-xs text-gray-500">Paid so far</dt><dd className="font-semibold text-emerald-700 tabular-nums">{fmt$(activeLoan.totalPaid)}</dd></div>
+              <div><dt className="text-xs text-gray-500">Last payment due</dt><dd className="font-semibold text-gray-900">{fmtDate(activeLoan.endDate)}</dd></div>
+            </dl>
+          </div>
+        ) : (
+          <Empty icon={Landmark} title="No loan being repaid">
+            {eligible ? <>You can borrow up to <strong className="text-gray-900">{fmt$(member.maxLoanAmount)}</strong>, interest-free.</> : 'Your borrowing status is shown above.'}
+          </Empty>
+        )}
+      </Panel>
 
-        {/* Active loan */}
-        <div className="bg-white rounded-xl p-5 shadow-xs border border-gray-200">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Active loan</h2>
-          {activeLoan && activeLoan.status === 'Active' ? (
-            <div>
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-mono text-xs text-indigo-600 whitespace-nowrap">{activeLoan.loanId}</p>
-                  <p className="text-2xl font-bold text-gray-900 mt-0.5">{fmt$(activeLoan.balanceRemaining)}</p>
-                  <p className="text-xs text-gray-500">remaining of {fmt$(activeLoan.loanAmount)}</p>
-                </div>
-                {activeLoan.overdue && (
-                  <span className="bg-red-100 text-red-800 text-xs font-semibold px-2 py-1 rounded-full">⚠ Overdue</span>
-                )}
-              </div>
-              {/* Progress bar */}
-              <div className="w-full bg-gray-100 rounded-full h-2 mb-3">
-                <div
-                  className="bg-green-500 h-2 rounded-full"
-                  style={{ width: `${Math.round((activeLoan.totalPaid / activeLoan.loanAmount) * 100)}%` }}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs text-gray-500">
-                <div><span className="text-gray-400">Monthly due</span><br /><strong className="text-gray-800">{fmt$(activeLoan.monthlyDue)}</strong></div>
-                <div><span className="text-gray-400">Next payment</span><br /><strong className="text-gray-800">{fmtDate(activeLoan.nextDueDate)}</strong></div>
-                <div><span className="text-gray-400">Total paid</span><br /><strong className="text-green-700">{fmt$(activeLoan.totalPaid)}</strong></div>
-                <div><span className="text-gray-400">Term end</span><br /><strong className="text-gray-800">{fmtDate(activeLoan.endDate)}</strong></div>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-gray-400">No active loan.</p>
-          )}
-          {activeLoan && activeLoan.status === 'Active' && (
-            <Link href="/portal/loan" className="mt-3 inline-flex min-h-6 items-center text-sm text-indigo-700 underline">See the schedule and payoff →</Link>
-          )}
-        </div>
-      </div>
-
-      {/* Recent contributions */}
-      <div className="bg-white rounded-xl shadow-xs border border-gray-200">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Recent contributions (2026)</h2>
+      <section className={cn(surface, 'overflow-hidden')} aria-labelledby="recent">
+        <div className="px-5 pt-5 pb-3">
+          <h2 id="recent" className="text-[15px] font-semibold text-gray-900">Recent contributions</h2>
         </div>
         {member.contributions?.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No contributions recorded yet.</p>
+          <div className="border-t border-gray-100"><Empty icon={Receipt} title="No contributions recorded yet" /></div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <Rows>
             {member.contributions?.map((c: any) => (
-              <div key={c.id} className="flex items-center justify-between px-5 py-3">
-                <div className="min-w-0">
-                  <p className="text-sm font-medium text-gray-900">
-                    {c.reversedAt ? 'Reversed' : c.category === 'voluntary' ? 'Voluntary contribution' : (c.receiptCovers || c.monthYear)}
-                  </p>
-                  <p className="text-xs text-gray-400">
-                    Paid {fmtDate(c.paymentDate)} · {c.paymentMethod || '—'}
-                    {c.receiptNumber && <> · <Link className="text-indigo-600 underline" href={`/portal/receipts/${c.transactionId}`}>Receipt</Link></>}
-                  </p>
-                </div>
-                <span className={`font-semibold ${c.reversedAt ? 'text-gray-400 line-through' : 'text-green-700'}`}>{fmt$(c.amount)}</span>
-              </div>
+              <Row key={c.id}
+                icon={c.reversedAt ? Undo2 : CircleCheck} tone={c.reversedAt ? 'gray' : 'green'}
+                title={c.reversedAt ? 'Reversed' : c.category === 'voluntary' ? 'Voluntary contribution' : (c.receiptCovers || c.monthYear)}
+                meta={<>Paid {fmtDate(c.paymentDate)} · {c.paymentMethod || '—'}
+                  {c.receiptNumber && <> · <Link className="font-medium text-navy underline underline-offset-2" href={`/portal/receipts/${c.transactionId}`}>Receipt</Link></>}</>}
+                end={<span className={cn('text-sm font-semibold tabular-nums', c.reversedAt ? 'text-gray-400 line-through' : 'text-gray-900')}>{fmt$(c.amount)}</span>}
+              />
             ))}
-          </div>
+          </Rows>
         )}
-        <div className="px-5 py-3 border-t border-gray-100">
-          <a href="/portal/history" className="inline-flex min-h-6 items-center text-sm text-indigo-700 hover:underline">View full payment history →</a>
+        <div className="border-t border-gray-100 px-5 py-3">
+          <Link href="/portal/history" className={button.link}>View full payment history →</Link>
         </div>
-      </div>
+      </section>
     </div>
   )
 }

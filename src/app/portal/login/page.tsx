@@ -2,7 +2,9 @@
 import { useState } from 'react'
 import { signIn } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { ArrowRight, Lock } from 'lucide-react'
 import { APP_NAME } from '@/lib/brand'
+import { button, field } from '@/components/portal/kit'
 
 export default function PortalLoginPage() {
   const router = useRouter()
@@ -24,45 +26,45 @@ export default function PortalLoginPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#1B2A4A] flex items-center justify-center p-4">
-      <div className="w-full max-w-sm">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <img src="/brand/mc-logo-on-dark.svg" alt={APP_NAME} className="inline-block w-28 h-16 mb-4 object-contain" />
-          <h1 className="text-2xl font-bold text-white">{APP_NAME}</h1>
-          <p className="text-white/75 text-sm mt-1">Member Portal</p>
-        </div>
+    <div className="relative min-h-screen overflow-hidden bg-navy bg-[radial-gradient(120%_80%_at_50%_0%,#2d4475_0%,#1b2a4a_60%,#121d35_100%)]">
+      <main className="relative flex min-h-screen items-center justify-center px-4 py-12">
+        <div className="w-full max-w-sm">
+          <div className="mb-8 text-center">
+            <img src="/brand/mc-logo-on-dark.svg" alt="" className="mx-auto mb-5 h-14 w-24 object-contain" />
+            <h1 className="text-2xl font-semibold tracking-tight text-white">{APP_NAME}</h1>
+            <p className="mt-1 text-sm text-white/80">Sign in to your member account</p>
+          </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-8 shadow-2xl space-y-4">
-          <div>
-            <label htmlFor="memberId" className="block text-sm font-medium text-gray-700 mb-1">Member ID</label>
-            <input
-              id="memberId" type="text" autoComplete="username" value={memberId} onChange={e => setMemberId(e.target.value)} required
-              placeholder="e.g. MC-10001"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500 uppercase"
-            />
-          </div>
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              id="password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required
-              placeholder="••••••••"
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
-            />
-          </div>
-          {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
-          <button
-            type="submit" disabled={loading}
-            className="w-full bg-[#1B2A4A] hover:bg-[#243660] text-white font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-60 mt-2"
-          >
-            {loading ? 'Signing in…' : 'Sign in'}
-          </button>
-          <p className="text-center text-xs text-gray-400 pt-1">
-            Admin?{' '}
-            <a href="/login" className="text-indigo-600 hover:underline">Sign in here</a>
+          <form onSubmit={handleSubmit} className="space-y-5 rounded-3xl bg-white p-6 shadow-2xl shadow-black/20 sm:p-8">
+            <div className="space-y-1.5">
+              <label htmlFor="memberId" className="block text-sm font-medium text-gray-800">Member ID</label>
+              <input
+                id="memberId" type="text" autoComplete="username" value={memberId} onChange={e => setMemberId(e.target.value)} required
+                placeholder="e.g. MC-10001" autoCapitalize="characters" spellCheck={false}
+                className={`${field} uppercase placeholder:normal-case`}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-800">Password</label>
+              <input
+                id="password" type="password" autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} required
+                className={field}
+              />
+            </div>
+            {error && <p role="alert" className="rounded-xl bg-red-50 px-3.5 py-2.5 text-sm text-red-800 ring-1 ring-inset ring-red-600/15">{error}</p>}
+            <button type="submit" disabled={loading} className={`${button.primary} w-full min-h-11`}>
+              {loading ? 'Signing in…' : <>Sign in <ArrowRight size={16} aria-hidden /></>}
+            </button>
+            <p className="flex items-start justify-center gap-1.5 text-center text-xs text-gray-500">
+              <Lock size={12} className="mt-0.5 shrink-0" aria-hidden /> Forgot your password? A club officer can reset it for you.
+            </p>
+          </form>
+
+          <p className="mt-6 text-center text-sm text-white/80">
+            Club staff? <a href="/login" className="inline-flex min-h-6 items-center font-medium text-white underline-offset-4 hover:underline">Staff sign-in</a>
           </p>
-        </form>
-      </div>
+        </div>
+      </main>
     </div>
   )
 }

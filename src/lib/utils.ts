@@ -43,17 +43,20 @@ export function fmtCompact$(n: number) {
 
 /**
  * A stored loan-eligibility code ("YES", "NO - Active Loan/Cosign") in
- * plain words. `short` for a badge, the full reason for the member.
+ * plain words. `short` for a badge, the full reason for the member (shown
+ * under "Not now", so it does not repeat it).
  */
 export function eligibilityText(code: string | null | undefined, short = false): string {
   if (code === 'YES') return 'Eligible'
   const reasons: Record<string, [string, string]> = {
-    'NO - Active Loan/Cosign': ['Has a loan or co-sign', 'Not now: you have a loan, or co-sign one, still being repaid.'],
-    'NO - Inactive': ['Inactive', 'Not now: your membership is inactive.'],
-    'NO - Loan written off': ['Past loan written off', 'Not now: a past loan was written off. Please speak to the Treasurer.'],
+    'NO - Active Loan/Cosign': ['Has a loan or co-sign', 'You have a loan, or co-sign one, still being repaid.'],
+    'NO - Inactive': ['Inactive', 'Your membership is inactive.'],
+    'NO - Loan written off': ['Past loan written off', 'A past loan was written off. Please speak to the Treasurer.'],
+    'NO - Need 6 Months': ['Under 6 months', 'Members can borrow after 6 months of membership.'],
   }
   const known = code ? reasons[code] : undefined
   if (known) return short ? known[0] : known[1]
-  const rest = (code ?? '').replace(/^NO\s*-\s*/i, '').trim()
+  // A bare "NO", or "NO - <reason>": the reason without the code.
+  const rest = (code ?? '').replace(/^NO\b\s*(-\s*)?/i, '').trim()
   return short ? (rest || 'Not eligible') : `Not eligible now${rest ? `: ${rest}` : ''}.`
 }

@@ -2,22 +2,15 @@
 import { useEffect, useId, useState } from 'react'
 import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
-import { fmt$, fmtDate } from '@/lib/utils'
-import { CreditCard, Landmark, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { cn, fmt$, fmtDate } from '@/lib/utils'
+import { CreditCard, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
+import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, surface, type Tone } from '@/components/portal/kit'
 
 async function readJsonSafe(res: Response) {
   try { return await res.json() } catch { return null }
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-800',
-    completed: 'bg-green-100 text-green-800',
-    rejected: 'bg-red-100 text-red-800',
-    failed: 'bg-gray-100 text-gray-600',
-  }
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] || map.failed}`}>{statusLabel(status)}</span>
-}
+const STATUS_TONE: Record<string, Tone> = { pending: 'amber', completed: 'green', rejected: 'red', failed: 'gray' }
 
 type Zelle = { name: string; email: string } | null
 
@@ -72,69 +65,76 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
 
   if (zelleSubmitted) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-        <CheckCircle size={18} className="text-green-600 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-600/20">
+        <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden />
         <div>
-          <p className="text-sm font-semibold text-green-800">Payment claim submitted</p>
-          <p className="text-xs text-green-600 mt-0.5">An admin will confirm it once they see the Zelle transfer in the club’s account. It’ll show as pending until then.</p>
+          <p className="text-sm font-semibold text-emerald-900">Payment claim submitted</p>
+          <p className="mt-0.5 text-sm text-emerald-800">An admin will confirm it once they see the Zelle transfer in the club’s account. It’ll show as pending until then.</p>
         </div>
       </div>
     )
   }
 
+  const methods = [
+    { id: 'stripe' as const, label: 'Card', icon: CreditCard, hint: 'Debit or credit card' },
+    { id: 'zelle' as const, label: 'Zelle', icon: Landmark, hint: 'Bank transfer' },
+  ]
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div>
-        <label htmlFor={amountId} className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount</label>
+        <label htmlFor={amountId} className="mb-1.5 block text-sm font-medium text-gray-800">Amount</label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-400" aria-hidden>$</span>
           <input
-            id={amountId} type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
-            className="w-full pl-6 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            id={amountId} type="number" inputMode="decimal" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
+            className={cn(field, 'py-3 pl-8 text-lg font-semibold tabular-nums')}
           />
         </div>
-        {maxAmount !== undefined && <p className="text-xs text-gray-400 mt-1">Remaining balance: {fmt$(maxAmount)}</p>}
+        {maxAmount !== undefined && <p className="mt-1.5 text-xs text-gray-500">Remaining balance: <span className="font-medium tabular-nums text-gray-700">{fmt$(maxAmount)}</span></p>}
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button" onClick={() => setMethod('stripe')}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${method === 'stripe' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-        >
-          <CreditCard size={15} /> Card
-        </button>
-        <button
-          type="button" onClick={() => setMethod('zelle')}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${method === 'zelle' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-        >
-          <Landmark size={15} /> Zelle
-        </button>
+      <div>
+        <p className="mb-1.5 text-sm font-medium text-gray-800" id={`${amountId}-method`}>Pay with</p>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby={`${amountId}-method`}>
+          {methods.map((m) => (
+            <button
+              key={m.id} type="button" onClick={() => setMethod(m.id)} aria-pressed={method === m.id}
+              className={cn(
+                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left ring-1 ring-inset transition-colors',
+                method === m.id ? 'bg-navy/[0.04] ring-2 ring-navy' : 'bg-white ring-gray-300 hover:bg-gray-50',
+              )}
+            >
+              <m.icon size={18} className={method === m.id ? 'text-navy' : 'text-gray-500'} aria-hidden />
+              <span className="leading-tight">
+                <span className="block text-sm font-semibold text-gray-900">{m.label}</span>
+                <span className="block text-[11px] text-gray-600" aria-hidden>{m.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {method === 'zelle' && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-          {zelleConfigured ? (
-            <p className="text-xs text-gray-600">
-              Send via Zelle to <strong>{zelleName}</strong>{zelleEmail && <> · <strong>{zelleEmail}</strong></>}, then submit a claim below. It won’t be credited until an admin confirms it.
-            </p>
-          ) : (
-            <p className="text-xs text-gray-600">Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</p>
-          )}
+        <div className="space-y-3 rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-900/5">
+          <p className="flex gap-2 text-sm text-gray-700">
+            <Info size={16} className="mt-0.5 shrink-0 text-gray-500" aria-hidden />
+            {zelleConfigured
+              ? <span>Send via Zelle to <strong>{zelleName}</strong>{zelleEmail && <> · <strong>{zelleEmail}</strong></>}, then submit a claim below. It won’t be credited until an admin confirms it.</span>
+              : <span>Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</span>}
+          </p>
           <input
             value={zelleReference} onChange={e => setZelleReference(e.target.value)}
             placeholder="Optional: confirmation number or note"
             aria-label="Zelle confirmation number or note"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            className={field}
           />
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
-      <button
-        onClick={submit} disabled={submitting}
-        className="w-full bg-[#1B2A4A] hover:bg-[#243660] text-white font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-60 text-sm"
-      >
+      <button onClick={submit} disabled={submitting} className={cn(button.primary, 'w-full min-h-11')}>
         {submitting ? 'Please wait…' : method === 'stripe' ? 'Continue to card payment' : 'Submit Zelle claim'}
       </button>
     </div>
@@ -167,37 +167,41 @@ export default function PortalPayPage() {
 
   useEffect(() => { load() }, [])
 
-  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded-sm w-48 animate-pulse" /></div>
+  if (loading) return <PageSkeleton />
 
   const activeLoan = member?.loansAsBorrower?.[0]
   const hasActiveLoan = activeLoan && activeLoan.status === 'Active' && activeLoan.balanceRemaining > 0
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Make a Payment</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Pay your monthly contribution or your loan by card or Zelle.</p>
-      </div>
+      <PageHeader title="Make a Payment" sub="Pay your monthly contribution or your loan by card or Zelle." />
 
       {status === 'success' && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
-          Payment received! It may take a minute to show up below.
+        <div role="status" className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-600/20">
+          <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden /> Payment received! It may take a minute to show up below.
         </div>
       )}
       {status === 'cancelled' && (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-600">
-          Checkout was cancelled — no charge was made.
+        <div role="status" className="flex items-start gap-3 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700 ring-1 ring-inset ring-gray-900/10">
+          <XCircle size={18} className="mt-0.5 shrink-0 text-gray-500" aria-hidden /> Checkout was cancelled — no charge was made.
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Pay monthly contribution</h2>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* The heading and its form share a parent, so the form is found by its heading. */}
+        <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
+          <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Wallet size={18} aria-hidden /></span>
+            Pay monthly contribution
+          </h2>
           <PayForm type="contribution" defaultAmount={20} zelle={zelle} onDone={load} />
-        </div>
+        </section>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Pay toward my loan</h2>
+        <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
+          <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Landmark size={18} aria-hidden /></span>
+            Pay toward my loan
+          </h2>
           {hasActiveLoan ? (
             <PayForm
               type="loan_payment"
@@ -208,45 +212,35 @@ export default function PortalPayPage() {
               onDone={load}
             />
           ) : (
-            <p className="text-sm text-gray-400">No active loan to pay toward.</p>
+            <Empty icon={Landmark} title="No active loan to pay toward" />
           )}
-        </div>
+        </section>
       </div>
 
-      <div className="bg-white rounded-xl shadow-xs border border-gray-200">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Your payment requests</h2>
+      <section className={cn(surface, 'overflow-hidden')} aria-labelledby="requests">
+        <div className="px-5 pt-5 pb-3">
+          <h2 id="requests" className="text-[15px] font-semibold text-gray-900">Your payment requests</h2>
+          <p className="text-xs text-gray-500">Card payments and Zelle claims made here, and whether they have been credited.</p>
         </div>
         {payments.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No online payments yet.</p>
+          <div className="border-t border-gray-100"><Empty icon={Receipt} title="No online payments yet" /></div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <Rows>
             {payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between px-5 py-3">
-                <div className="flex items-center gap-3">
-                  {p.status === 'completed' ? <CheckCircle size={16} className="text-green-500 shrink-0" />
-                    : p.status === 'rejected' || p.status === 'failed' ? <XCircle size={16} className="text-red-400 shrink-0" />
-                    : <Clock size={16} className="text-amber-500 shrink-0" />}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}
-                      <span className="text-gray-400 font-normal"> · {p.method === 'stripe' ? 'Card' : 'Zelle'}</span>
-                    </p>
-                    <p className="text-xs text-gray-400">{fmtDate(p.createdAt)}</p>
-                    {p.status === 'rejected' && p.rejectionReason && (
-                      <p className="text-xs text-red-700 mt-0.5">Reason: {p.rejectionReason}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">{fmt$(p.amount)}</span>
-                  <StatusBadge status={p.status} />
-                </div>
-              </div>
+              <Row key={p.id}
+                icon={p.status === 'completed' ? CheckCircle : p.status === 'rejected' || p.status === 'failed' ? XCircle : Clock}
+                tone={STATUS_TONE[p.status] ?? 'gray'}
+                title={<>{p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}<span className="font-normal text-gray-500"> · {p.method === 'stripe' ? 'Card' : 'Zelle'}</span></>}
+                meta={<>{fmtDate(p.createdAt)}{p.status === 'rejected' && p.rejectionReason && <span className="block text-red-700">Reason: {p.rejectionReason}</span>}</>}
+                end={<>
+                  <span className="text-sm font-semibold text-gray-900 tabular-nums">{fmt$(p.amount)}</span>
+                  <Pill tone={STATUS_TONE[p.status] ?? 'gray'}>{statusLabel(p.status)}</Pill>
+                </>}
+              />
             ))}
-          </div>
+          </Rows>
         )}
-      </div>
+      </section>
     </div>
   )
 }
