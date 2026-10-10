@@ -2,31 +2,95 @@
 import { useEffect, useId, useState } from 'react'
 import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
-import { fmt$, fmtDate } from '@/lib/utils'
-import { CreditCard, Landmark, Clock, CheckCircle, XCircle } from 'lucide-react'
+import { cn, fmt$, fmtDate } from '@/lib/utils'
+import { Check, CreditCard, Copy, Download, ExternalLink, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
+import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, surface, type Tone } from '@/components/portal/kit'
+import { BANKS, BANK_STORAGE_KEY, findBank } from '@/components/portal/banks'
 
 async function readJsonSafe(res: Response) {
   try { return await res.json() } catch { return null }
 }
 
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, string> = {
-    pending: 'bg-amber-100 text-amber-800',
-    completed: 'bg-green-100 text-green-800',
-    rejected: 'bg-red-100 text-red-800',
-    failed: 'bg-gray-100 text-gray-600',
-  }
-  return <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${map[status] || map.failed}`}>{statusLabel(status)}</span>
-}
+const STATUS_TONE: Record<string, Tone> = { pending: 'amber', completed: 'green', rejected: 'red', failed: 'gray' }
 
 type Zelle = { name: string; email: string } | null
 
-function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
+/**
+ * The member picks their bank once (remembered on this device only), then
+ * one tap opens the bank's official website, which on a phone often opens
+ * the bank's app. Only the fixed addresses in banks.ts are linked.
+ */
+function BankOpener() {
+  const [bankId, setBankId] = useState('')
+  const selectId = useId()
+  useEffect(() => {
+    try { setBankId(window.localStorage.getItem(BANK_STORAGE_KEY) ?? '') } catch { /* storage blocked: choose each time */ }
+  }, [])
+  function choose(id: string) {
+    setBankId(id)
+    try { window.localStorage.setItem(BANK_STORAGE_KEY, id) } catch { /* storage blocked: choose each time */ }
+  }
+  const bank = findBank(bankId)
+  return (
+    <div className="space-y-2">
+      <label htmlFor={selectId} className="sr-only">Your bank</label>
+      <div className="flex flex-wrap gap-2">
+        <select id={selectId} value={bankId} onChange={(e) => choose(e.target.value)} className={cn(field, 'w-auto min-w-0 flex-1 py-2')}>
+          <option value="">Choose your bank…</option>
+          {BANKS.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+          <option value="other">Other bank</option>
+        </select>
+        {bank && (
+          <a href={bank.url} target="_blank" rel="noopener noreferrer" className={cn(button.secondary, 'min-h-10')}>
+            Open {bank.name} <ExternalLink size={14} aria-hidden /><span className="sr-only"> (opens in a new tab)</span>
+          </a>
+        )}
+      </div>
+      {bank && <p className="text-xs text-gray-600">Opens {bank.name}’s own website. On a phone with its app installed, it may open the app.</p>}
+      {bankId === 'other' && <p className="text-xs text-gray-600">Open your bank’s app the usual way and look for Zelle.</p>}
+    </div>
+  )
+}
+
+function Step({ n }: { n: number }) {
+  return <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-semibold text-white" aria-hidden>{n}</span>
+}
+
+/** One Zelle detail with a button that copies it, so the member can paste it into their bank's app. */
+function CopyLine({ label, value, display, copyLabel }: { label: string; value: string; display?: string; copyLabel: string }) {
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // No clipboard (an old browser, or not on https): the value stays on screen to type in.
+    }
+  }
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-gray-500">{label}</p>
+        <p className="text-sm font-semibold break-words text-gray-900">{display ?? value}</p>
+      </div>
+      <button type="button" onClick={copy} aria-label={copyLabel}
+        className={cn('inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset transition-colors',
+          copied ? 'bg-emerald-50 text-emerald-800 ring-emerald-600/20' : 'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50')}>
+        {copied ? <><Check size={14} aria-hidden /> Copied</> : <><Copy size={14} aria-hidden /> Copy</>}
+      </button>
+      <span className="sr-only" aria-live="polite">{copied ? `${label} copied` : ''}</span>
+    </div>
+  )
+}
+
+function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: {
   type: 'contribution' | 'loan_payment'
   loanId?: string
   defaultAmount: number
   maxAmount?: number
   zelle: Zelle
+  qr: boolean
   onDone: () => void
 }) {
   const [amount, setAmount] = useState(String(defaultAmount))
@@ -72,69 +136,119 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
 
   if (zelleSubmitted) {
     return (
-      <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-start gap-3">
-        <CheckCircle size={18} className="text-green-600 shrink-0 mt-0.5" />
+      <div className="flex items-start gap-3 rounded-xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-600/20">
+        <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden />
         <div>
-          <p className="text-sm font-semibold text-green-800">Payment claim submitted</p>
-          <p className="text-xs text-green-600 mt-0.5">An admin will confirm it once they see the Zelle transfer in the club’s account. It’ll show as pending until then.</p>
+          <p className="text-sm font-semibold text-emerald-900">Payment claim submitted</p>
+          <p className="mt-0.5 text-sm text-emerald-800">An admin will confirm it once they see the Zelle transfer in the club’s account. It’ll show as pending until then.</p>
         </div>
       </div>
     )
   }
 
+  const methods = [
+    { id: 'stripe' as const, label: 'Card', icon: CreditCard, hint: 'Debit or credit card' },
+    { id: 'zelle' as const, label: 'Zelle', icon: Landmark, hint: 'Bank transfer' },
+  ]
+
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div>
-        <label htmlFor={amountId} className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1">Amount</label>
+        <label htmlFor={amountId} className="mb-1.5 block text-sm font-medium text-gray-800">Amount</label>
         <div className="relative">
-          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">$</span>
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-400" aria-hidden>$</span>
           <input
-            id={amountId} type="number" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
-            className="w-full pl-6 pr-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            id={amountId} type="number" inputMode="decimal" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
+            className={cn(field, 'py-3 pl-8 text-lg font-semibold tabular-nums')}
           />
         </div>
-        {maxAmount !== undefined && <p className="text-xs text-gray-400 mt-1">Remaining balance: {fmt$(maxAmount)}</p>}
+        {maxAmount !== undefined && <p className="mt-1.5 text-xs text-gray-500">Remaining balance: <span className="font-medium tabular-nums text-gray-700">{fmt$(maxAmount)}</span></p>}
       </div>
 
-      <div className="flex gap-2">
-        <button
-          type="button" onClick={() => setMethod('stripe')}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${method === 'stripe' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-        >
-          <CreditCard size={15} /> Card
-        </button>
-        <button
-          type="button" onClick={() => setMethod('zelle')}
-          className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${method === 'zelle' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-600 hover:bg-gray-50'}`}
-        >
-          <Landmark size={15} /> Zelle
-        </button>
+      <div>
+        <p className="mb-1.5 text-sm font-medium text-gray-800" id={`${amountId}-method`}>Pay with</p>
+        <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby={`${amountId}-method`}>
+          {methods.map((m) => (
+            <button
+              key={m.id} type="button" onClick={() => setMethod(m.id)} aria-pressed={method === m.id}
+              className={cn(
+                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-left ring-1 ring-inset transition-colors',
+                method === m.id ? 'bg-navy/[0.04] ring-2 ring-navy' : 'bg-white ring-gray-300 hover:bg-gray-50',
+              )}
+            >
+              <m.icon size={18} className={method === m.id ? 'text-navy' : 'text-gray-500'} aria-hidden />
+              <span className="leading-tight">
+                <span className="block text-sm font-semibold text-gray-900">{m.label}</span>
+                <span className="block text-[11px] text-gray-600" aria-hidden>{m.hint}</span>
+              </span>
+            </button>
+          ))}
+        </div>
       </div>
 
       {method === 'zelle' && (
-        <div className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-2">
-          {zelleConfigured ? (
-            <p className="text-xs text-gray-600">
-              Send via Zelle to <strong>{zelleName}</strong>{zelleEmail && <> · <strong>{zelleEmail}</strong></>}, then submit a claim below. It won’t be credited until an admin confirms it.
-            </p>
+        <div className="space-y-4 rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-900/5">
+          {zelleConfigured || qr ? (
+              <ol className="space-y-4 text-sm text-gray-700">
+                <li className="flex gap-3">
+                  <Step n={1} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    {qr && (
+                      <>
+                        <p>Scan the club’s Zelle QR code with your bank’s app:</p>
+                        <div className="flex flex-col items-center gap-3 rounded-xl bg-white p-3 ring-1 ring-inset ring-gray-900/10 sm:flex-row sm:items-center sm:gap-4">
+                          <img src="/api/portal/zelle-qr" alt="The club’s Zelle QR code" width={160} height={160} className="size-40 rounded-lg object-contain sm:size-32" />
+                          <div className="w-full min-w-0 flex-1 space-y-2 text-center text-xs text-gray-600 sm:text-left">
+                            <p>On a computer, scan it with your phone. On a phone, save it, then choose the photo in your bank app’s Zelle scanner (most banks can).</p>
+                            <a href="/api/portal/zelle-qr" download="millionaires-club-zelle-qr.png" className={cn(button.secondary, 'min-h-9 w-full px-3 text-xs sm:w-auto')}>
+                              <Download size={14} aria-hidden /> Save QR code
+                            </a>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                    {zelleConfigured && (
+                      <>
+                        <p>{qr ? 'Or copy the club’s Zelle details:' : 'Copy the club’s Zelle details:'}</p>
+                        <div className="divide-y divide-gray-100 rounded-xl bg-white ring-1 ring-inset ring-gray-900/10">
+                          {zelleName && <CopyLine label="Send to" value={zelleName} copyLabel="Copy name" />}
+                          {zelleEmail && <CopyLine label="Zelle email or phone" value={zelleEmail} copyLabel="Copy email" />}
+                          {Number(amount) > 0 && <CopyLine label="Amount" value={Number(amount).toFixed(2)} display={fmt$(Number(amount))} copyLabel="Copy amount" />}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <Step n={2} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p className="pt-0.5">Open your bank’s app, choose <strong>Zelle</strong>, and send the payment.</p>
+                    <BankOpener />
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <Step n={3} />
+                  <p className="pt-0.5">Come back and submit your claim below. It won’t be credited until an admin confirms it.</p>
+                </li>
+              </ol>
           ) : (
-            <p className="text-xs text-gray-600">Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</p>
+            <p className="flex gap-2 text-sm text-gray-700">
+              <Info size={16} className="mt-0.5 shrink-0 text-gray-500" aria-hidden />
+              <span>Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</span>
+            </p>
           )}
           <input
             value={zelleReference} onChange={e => setZelleReference(e.target.value)}
             placeholder="Optional: confirmation number or note"
             aria-label="Zelle confirmation number or note"
-            className="w-full px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
+            className={field}
           />
         </div>
       )}
 
-      {error && <p className="text-xs text-red-600">{error}</p>}
+      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
-      <button
-        onClick={submit} disabled={submitting}
-        className="w-full bg-[#1B2A4A] hover:bg-[#243660] text-white font-semibold py-2.5 rounded-xl transition-colors disabled:opacity-60 text-sm"
-      >
+      <button onClick={submit} disabled={submitting} className={cn(button.primary, 'w-full min-h-11')}>
         {submitting ? 'Please wait…' : method === 'stripe' ? 'Continue to card payment' : 'Submit Zelle claim'}
       </button>
     </div>
@@ -146,6 +260,7 @@ export default function PortalPayPage() {
   const [member, setMember] = useState<any>(null)
   const [payments, setPayments] = useState<any[]>([])
   const [zelle, setZelle] = useState<Zelle>(null)
+  const [zelleQr, setZelleQr] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const status = searchParams.get('status')
@@ -161,43 +276,48 @@ export default function PortalPayPage() {
     if (paymentsData) {
       setPayments(paymentsData.payments || [])
       setZelle(paymentsData.zelle ?? null)
+      setZelleQr(paymentsData.zelleQr === true)
     }
     setLoading(false)
   }
 
   useEffect(() => { load() }, [])
 
-  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded-sm w-48 animate-pulse" /></div>
+  if (loading) return <PageSkeleton />
 
   const activeLoan = member?.loansAsBorrower?.[0]
   const hasActiveLoan = activeLoan && activeLoan.status === 'Active' && activeLoan.balanceRemaining > 0
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Make a Payment</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Pay your monthly contribution or your loan by card or Zelle.</p>
-      </div>
+      <PageHeader title="Make a Payment" sub="Pay your monthly contribution or your loan by card or Zelle." />
 
       {status === 'success' && (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-sm text-green-800">
-          Payment received! It may take a minute to show up below.
+        <div role="status" className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-600/20">
+          <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden /> Payment received! It may take a minute to show up below.
         </div>
       )}
       {status === 'cancelled' && (
-        <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 text-sm text-gray-600">
-          Checkout was cancelled — no charge was made.
+        <div role="status" className="flex items-start gap-3 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700 ring-1 ring-inset ring-gray-900/10">
+          <XCircle size={18} className="mt-0.5 shrink-0 text-gray-500" aria-hidden /> Checkout was cancelled — no charge was made.
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Pay monthly contribution</h2>
-          <PayForm type="contribution" defaultAmount={20} zelle={zelle} onDone={load} />
-        </div>
+      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+        {/* The heading and its form share a parent, so the form is found by its heading. */}
+        <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
+          <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Wallet size={18} aria-hidden /></span>
+            Pay monthly contribution
+          </h2>
+          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} onDone={load} />
+        </section>
 
-        <div className="bg-white rounded-xl border border-gray-200 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-3">Pay toward my loan</h2>
+        <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
+          <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
+            <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Landmark size={18} aria-hidden /></span>
+            Pay toward my loan
+          </h2>
           {hasActiveLoan ? (
             <PayForm
               type="loan_payment"
@@ -205,48 +325,39 @@ export default function PortalPayPage() {
               defaultAmount={Math.min(activeLoan.monthlyDue, activeLoan.balanceRemaining)}
               maxAmount={activeLoan.balanceRemaining}
               zelle={zelle}
+              qr={zelleQr}
               onDone={load}
             />
           ) : (
-            <p className="text-sm text-gray-400">No active loan to pay toward.</p>
+            <Empty icon={Landmark} title="No active loan to pay toward" />
           )}
-        </div>
+        </section>
       </div>
 
-      <div className="bg-white rounded-xl shadow-xs border border-gray-200">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">Your payment requests</h2>
+      <section className={cn(surface, 'overflow-hidden')} aria-labelledby="requests">
+        <div className="px-5 pt-5 pb-3">
+          <h2 id="requests" className="text-[15px] font-semibold text-gray-900">Your payment requests</h2>
+          <p className="text-xs text-gray-500">Card payments and Zelle claims made here, and whether they have been credited.</p>
         </div>
         {payments.length === 0 ? (
-          <p className="py-8 text-center text-sm text-gray-400">No online payments yet.</p>
+          <div className="border-t border-gray-100"><Empty icon={Receipt} title="No online payments yet" /></div>
         ) : (
-          <div className="divide-y divide-gray-100">
+          <Rows>
             {payments.map((p) => (
-              <div key={p.id} className="flex items-center justify-between px-5 py-3">
-                <div className="flex items-center gap-3">
-                  {p.status === 'completed' ? <CheckCircle size={16} className="text-green-500 shrink-0" />
-                    : p.status === 'rejected' || p.status === 'failed' ? <XCircle size={16} className="text-red-400 shrink-0" />
-                    : <Clock size={16} className="text-amber-500 shrink-0" />}
-                  <div>
-                    <p className="text-sm font-medium text-gray-900">
-                      {p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}
-                      <span className="text-gray-400 font-normal"> · {p.method === 'stripe' ? 'Card' : 'Zelle'}</span>
-                    </p>
-                    <p className="text-xs text-gray-400">{fmtDate(p.createdAt)}</p>
-                    {p.status === 'rejected' && p.rejectionReason && (
-                      <p className="text-xs text-red-700 mt-0.5">Reason: {p.rejectionReason}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold text-gray-900">{fmt$(p.amount)}</span>
-                  <StatusBadge status={p.status} />
-                </div>
-              </div>
+              <Row key={p.id}
+                icon={p.status === 'completed' ? CheckCircle : p.status === 'rejected' || p.status === 'failed' ? XCircle : Clock}
+                tone={STATUS_TONE[p.status] ?? 'gray'}
+                title={<>{p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}<span className="font-normal text-gray-500"> · {p.method === 'stripe' ? 'Card' : 'Zelle'}</span></>}
+                meta={<>{fmtDate(p.createdAt)}{p.status === 'rejected' && p.rejectionReason && <span className="block text-red-700">Reason: {p.rejectionReason}</span>}</>}
+                end={<>
+                  <span className="text-sm font-semibold text-gray-900 tabular-nums">{fmt$(p.amount)}</span>
+                  <Pill tone={STATUS_TONE[p.status] ?? 'gray'}>{statusLabel(p.status)}</Pill>
+                </>}
+              />
             ))}
-          </div>
+          </Rows>
         )}
-      </div>
+      </section>
     </div>
   )
 }

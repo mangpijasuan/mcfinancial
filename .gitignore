@@ -48,3 +48,6 @@ coverage
 /e2e/.auth/
 /test-results/
 /playwright-report/
+
+# Club files kept only on the server (the Zelle QR code)
+/club/

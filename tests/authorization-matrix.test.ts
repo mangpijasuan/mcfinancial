@@ -95,6 +95,7 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'portal/statements/[period]': { GET: { member: true } },
   'portal/me': { GET: { member: true } },
   'portal/payments': { GET: { member: true } },
+  'portal/zelle-qr': { GET: { member: true } },
   'portal/payments/checkout': { POST: { member: true } },
   'staff': { GET: perm('staff.read'), POST: perm('staff.manage') },
   'staff/[id]': { PATCH: perm('staff.manage') }, // no DELETE: accounts are disabled, not deleted

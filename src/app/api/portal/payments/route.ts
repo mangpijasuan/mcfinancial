@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
-import { zelleRecipient } from '@/lib/zelle'
+import { readZelleQr, zelleRecipient } from '@/lib/zelle'
 
 export async function GET() {
   const auth = await requireMember()
@@ -14,5 +14,5 @@ export async function GET() {
     take: 25,
   })
 
-  return NextResponse.json({ payments, zelle: zelleRecipient() })
+  return NextResponse.json({ payments, zelle: zelleRecipient(), zelleQr: readZelleQr() !== null })
 }

@@ -1,8 +1,9 @@
 'use client'
 import { useEffect, useState } from 'react'
-import { fmt$, fmtDate } from '@/lib/utils'
-import { FileSignature, CheckCircle } from 'lucide-react'
+import { cn, fmt$, fmtDate } from '@/lib/utils'
+import { FileSignature, CheckCircle, FileText } from 'lucide-react'
 import { Modal } from '@/components/ui'
+import { Empty, PageHeader, PageSkeleton, Pill, button, field, surface } from '@/components/portal/kit'
 import { APP_NAME } from '@/lib/brand'
 
 async function readJsonSafe(res: Response) {
@@ -41,57 +42,50 @@ export default function PortalAgreements() {
     })()
   }, [])
 
-  if (loading) return <div className="space-y-4"><div className="h-8 bg-gray-200 rounded-sm w-48 animate-pulse"/></div>
+  if (loading) return <PageSkeleton />
 
   if (error) {
-    return <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>
+    return <div role="alert" className="rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800 ring-1 ring-inset ring-red-600/20">{error}</div>
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Loan Agreements</h1>
-        <p className="text-sm text-gray-500 mt-0.5">Sign your pending loan agreements below.</p>
-      </div>
+      <PageHeader title="Loan Agreements" sub="Read and sign the agreements for your loans, or loans you co-sign." />
 
       {agreements.length === 0 ? (
-        <div className="bg-white rounded-xl border border-gray-200 p-10 text-center text-gray-400">No loan agreements found.</div>
+        <div className={surface}><Empty icon={FileText} title="No loan agreements yet">When the club approves a loan for you, or one you co-sign, its agreement appears here to sign.</Empty></div>
       ) : (
-        <div className="space-y-4">
+        <ul className="space-y-3">
           {agreements.map(a => {
             const isBorrower  = a.borrowerId  === me?.id
             const mySignature = isBorrower ? a.borrowerSignature : a.cosignerSignature
             const mySigned    = !!mySignature
 
             return (
-              <div key={a.id} className="bg-white rounded-xl border border-gray-200 p-5">
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div className="min-w-0">
-                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-                      <span className="font-mono text-xs text-indigo-600">{a.agreementId}</span>
-                      <span className="font-mono text-xs text-gray-400">· Loan {a.loanId}</span>
-                      {mySigned
-                        ? <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-0.5 rounded-full flex items-center gap-1"><CheckCircle size={10}/> Signed</span>
-                        : <span className="bg-amber-100 text-amber-800 text-xs font-semibold px-2 py-0.5 rounded-full">Awaiting your signature</span>
-                      }
-                    </div>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {fmt$(a.loanAmount)} · {a.termMonths} months · {isBorrower ? 'You are the borrower' : 'You are the co-signer'}
-                    </p>
+              <li key={a.id} className={cn(surface, 'flex flex-wrap items-center gap-4 p-4 sm:p-5')}>
+                <span className={cn('flex size-11 shrink-0 items-center justify-center rounded-xl', mySigned ? 'bg-emerald-50 text-emerald-700' : 'bg-gold/15 text-amber-800')}>
+                  {mySigned ? <CheckCircle size={20} aria-hidden /> : <FileSignature size={20} aria-hidden />}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <p className="text-[15px] font-semibold text-gray-900 tabular-nums">{fmt$(a.loanAmount)} · {a.termMonths} months</p>
+                    {mySigned
+                      ? <Pill tone="green" dot>Signed</Pill>
+                      : <Pill tone="amber" dot>Awaiting your signature</Pill>}
                   </div>
-                  <button
-                    onClick={() => setSelected(a)}
-                    className={mySigned
-                      ? 'inline-flex min-h-10 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50'
-                      : 'inline-flex min-h-10 items-center gap-1.5 rounded-lg bg-[#1B2A4A] px-4 text-sm font-semibold text-white hover:bg-[#243660]'}
-                  >
-                    <FileSignature size={14}/> {mySigned ? 'View' : 'Review & sign'}
-                  </button>
+                  <p className="mt-0.5 text-sm text-gray-500">
+                    {isBorrower ? 'You are the borrower' : 'You are the co-signer'}
+                    <span className="text-gray-400"> · </span><span className="font-mono text-xs">{a.agreementId}</span>
+                    <span className="text-gray-400"> · </span><span className="font-mono text-xs">Loan {a.loanId}</span>
+                  </p>
                 </div>
-              </div>
+                <button onClick={() => setSelected(a)} className={cn(mySigned ? button.secondary : button.primary, 'w-full sm:w-auto')}>
+                  <FileSignature size={16} aria-hidden /> {mySigned ? 'View' : 'Review & sign'}
+                </button>
+              </li>
             )
           })}
-        </div>
+        </ul>
       )}
 
       {selected && me && (
@@ -194,34 +188,33 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
 
           {/* Sign form */}
           {!mySigned ? (
-            <div className="bg-indigo-50 border border-indigo-200 rounded-xl p-4 space-y-3">
-              <p className="text-sm font-semibold text-indigo-900">
+            <div className="space-y-3 rounded-2xl bg-navy/[0.03] p-4 ring-1 ring-inset ring-navy/10">
+              <p className="text-sm font-semibold text-navy">
                 Sign as {isBorrower ? 'Borrower' : 'Co-signer'}
               </p>
               {isBorrower && (
                 <div className="grid grid-cols-3 gap-3">
-                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className="col-span-3 px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
-                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
-                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className="px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerAddress} onChange={e => setAddress(a => ({...a, borrowerAddress: e.target.value}))} placeholder="Street address" aria-label="Street address" className={cn(field, 'col-span-3')} />
+                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerCity} onChange={e => setAddress(a => ({...a, borrowerCity: e.target.value}))} placeholder="City *" aria-label="City" required className={field} />
+                  <input readOnly={!!(a.lenderSignature || a.cosignerSignature || a.borrowerSignature)} value={address.borrowerState} onChange={e => setAddress(a => ({...a, borrowerState: e.target.value}))} placeholder="State" aria-label="State" className={field} />
                 </div>
               )}
               <input value={sig} onChange={e => setSig(e.target.value)} placeholder="Type your full legal name to sign…" aria-label="Your full legal name"
-                className="w-full px-3 py-2 rounded-lg border border-indigo-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
+                className={field} />
               {error && <p className="text-xs text-red-600">{error}</p>}
-              <div className="flex items-center justify-between">
-                <p className="text-xs text-indigo-600">By typing your name you are electronically signing this agreement.</p>
-                <button onClick={sign} disabled={saving || !sig.trim()}
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-50 hover:bg-indigo-700">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <p className="text-xs text-gray-600">By typing your name you are electronically signing this agreement.</p>
+                <button onClick={sign} disabled={saving || !sig.trim()} className={button.primary}>
                   {saving ? 'Signing…' : 'Sign agreement'}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-              <CheckCircle size={20} className="text-green-600 shrink-0" />
+            <div className="flex items-center gap-3 rounded-2xl bg-emerald-50 p-4 ring-1 ring-inset ring-emerald-600/20">
+              <CheckCircle size={20} className="shrink-0 text-emerald-600" aria-hidden />
               <div>
-                <p className="text-sm font-semibold text-green-800">You have signed this agreement</p>
-                <p className="text-xs text-green-600">Signed on {fmtDate(isBorrower ? a.borrowerSignedAt : a.cosignerSignedAt)}</p>
+                <p className="text-sm font-semibold text-emerald-900">You have signed this agreement</p>
+                <p className="text-xs text-emerald-800">Signed on {fmtDate(isBorrower ? a.borrowerSignedAt : a.cosignerSignedAt)}</p>
               </div>
             </div>
           )}

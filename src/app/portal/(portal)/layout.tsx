@@ -10,9 +10,10 @@ export default async function PortalLayout({ children }: { children: React.React
   if (principal.kind !== 'member') redirect('/start')
 
   return (
-    <div className="min-h-screen bg-gray-50 print:bg-white">
+    <div className="min-h-screen bg-[#f6f7fb] print:bg-white">
       <div className="contents print:hidden"><PortalNav user={{ memberId: principal.memberId, name: principal.name }} /></div>
-      <main className="max-w-4xl mx-auto px-4 py-8 print:p-0">{children}</main>
+      {/* Room at the bottom for the phone tab bar. */}
+      <main className="mx-auto max-w-5xl px-4 pt-6 pb-28 sm:px-6 sm:pt-8 lg:pb-14 print:p-0">{children}</main>
     </div>
   )
 }

@@ -13,3 +13,6 @@ prisma/dev.db
 
 backups/
 *.age
+
+# Club files kept only on the server, mounted at run time
+club/
