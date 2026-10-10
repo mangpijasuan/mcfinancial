@@ -7,7 +7,8 @@ import { describe, expect, it } from 'vitest'
 const API_DIR = path.resolve(__dirname, '../src/app/api')
 
 // Handlers that accept POST but change nothing.
-const READ_ONLY = new Set(['loans/check-policy', 'auth/[...nextauth]'])
+// POST routes that change nothing: a policy check, sign-in, and import previews.
+const READ_ONLY = new Set(['loans/check-policy', 'auth/[...nextauth]', 'data/import/members/preview', 'data/import/contributions/preview'])
 
 function routeFiles(dir = API_DIR): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -24,7 +25,7 @@ describe('audit coverage', () => {
 
   // Either directly, or through a module function that records its own
   // entry (each is covered by its own tests).
-  const AUDITED = /\b(recordAudit|submitOrExecute|decideApproval|cancelApproval|changeDuesPlan|reconcileBank|closePeriod|linkExactMatches|linkName|confirmBalance|processStripeEvent|setItems|disconnect|syncAchPayments|exportToGoogleSheets)\(/
+  const AUDITED = /\b(recordAudit|submitOrExecute|decideApproval|cancelApproval|changeDuesPlan|reconcileBank|closePeriod|linkExactMatches|linkName|confirmBalance|processStripeEvent|setItems|disconnect|syncAchPayments|exportToGoogleSheets|importResponse)\(/
 
   it.each(writers)('/api/$route records an audit entry', ({ source }) => {
     expect(source).toMatch(AUDITED)

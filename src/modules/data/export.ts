@@ -92,5 +92,5 @@ export function toCsv(t: Pick<Table, 'headers' | 'rows'>): string {
     return /[",\r\n]/.test(safe) ? `"${safe.replace(/"/g, '""')}"` : safe
   }
   // A byte-order mark so Excel reads the accents in names correctly.
-  return '﻿' + [t.headers, ...t.rows].map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n'
+  return '\uFEFF' + [t.headers, ...t.rows].map((r) => r.map(cell).join(',')).join('\r\n') + '\r\n'
 }
