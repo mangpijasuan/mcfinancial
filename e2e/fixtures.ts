@@ -53,5 +53,8 @@ export function e2eEnv(): Record<string, string> {
     DUES_TRACKING_START: '2026-01',
     MAKER_CHECKER_ENFORCED: 'false',
     LATE_FEES_ENABLED: 'false',
+    // What the portal shows members to send a Zelle payment to.
+    ZELLE_RECIPIENT_NAME: 'Millionaires Club',
+    ZELLE_RECIPIENT_EMAIL: 'payments@e2e.test',
   }
 }

@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from 'react'
 import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
 import { cn, fmt$, fmtDate } from '@/lib/utils'
-import { CreditCard, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
+import { Check, CreditCard, Copy, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
 import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, surface, type Tone } from '@/components/portal/kit'
 
 async function readJsonSafe(res: Response) {
@@ -13,6 +13,38 @@ async function readJsonSafe(res: Response) {
 const STATUS_TONE: Record<string, Tone> = { pending: 'amber', completed: 'green', rejected: 'red', failed: 'gray' }
 
 type Zelle = { name: string; email: string } | null
+
+function Step({ n }: { n: number }) {
+  return <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-navy text-xs font-semibold text-white" aria-hidden>{n}</span>
+}
+
+/** One Zelle detail with a button that copies it, so the member can paste it into their bank's app. */
+function CopyLine({ label, value, display, copyLabel }: { label: string; value: string; display?: string; copyLabel: string }) {
+  const [copied, setCopied] = useState(false)
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(value)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // No clipboard (an old browser, or not on https): the value stays on screen to type in.
+    }
+  }
+  return (
+    <div className="flex items-center gap-3 px-3 py-2.5">
+      <div className="min-w-0 flex-1">
+        <p className="text-[11px] text-gray-500">{label}</p>
+        <p className="text-sm font-semibold break-words text-gray-900">{display ?? value}</p>
+      </div>
+      <button type="button" onClick={copy} aria-label={copyLabel}
+        className={cn('inline-flex min-h-9 shrink-0 items-center gap-1.5 rounded-lg px-3 text-xs font-semibold ring-1 ring-inset transition-colors',
+          copied ? 'bg-emerald-50 text-emerald-800 ring-emerald-600/20' : 'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50')}>
+        {copied ? <><Check size={14} aria-hidden /> Copied</> : <><Copy size={14} aria-hidden /> Copy</>}
+      </button>
+      <span className="sr-only" aria-live="polite">{copied ? `${label} copied` : ''}</span>
+    </div>
+  )
+}
 
 function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
   type: 'contribution' | 'loan_payment'
@@ -116,13 +148,35 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, onDone }: {
       </div>
 
       {method === 'zelle' && (
-        <div className="space-y-3 rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-900/5">
-          <p className="flex gap-2 text-sm text-gray-700">
-            <Info size={16} className="mt-0.5 shrink-0 text-gray-500" aria-hidden />
-            {zelleConfigured
-              ? <span>Send via Zelle to <strong>{zelleName}</strong>{zelleEmail && <> · <strong>{zelleEmail}</strong></>}, then submit a claim below. It won’t be credited until an admin confirms it.</span>
-              : <span>Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</span>}
-          </p>
+        <div className="space-y-4 rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-900/5">
+          {zelleConfigured ? (
+              <ol className="space-y-3 text-sm text-gray-700">
+                <li className="flex gap-3">
+                  <Step n={1} />
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <p>Copy the club’s Zelle details:</p>
+                    <div className="divide-y divide-gray-100 rounded-xl bg-white ring-1 ring-inset ring-gray-900/10">
+                      {zelleName && <CopyLine label="Send to" value={zelleName} copyLabel="Copy name" />}
+                      {zelleEmail && <CopyLine label="Zelle email or phone" value={zelleEmail} copyLabel="Copy email" />}
+                      {Number(amount) > 0 && <CopyLine label="Amount" value={Number(amount).toFixed(2)} display={fmt$(Number(amount))} copyLabel="Copy amount" />}
+                    </div>
+                  </div>
+                </li>
+                <li className="flex gap-3">
+                  <Step n={2} />
+                  <p className="pt-0.5">Open your bank’s app, choose <strong>Zelle</strong>, and paste them in to send the payment.</p>
+                </li>
+                <li className="flex gap-3">
+                  <Step n={3} />
+                  <p className="pt-0.5">Come back and submit your claim below. It won’t be credited until an admin confirms it.</p>
+                </li>
+              </ol>
+          ) : (
+            <p className="flex gap-2 text-sm text-gray-700">
+              <Info size={16} className="mt-0.5 shrink-0 text-gray-500" aria-hidden />
+              <span>Contact your admin for the club’s Zelle details, then submit a claim below with your confirmation note.</span>
+            </p>
+          )}
           <input
             value={zelleReference} onChange={e => setZelleReference(e.target.value)}
             placeholder="Optional: confirmation number or note"

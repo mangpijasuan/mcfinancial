@@ -26,6 +26,8 @@ A visual refresh of the member portal: the same pages, figures, permissions and 
 
 **Make a Payment:** a larger amount field, and *Card* / *Zelle* as two clear choices with a line under each.
 
+**Paying by Zelle:** Zelle has no web link that opens a payment: members send it from their own bank's app. So the portal does the next best thing. It shows three steps, and gives the club's name, its Zelle email or phone, and the amount each a **Copy** button, to paste straight into the bank's app (`ZELLE_RECIPIENT_NAME` and `ZELLE_RECIPIENT_EMAIL` in `.env.production`). The claim is still confirmed by an admin against the bank account.
+
 **Payment History**
 
 - Totals at the top.
@@ -58,10 +60,11 @@ Taken from the browser-test data (a member with a loan, two contributions and a 
 | Loan Agreements | ![](portal/before/desktop_agreements.png) | ![](portal/after/desktop_agreements.png) |
 | Sign-in, phone | ![](portal/before/phone_login.png) | ![](portal/after/phone_login.png) |
 | Phone tab bar, *More* open | | ![](portal/after/phone_menu.png) |
+| Zelle: steps and copy buttons | | ![](portal/after/zelle_steps.png) |
 
 ## Checks
 
-- **Browser tests:** every browser test passes unchanged except one wording check, now matched to the shorter sentence. That covers signing in, paying by Zelle, signing a loan agreement, the loan schedule, statements, and receipts in the history.
+- **Browser tests:** every browser test passes. One wording check now matches the shorter eligibility sentence, and the Zelle test now also copies the club's email and the amount. That covers signing in, paying by Zelle, signing a loan agreement, the loan schedule, statements, and receipts in the history.
 - **Accessibility:** the automated WCAG 2.1 A/AA checks pass on every portal page, including colour contrast.
 - **Phone layout:** no portal page scrolls sideways on a phone.
 - **Same data and permissions:** the pages call the same APIs, with the same permissions, as before.
