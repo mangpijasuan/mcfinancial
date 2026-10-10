@@ -24,7 +24,7 @@ describe('audit coverage', () => {
 
   // Either directly, or through a module function that records its own
   // entry (each is covered by its own tests).
-  const AUDITED = /\b(recordAudit|submitOrExecute|decideApproval|cancelApproval|changeDuesPlan|reconcileBank|closePeriod|linkExactMatches|linkName|confirmBalance|processStripeEvent|setItems|disconnect|syncAchPayments)\(/
+  const AUDITED = /\b(recordAudit|submitOrExecute|decideApproval|cancelApproval|changeDuesPlan|reconcileBank|closePeriod|linkExactMatches|linkName|confirmBalance|processStripeEvent|setItems|disconnect|syncAchPayments|exportToGoogleSheets)\(/
 
   it.each(writers)('/api/$route records an audit entry', ({ source }) => {
     expect(source).toMatch(AUDITED)

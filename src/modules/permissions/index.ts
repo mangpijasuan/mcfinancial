@@ -33,6 +33,7 @@ export const PERMISSIONS = {
   'withdrawals.record': 'Record withdrawals and full exits',
   'payments.read': 'View member online payments',
   'payments.review': 'Confirm or reject Zelle claims',
+  'data.export': 'Download the club’s records as spreadsheets and refresh the Google Sheets copy (includes members’ personal details)',
   'payments.manage_quickbooks': 'Connect the club’s QuickBooks company for ACH payments, and choose its products',
   'notifications.read': 'View notification previews and history',
   'notifications.send': 'Send reminder and summary emails',
@@ -109,7 +110,7 @@ export const ROLES = {
       'loans.disburse', 'loan_fees.waive', 'loan_fees.approve_waiver', 'loans.write_off',
       'contributions.reverse', 'contributions.approve_reversal', 'dues.manage_plans', 'treasury.record_balance',
       'treasury.record_transfer', 'treasury.approve_transfer', 'ledger.reconcile', 'ledger.close_period',
-      'loans.link_history', 'payments.manage_quickbooks',
+      'loans.link_history', 'payments.manage_quickbooks', 'data.export',
     ],
   },
   compliance: {
@@ -120,7 +121,7 @@ export const ROLES = {
   auditor: {
     label: 'Auditor',
     description: 'Read-only access to everything, including the audit log.',
-    permissions: [...READ_EVERYTHING, 'audit.read', 'staff.read'],
+    permissions: [...READ_EVERYTHING, 'audit.read', 'staff.read', 'data.export'],
   },
   board: {
     label: 'Board',
