@@ -10,8 +10,9 @@ import { ImportError, MAX_IMPORT_ROWS, applyImport, fileHash, parseImportDate, p
 const A = TEST_IDS.member
 const B = TEST_IDS.otherMember
 const ctx = systemAuditContext('treasurer@example.test')
-let started: Date
-const audits = (action: string) => prisma.auditLog.count({ where: { action, at: { gte: started } } })
+// Audit entries are never reset, and ids only grow: count those after the test began.
+let lastId: bigint
+const audits = (action: string) => prisma.auditLog.count({ where: { action, id: { gt: lastId } } })
 
 const csv = (...lines: string[]) => lines.join('\r\n') + '\r\n'
 const MEMBERS = (...rows: string[]) => csv('Member ID,Legal name,Joined,Nickname,Phone,Email,Beneficiary', ...rows)
@@ -21,9 +22,9 @@ const doImport = async (kind: 'members' | 'contributions', file: string, opts = 
   applyImport(kind, file, { fileHash: fileHash(file), fileName: `${kind}.csv`, ...opts }, ctx)
 
 beforeEach(async () => {
-  started = new Date()
   await resetDatabase()
   await createBaseFixtures()
+  lastId = (await prisma.auditLog.aggregate({ _max: { id: true } }))._max.id ?? BigInt(0)
 })
 
 describe('reading CSV', () => {
