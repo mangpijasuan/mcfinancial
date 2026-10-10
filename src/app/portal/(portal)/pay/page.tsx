@@ -3,7 +3,7 @@ import { useEffect, useId, useState } from 'react'
 import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
 import { cn, fmt$, fmtDate } from '@/lib/utils'
-import { Check, CreditCard, Copy, Download, ExternalLink, Landmark, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
+import { Building2, Check, CreditCard, Copy, Download, ExternalLink, Landmark, ShieldCheck, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
 import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, surface, type Tone } from '@/components/portal/kit'
 import { BANKS, BANK_STORAGE_KEY, findBank } from '@/components/portal/banks'
 
@@ -84,17 +84,18 @@ function CopyLine({ label, value, display, copyLabel }: { label: string; value: 
   )
 }
 
-function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: {
+function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, ach, onDone }: {
   type: 'contribution' | 'loan_payment'
   loanId?: string
   defaultAmount: number
   maxAmount?: number
   zelle: Zelle
   qr: boolean
+  ach: boolean
   onDone: () => void
 }) {
   const [amount, setAmount] = useState(String(defaultAmount))
-  const [method, setMethod] = useState<'stripe' | 'zelle'>('stripe')
+  const [method, setMethod] = useState<'stripe' | 'ach' | 'zelle'>('stripe')
   const [zelleReference, setZelleReference] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -123,9 +124,9 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: 
       setSubmitting(false)
       return
     }
-    if (method === 'stripe') {
+    if (method === 'stripe' || method === 'ach') {
       if (data.url) { window.location.href = data.url; return }
-      setError('Could not start checkout.')
+      setError(method === 'ach' ? 'Could not open the bank payment page.' : 'Could not start checkout.')
       setSubmitting(false)
       return
     }
@@ -148,7 +149,8 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: 
 
   const methods = [
     { id: 'stripe' as const, label: 'Card', icon: CreditCard, hint: 'Debit or credit card' },
-    { id: 'zelle' as const, label: 'Zelle', icon: Landmark, hint: 'Bank transfer' },
+    ...(ach ? [{ id: 'ach' as const, label: 'Bank (ACH)', icon: Building2, hint: 'From your bank account' }] : []),
+    { id: 'zelle' as const, label: 'Zelle', icon: Landmark, hint: 'From your bank’s app' },
   ]
 
   return (
@@ -167,7 +169,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: 
 
       <div>
         <p className="mb-1.5 text-sm font-medium text-gray-800" id={`${amountId}-method`}>Pay with</p>
-        <div className="grid grid-cols-2 gap-2" role="group" aria-labelledby={`${amountId}-method`}>
+        <div className={cn('grid gap-2', methods.length === 3 ? 'grid-cols-1 sm:grid-cols-3' : 'grid-cols-2')} role="group" aria-labelledby={`${amountId}-method`}>
           {methods.map((m) => (
             <button
               key={m.id} type="button" onClick={() => setMethod(m.id)} aria-pressed={method === m.id}
@@ -185,6 +187,13 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: 
           ))}
         </div>
       </div>
+
+      {method === 'ach' && (
+        <p className="flex gap-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-700 ring-1 ring-inset ring-gray-900/5">
+          <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden />
+          <span>You’ll pay on the club’s secure QuickBooks page, from your bank account. Your bank details are entered there, never here. Bank transfers take a few days: the payment shows here as pending until QuickBooks has it.</span>
+        </p>
+      )}
 
       {method === 'zelle' && (
         <div className="space-y-4 rounded-xl bg-gray-50 p-4 ring-1 ring-inset ring-gray-900/5">
@@ -249,7 +258,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, onDone }: 
       {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
 
       <button onClick={submit} disabled={submitting} className={cn(button.primary, 'w-full min-h-11')}>
-        {submitting ? 'Please wait…' : method === 'stripe' ? 'Continue to card payment' : 'Submit Zelle claim'}
+        {submitting ? 'Please wait…' : method === 'stripe' ? 'Continue to card payment' : method === 'ach' ? 'Continue to bank payment' : 'Submit Zelle claim'}
       </button>
     </div>
   )
@@ -261,6 +270,7 @@ export default function PortalPayPage() {
   const [payments, setPayments] = useState<any[]>([])
   const [zelle, setZelle] = useState<Zelle>(null)
   const [zelleQr, setZelleQr] = useState(false)
+  const [ach, setAch] = useState(false)
   const [loading, setLoading] = useState(true)
 
   const status = searchParams.get('status')
@@ -277,6 +287,7 @@ export default function PortalPayPage() {
       setPayments(paymentsData.payments || [])
       setZelle(paymentsData.zelle ?? null)
       setZelleQr(paymentsData.zelleQr === true)
+      setAch(paymentsData.ach === true)
     }
     setLoading(false)
   }
@@ -310,7 +321,7 @@ export default function PortalPayPage() {
             <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Wallet size={18} aria-hidden /></span>
             Pay monthly contribution
           </h2>
-          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} onDone={load} />
+          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} ach={ach} onDone={load} />
         </section>
 
         <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
@@ -326,6 +337,7 @@ export default function PortalPayPage() {
               maxAmount={activeLoan.balanceRemaining}
               zelle={zelle}
               qr={zelleQr}
+              ach={ach}
               onDone={load}
             />
           ) : (
@@ -347,8 +359,14 @@ export default function PortalPayPage() {
               <Row key={p.id}
                 icon={p.status === 'completed' ? CheckCircle : p.status === 'rejected' || p.status === 'failed' ? XCircle : Clock}
                 tone={STATUS_TONE[p.status] ?? 'gray'}
-                title={<>{p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}<span className="font-normal text-gray-500"> · {p.method === 'stripe' ? 'Card' : 'Zelle'}</span></>}
-                meta={<>{fmtDate(p.createdAt)}{p.status === 'rejected' && p.rejectionReason && <span className="block text-red-700">Reason: {p.rejectionReason}</span>}</>}
+                title={<>{p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}<span className="font-normal text-gray-500"> · {p.method === 'stripe' ? 'Card' : p.method === 'ach' ? 'Bank (ACH)' : 'Zelle'}</span></>}
+                meta={<>
+                  {fmtDate(p.createdAt)}
+                  {p.status === 'rejected' && p.rejectionReason && <span className="block text-red-700">Reason: {p.rejectionReason}</span>}
+                  {p.method === 'ach' && p.status === 'pending' && p.qboInvoiceLink && (
+                    <span className="block">Not paid yet? <a href={p.qboInvoiceLink} className="font-medium text-navy underline underline-offset-2">Continue on QuickBooks</a></span>
+                  )}
+                </>}
                 end={<>
                   <span className="text-sm font-semibold text-gray-900 tabular-nums">{fmt$(p.amount)}</span>
                   <Pill tone={STATUS_TONE[p.status] ?? 'gray'}>{statusLabel(p.status)}</Pill>

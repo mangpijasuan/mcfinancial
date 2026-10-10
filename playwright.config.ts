@@ -1,7 +1,7 @@
 // Browser tests (Playwright): the golden paths, end to end, against a
 // production build on its own database. `npm run test:e2e`.
 import { defineConfig, devices } from '@playwright/test'
-import { BASE_URL, PORT, e2eEnv } from './e2e/fixtures'
+import { BASE_URL, FAKE_QBO, FAKE_QBO_PORT, PORT, e2eEnv } from './e2e/fixtures'
 
 export default defineConfig({
   testDir: 'e2e',
@@ -23,12 +23,22 @@ export default defineConfig({
     screenshot: 'only-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
-  webServer: {
-    command: `npx next start -p ${PORT}`,
-    url: `${BASE_URL}/api/health`,
-    // Always our own server: one already on the port may use another database.
-    reuseExistingServer: false,
-    timeout: 120_000,
-    env: e2eEnv(),
-  },
+  webServer: [
+    {
+      // QuickBooks for the ACH test: a local stand-in, never the real one.
+      command: 'node e2e/fake-quickbooks.mjs',
+      url: `${FAKE_QBO}/health`,
+      reuseExistingServer: false,
+      timeout: 20_000,
+      env: { FAKE_QBO_PORT: String(FAKE_QBO_PORT) },
+    },
+    {
+      command: `npx next start -p ${PORT}`,
+      url: `${BASE_URL}/api/health`,
+      // Always our own server: one already on the port may use another database.
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: e2eEnv(),
+    },
+  ],
 })

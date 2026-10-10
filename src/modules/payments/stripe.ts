@@ -2,7 +2,7 @@ import type Stripe from 'stripe'
 import { Prisma } from '@prisma/client'
 import { prisma } from '@/lib/prisma'
 import { fromLegacyDollars } from '@/lib/money'
-import { recordContribution, recordLoanPayment } from '@/lib/paymentActions'
+import { completePortalPayment } from './complete'
 import { recordAudit, systemAuditContext } from '@/modules/audit'
 import { sendEmail, escapeHtml } from '@/lib/email'
 
@@ -27,56 +27,21 @@ async function completeCheckout(session: Stripe.Checkout.Session, eventId: strin
   }
 
   const paymentIntentId = typeof session.payment_intent === 'string' ? session.payment_intent : session.payment_intent?.id
-  const ctx = systemAuditContext('stripe-webhook')
-  const details = {
-    paymentDate: new Date(settledAt * 1000),
-    paymentMethod: 'Card (Stripe)',
-    comments: `Stripe checkout ${session.id}`,
-    source: 'Stripe',
-  }
-
-  try {
-    await prisma.$transaction(async (tx) => {
-      // Stripe retries and can deliver the same event concurrently. Only
-      // one delivery can move the payment to "completed"; the rest match
-      // nothing here (after waiting on the row lock) and record nothing.
-      const claimed = await tx.portalPayment.updateMany({
-        where: { id: payment.id, status: { not: 'completed' } },
-        data: { status: 'completed', stripePaymentIntentId: paymentIntentId, reviewedAt: new Date(), rejectionReason: null },
-      })
-      if (claimed.count === 0) return
-
-      let after
-      let recorded: Record<string, string>
-      if (payment.type === 'contribution') {
-        const record = await recordContribution(tx, { memberId: payment.memberId, amount: payment.amount, ...details })
-        after = await tx.portalPayment.update({ where: { id: payment.id }, data: { contributionId: record.id } })
-        recorded = { contributionId: record.transactionId }
-      } else {
-        if (!payment.loanId) throw new Error('Missing loanId on loan_payment PortalPayment')
-        const record = await recordLoanPayment(tx, { loanId: payment.loanId, amount: payment.amount, settledExternally: true, ...details })
-        after = await tx.portalPayment.update({ where: { id: payment.id }, data: { loanPaymentId: record.id } })
-        recorded = { loanPaymentId: record.paymentId }
-      }
-      await recordAudit(tx, ctx, {
-        action: 'payment.stripe.complete', entityType: 'portal_payment', entityId: payment.publicId,
-        before: payment, after, metadata: { stripeEventId: eventId, checkoutSessionId: session.id, ...recorded },
-      })
-    })
-  } catch (err: any) {
-    const reason = err?.message?.slice(0, 500) || 'Failed to record payment'
-    const failed = await prisma.portalPayment.updateMany({
-      where: { id: payment.id, status: { not: 'completed' } },
-      data: { status: 'failed', rejectionReason: reason },
-    })
-    if (failed.count > 0) {
-      await recordAudit(prisma, ctx, {
-        action: 'payment.stripe.record_failed', entityType: 'portal_payment', entityId: payment.publicId,
-        before: payment, metadata: { stripeEventId: eventId, checkoutSessionId: session.id, reason },
-      }).catch((auditErr) => console.error('audit: failed to record payment failure', auditErr))
-    }
-    throw err
-  }
+  // Stripe retries and can deliver the same event concurrently: only one
+  // delivery records the payment (completePortalPayment claims it once).
+  await completePortalPayment(payment, {
+    actor: 'stripe-webhook',
+    action: 'payment.stripe.complete',
+    failedAction: 'payment.stripe.record_failed',
+    details: {
+      paymentDate: new Date(settledAt * 1000),
+      paymentMethod: 'Card (Stripe)',
+      comments: `Stripe checkout ${session.id}`,
+      source: 'Stripe',
+    },
+    references: { stripePaymentIntentId: paymentIntentId },
+    metadata: { stripeEventId: eventId, checkoutSessionId: session.id },
+  })
 }
 
 async function expireCheckout(session: Stripe.Checkout.Session, eventId: string) {

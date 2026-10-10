@@ -33,6 +33,7 @@ export const PERMISSIONS = {
   'withdrawals.record': 'Record withdrawals and full exits',
   'payments.read': 'View member online payments',
   'payments.review': 'Confirm or reject Zelle claims',
+  'payments.manage_quickbooks': 'Connect the club’s QuickBooks company for ACH payments, and choose its products',
   'notifications.read': 'View notification previews and history',
   'notifications.send': 'Send reminder and summary emails',
   'ledger.read': 'View the chart of accounts, journal and trial balance',
@@ -108,7 +109,7 @@ export const ROLES = {
       'loans.disburse', 'loan_fees.waive', 'loan_fees.approve_waiver', 'loans.write_off',
       'contributions.reverse', 'contributions.approve_reversal', 'dues.manage_plans', 'treasury.record_balance',
       'treasury.record_transfer', 'treasury.approve_transfer', 'ledger.reconcile', 'ledger.close_period',
-      'loans.link_history',
+      'loans.link_history', 'payments.manage_quickbooks',
     ],
   },
   compliance: {
