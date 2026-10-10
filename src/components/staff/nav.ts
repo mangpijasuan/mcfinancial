@@ -1,4 +1,5 @@
 import {
+  FileSpreadsheet,
   LayoutDashboard, Users, Receipt, Landmark, CreditCard, ArrowDownLeft, Bell, FileText,
   Shield, Wallet, ScrollText, KeyRound, BookOpen, CheckSquare, CalendarCheck, PiggyBank, Scale, BarChart3, type LucideIcon,
 } from 'lucide-react'
@@ -35,6 +36,7 @@ export const STAFF_NAV: GroupedStaffNavItem[] = [
   { group: 'Operations',     href: '/notifications',  label: 'Notifications',         icon: Bell,            permission: 'notifications.read', badge: 'notificationTasks' },
   { group: 'Administration', href: '/settings/staff', label: 'Staff & Roles',         icon: Shield,          permission: 'staff.read' },
   { group: 'Administration', href: '/settings/audit', label: 'Audit Log',             icon: ScrollText,      permission: 'audit.read' },
+  { group: 'Administration', href: '/settings/data',  label: 'Data Export',           icon: FileSpreadsheet, permission: 'data.export' },
   { group: 'Account',        href: '/security',       label: 'My Security',           icon: KeyRound,        permission: null },
 ]
 

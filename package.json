@@ -33,6 +33,7 @@
     "ledger:opening": "tsx scripts/data/opening-balances.ts",
     "ledger:compare": "tsx scripts/jobs/compare-ledger.ts",
     "quickbooks:sync": "tsx scripts/jobs/sync-quickbooks.ts",
+    "sheets:export": "tsx scripts/jobs/export-sheets.ts",
     "payments:retry": "tsx scripts/jobs/retry-stripe.ts"
   },
   "prisma": {
