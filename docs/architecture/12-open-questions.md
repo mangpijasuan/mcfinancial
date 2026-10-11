@@ -10,7 +10,7 @@ Grouped by who can answer them. Items marked ★ block the start of the financia
 | Q-2 ★ | Which state(s) is the club organised in, and where do members live? | Lending, privacy and money-transmission rules are state-specific |
 | Q-3 | Do written bylaws, membership terms or loan terms exist? Where? | The system should enforce what the documents say, not the reverse |
 | Q-4 ★ | Is member capital refundable on request? On what notice, and with what exceptions (e.g. while co-signing)? | Liability vs. equity classification (D-04); liquidity policy ([08](08-treasury.md)) |
-| Q-5 | Have members already been told anything about MCTN, rewards or UMI? | Existing expectations shape messaging and consumer-protection risk |
+| Q-5 | Have members already been told anything about MCC, rewards or UMI? | Existing expectations shape messaging and consumer-protection risk |
 
 ## Finance operations — Treasurer
 
@@ -32,9 +32,9 @@ Grouped by who can answer them. Items marked ★ block the start of the financia
 |---|---|---|
 | Q-15 | How are new members approved today? | Pending → Active workflow |
 | Q-16 | What notice period should apply to withdrawals and full exits? | Liquidity policy |
-| Q-17 | Do members actually want a token or crypto, or would they value points, events and discounts equally? A short member survey is suggested | Validates or retires the MCTN track before money is spent on it |
+| Q-17 | Do members actually want a token or crypto, or would they value points, events and discounts equally? A short member survey is suggested | Validates or retires the MCC track before money is spent on it |
 | Q-18 | What could MC Points buy (event tickets, merchandise, fee waivers, recognition)? | Points without a use have no value |
-| Q-19 | Should on-time contribution streaks earn points? | Links rewards to contributions; see [rewards](06-web3-and-mctn.md#5-rewards-architecture) |
+| Q-19 | Should on-time contribution streaks earn points? | Links rewards to contributions; see [rewards](06-web3-and-mcc.md#5-rewards-architecture) |
 
 ## Web3 — Founder (only if pursued after Gate #2)
 
@@ -42,7 +42,7 @@ Grouped by who can answer them. Items marked ★ block the start of the financia
 |---|---|---|
 | Q-20 | Who would the five treasury signers be? | D-14 needs five trustworthy, available people |
 | Q-21 | What budget exists for an independent smart-contract audit and ongoing monitoring? | Mainnet is blocked without an audit (§35) |
-| Q-22 | Is there any intent to let MCTN be transferred or traded in future? | Determines contract design and legal exposure now |
+| Q-22 | Is there any intent to let MCC be transferred or traded in future? | Determines contract design and legal exposure now |
 
 ## Technical — Engineering, with Founder approval
 

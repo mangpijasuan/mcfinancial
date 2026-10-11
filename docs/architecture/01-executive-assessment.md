@@ -37,9 +37,9 @@ Applying the test "what problem does putting this on-chain solve?":
 
 - **Contributions, loans, balances and member data:** nothing. They need privacy, correction workflows and legal enforceability, all of which a public chain works against. They stay off-chain permanently (D-09).
 - **Member rewards:** a little, later. On-chain settlement gives members a verifiable, portable record of what they have earned. The same programme runs perfectly well as an off-chain points ledger first, with none of the regulatory, custody or key-management risk (D-10).
-- **Treasury transparency:** modest. If the club ever holds MCTN, a public multisig makes treasury movements visible to members. It says nothing about the fiat treasury, which is where the club's real money is.
+- **Treasury transparency:** modest. If the club ever holds MCC, a public multisig makes treasury movements visible to members. It says nothing about the fiat treasury, which is where the club's real money is.
 
-**Nothing in the club's current value to members depends on a token.** MCTN is optional and can be sequenced last without blocking anything else.
+**Nothing in the club's current value to members depends on a token.** MCC is optional and can be sequenced last without blocking anything else.
 
 ## Universal Member Income, honestly
 
@@ -48,7 +48,7 @@ The club's only non-contribution revenue is about $1,200 a year of loan applicat
 ## The largest risk is regulatory, not technical
 
 - **Lending.** The club has made 20–25 installment loans a year, including 25 in 2021, and charges application fees. Federal truth-in-lending rules use a "more than 25 times in the preceding calendar year" test to decide who counts as a creditor. State lending law may apply regardless. **LEGAL REVIEW REQUIRED.**
-- **Securities.** A pool of member money, plus a token, plus payments described as "income" is the pattern that invites securities analysis. **LEGAL REVIEW REQUIRED** before MCTN or UMI design is finalised (D-16).
+- **Securities.** A pool of member money, plus a token, plus payments described as "income" is the pattern that invites securities analysis. **LEGAL REVIEW REQUIRED** before MCC or UMI design is finalised (D-16).
 - **Entity.** The legal form of MC Financial (association, LLC, nonprofit, cooperative) is not recorded anywhere in the system. It changes almost every answer in the [compliance matrix](09-compliance-matrix.md).
 
 ## Recommended sequence
@@ -58,5 +58,5 @@ The club's only non-contribution revenue is about $1,200 a year of loan applicat
 3. **Lending and contributions.** Real repayment schedules, recorded disbursements and fees, computed delinquency, maker/checker approvals, reconciliation.
 4. **Legal scoping.** Runs in parallel with steps 2–3, and must finish before step 5.
 5. **MC Points.** An off-chain, non-transferable rewards ledger that can be settled on-chain later.
-6. **MCTN on testnet, audit, then mainnet.** Only after Founder Gates #2 and #3.
+6. **MCC on testnet, audit, then mainnet.** Only after Founder Gates #2 and #3.
 7. **UMI.** Only if a funding source that passes [the feasibility framework](07-umi.md#1-feasibility-framework) exists.

@@ -11,7 +11,7 @@
 - **not** Universal Basic Income (it is limited to members and conditional on funding);
 - **not** a return on contributions (not proportional to what a member paid in; see §22);
 - **not** a withdrawal (a withdrawal returns a member's own capital);
-- **not** token issuance (newly minted MCTN is not income; §20, §51).
+- **not** token issuance (newly minted MCC is not income; §20, §51).
 
 ### How UMI differs from other ways value reaches members
 
@@ -29,7 +29,7 @@
 2. **Reserve** ≥ 12 months of UMI cost, held separately from member capital and loan liquidity.
 3. **Liquidity is unaffected**: member withdrawal and loan capacity are modelled with UMI running (see [treasury](08-treasury.md)).
 4. **A written legal opinion** on securities, tax reporting, money transmission and entity implications (§32, D-16).
-5. **Eligibility** is equal and non-discriminatory, is not pay-more-get-more, and does not require buying MCTN.
+5. **Eligibility** is equal and non-discriminatory, is not pay-more-get-more, and does not require buying MCC.
 6. **Anti-fraud controls** are in place and tested (below).
 7. **Administration cost** is under 15% of the benefit paid.
 8. **Board approval**, and a member vote if the club's governing documents require one.
@@ -47,8 +47,8 @@
 | Sponsorships and partners | Yes | $0 | Independence; disclosure | Contract review |
 | Marketplace fees (§26) | Yes | $0 | Needs a marketplace at scale | Payments / consumer protection |
 | Grants and donations | Yes (restricted) | $0 | Usually requires nonprofit status and restricted use | Entity / tax status |
-| **MCTN issuance** | **No**; dilution, not revenue | — | Explicitly excluded (§21, §51) | — |
-| Selling MCTN from the treasury | Proceeds, not operating income | — | Turns MCTN into a sold asset | **Securities: LEGAL REVIEW REQUIRED**; excluded from UMI funding |
+| **MCC issuance** | **No**; dilution, not revenue | — | Explicitly excluded (§21, §51) | — |
+| Selling MCC from the treasury | Proceeds, not operating income | — | Turns MCC into a sold asset | **Securities: LEGAL REVIEW REQUIRED**; excluded from UMI funding |
 
 **Conclusion:** the club has **no source today** that can fund UMI. The only external revenue is about $1,200 a year in fees. UMI becomes a question only after an external revenue line (interest on reserves, sponsorships, a marketplace, grants) exists and is measured in the ledger.
 
@@ -57,7 +57,7 @@
 
 **DECISION:** Do not build or promise UMI. Keep it as a research track. Any future UMI is funded solely by identified external revenue that meets the go/no-go criteria above.
 **WHY:** Funded today, it would redistribute members' own contributions at a loss (overhead) while being described as income.
-**ALTERNATIVES:** A symbolic pilot funded from contributions; fund it with MCTN (rejected by §21).
+**ALTERNATIVES:** A symbolic pilot funded from contributions; fund it with MCC (rejected by §21).
 **BENEFITS:** Protects member capital and the club's credibility; avoids the highest-risk legal framing.
 **RISKS:** Disappoints members expecting a benefit. The mitigation is to communicate UMI as a research goal with published criteria.
 **REVERSIBILITY:** easy
