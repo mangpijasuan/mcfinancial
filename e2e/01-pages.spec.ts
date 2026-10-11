@@ -9,7 +9,10 @@ import { STAFF, type StaffRole } from './fixtures'
 import { expectNoOverflow, signedIn } from './helpers'
 
 // Screens reached from another page rather than the navigation.
-const SUB_PAGES: Partial<Record<StaffRole, string[]>> = { treasurer: ['/ledger/opening', '/ledger/comparison', '/ledger/reads', '/loan-history/review'] }
+const SUB_PAGES: Partial<Record<StaffRole, string[]>> = {
+  treasurer: ['/ledger/opening', '/ledger/comparison', '/ledger/reads', '/loan-history/review', '/contributions/import'],
+  administrator: ['/members/import'],
+}
 
 function screensFor(role: StaffRole): string[] {
   const nav = visibleNav([...permissionsForRoles([STAFF[role].role])])

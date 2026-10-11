@@ -17,6 +17,7 @@ export const STAFF = {
   finance: { id: 'e2e-finance', email: 'finance@e2e.test', name: 'Fin Finance', role: 'finance' },
   loan_officer: { id: 'e2e-loans', email: 'loans@e2e.test', name: 'Lou Loans', role: 'loan_officer' },
   board: { id: 'e2e-board', email: 'board@e2e.test', name: 'Bea Board', role: 'board' },
+  administrator: { id: 'e2e-admin', email: 'admin@e2e.test', name: 'Ada Admin', role: 'administrator' },
 } as const
 export type StaffRole = keyof typeof STAFF
 

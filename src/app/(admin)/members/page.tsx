@@ -2,7 +2,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, ExternalLink, ChevronRight } from 'lucide-react'
+import { Plus, ExternalLink, ChevronRight, Upload } from 'lucide-react'
 import { Card, Table, EmptyState, StatusBadge, EligibleBadge, RiskBadge, PaidBadge,
          Button, Modal, Input, Select, PageHeader, FilterBar, SearchInput } from '@/components/ui'
 import { fmt$, fmtDate } from '@/lib/utils'
@@ -70,7 +70,12 @@ export default function MembersPage() {
       <PageHeader
         title="Members"
         sub={`${total} total`}
-        action={can('members.create') ? <Button onClick={() => setShowAdd(true)}><Plus size={15} /> Add member</Button> : undefined}
+        action={can('members.create') ? (
+          <div className="flex flex-wrap gap-2">
+            <Link href="/members/import" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50"><Upload size={15} aria-hidden /> Import from spreadsheet</Link>
+            <Button onClick={() => setShowAdd(true)}><Plus size={15} /> Add member</Button>
+          </div>
+        ) : undefined}
       />
 
       <FilterBar>

@@ -738,6 +738,23 @@ model QuickBooksCustomer {
   member Member @relation(fields: [memberId], references: [id])
 }
 
+/// A spreadsheet imported into the app (docs/operations/data-import.md). The
+/// file's hash is kept so the same file cannot be imported twice.
+model DataImport {
+  id         String   @id @default(cuid())
+  publicId   String   @unique // IMP-…
+  kind       String // members | contributions
+  fileHash   String // SHA-256 of the file's contents
+  fileName   String?
+  rows       Int
+  added      Int
+  updated    Int
+  importedBy String
+  createdAt  DateTime @default(now())
+
+  @@unique([kind, fileHash])
+}
+
 /// Durable inbox for verified Stripe deliveries; refunds/disputes remain reviewable evidence.
 model StripeWebhookEvent {
   eventId     String    @id
