@@ -369,7 +369,7 @@ Transfers and reconciliations are kept as evidence: they can never be changed or
 
 ## Architecture assessment
 
-The platform modernisation plan (financial ledger, security, MCTN / rewards research, UMI feasibility) lives in [docs/architecture/](docs/architecture/README.md). Start with the executive assessment and **Founder Decision Gate #1**. The numbers in it are reproducible with `node scripts/models/tokenomics.mjs` and `node scripts/models/umi.mjs`.
+The platform modernisation plan (financial ledger, security, MCC / rewards research, UMI feasibility) lives in [docs/architecture/](docs/architecture/README.md). Start with the executive assessment and **Founder Decision Gate #1**. The numbers in it are reproducible with `node scripts/models/tokenomics.mjs` and `node scripts/models/umi.mjs`.
 
 ## Hetzner deployment
 For a production-oriented Hetzner setup with Docker, PostgreSQL, and Caddy, use:

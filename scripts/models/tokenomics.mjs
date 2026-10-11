@@ -1,11 +1,11 @@
-// Preliminary MCTN tokenomics models (research only — nothing here is deployed).
+// Preliminary MCC tokenomics models (research only — nothing here is deployed).
 // Run: node scripts/models/tokenomics.mjs
-// Token quantities are whole MCTN held as integers; every parameter below is
+// Token quantities are whole MCC held as integers; every parameter below is
 // an illustrative assumption for Founder Decision Gate #1, not a decision.
 
 const START_ACTIVE_MEMBERS = 114 // active members in the current database
 const YEARS = 10
-const REWARD_PER_MEMBER_YEAR = 1_200 // policy dial (~100 MCTN/month per active member)
+const REWARD_PER_MEMBER_YEAR = 1_200 // policy dial (~100 MCC/month per active member)
 
 const ADOPTION = { conservative: 200, base: 1_000, aggressive: 10_000 } // active members in year 10
 
@@ -121,7 +121,7 @@ const MODELS = {
 }
 
 const out = []
-out.push(`Assumptions: ${START_ACTIVE_MEMBERS} active members today; reward rate ${fmt(REWARD_PER_MEMBER_YEAR)} MCTN per active member per year;`)
+out.push(`Assumptions: ${START_ACTIVE_MEMBERS} active members today; reward rate ${fmt(REWARD_PER_MEMBER_YEAR)} MCC per active member per year;`)
 out.push(`adoption reaches ${Object.entries(ADOPTION).map(([k, v]) => `${fmt(v)} (${k})`).join(', ')} active members by year 10 at a constant growth rate.`)
 out.push('Initial circulating supply is 0 in every model: nothing is released until a member earns it or a vesting schedule unlocks it.')
 out.push('')
@@ -129,7 +129,7 @@ out.push('')
 for (const [key, model] of Object.entries(MODELS)) {
   out.push(`### ${model.name}`)
   out.push('')
-  out.push('| Allocation | % | MCTN | Release |')
+  out.push('| Allocation | % | MCC | Release |')
   out.push('|---|---:|---:|---|')
   for (const [label, qty, note] of model.allocations) {
     out.push(`| ${label} | ${qty === null ? '—' : model.cap ? pct(qty, model.cap) : '—'} | ${qty === null ? 'per emissions' : fmt(qty)} | ${note} |`)

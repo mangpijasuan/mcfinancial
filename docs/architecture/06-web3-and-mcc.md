@@ -1,4 +1,4 @@
-# 10–14. Web3 Boundary, MCTN, Chain Selection, Tokenomics and Rewards
+# 10–14. Web3 Boundary, MCC, Chain Selection, Tokenomics and Rewards
 
 > **Nothing in this document authorises building or deploying a token.** It is research for Founder Decision Gate #1. Contract work waits for Gate #2 and the legal scoping review (D-16).
 
@@ -14,9 +14,9 @@ Every candidate item was tested against §3: *what problem does putting this on-
 | Fiat ledger, bank, reconciliation, compliance records | Off-chain | nothing | **Off-chain** |
 | Wallet ↔ member link | Off-chain | — (publishing it de-anonymises members) | **Off-chain** |
 | MC Points (rewards) balances | Off-chain first | portability and member-verifiable balances, but only once members want to hold them outside MC | **Off-chain now; on-chain settlement optional later** |
-| MCTN balances and transfers, *if* issued | On-chain | a public, tamper-evident balance record not dependent on MC's database | On-chain (by definition) |
-| MCTN supply, mint limits, vesting | On-chain | members can verify that issuance rules cannot be quietly changed | **On-chain**; this is the strongest real benefit |
-| MCTN treasury movements | On-chain (Safe) | members can see that token reserves did not move without multi-party approval | **On-chain** |
+| MCC balances and transfers, *if* issued | On-chain | a public, tamper-evident balance record not dependent on MC's database | On-chain (by definition) |
+| MCC supply, mint limits, vesting | On-chain | members can verify that issuance rules cannot be quietly changed | **On-chain**; this is the strongest real benefit |
+| MCC treasury movements | On-chain (Safe) | members can see that token reserves did not move without multi-party approval | **On-chain** |
 | Membership proof | — | nothing identified today | **Not built** |
 | Governance voting | — | only if members are ever given binding votes on token rules | **Deferred** |
 | UMI distribution | — | nothing until UMI is funded and legal | **Not built** |
@@ -29,7 +29,7 @@ flowchart TB
       PTS --- WL[Wallet links<br/>Confidential]
     end
     subgraph ON["On-chain — only if Gate #2 approves"]
-      TOK[MCTN token<br/>rules visible]
+      TOK[MCC token<br/>rules visible]
       MIN[Rewards minter<br/>rate-limited]
       SAFE[Treasury Safes]
     end
@@ -50,7 +50,7 @@ flowchart TB
 **REQUIRES LEGAL REVIEW:** no
 **REQUIRES FOUNDER APPROVAL:** yes
 
-## 2. MCTN feasibility
+## 2. MCC feasibility
 
 ### What each proposed use actually needs
 
@@ -70,11 +70,11 @@ flowchart TB
 <a id="d-10"></a>
 ### D-10 — Start with MC Points (off-chain), designed to settle on-chain later
 
-**DECISION:** Launch rewards as **MC Points**: a non-transferable, non-redeemable-for-cash, off-chain ledger inside the platform. Design the points ledger so earned points can later be settled 1:1 into MCTN if Gate #2 approves a token.
-**WHY:** It delivers all the member-facing value in §10 with no custody, gas, audit or securities exposure. It also produces real usage data (how many points are earned, what members do with them) to size MCTN properly (D-13).
-**ALTERNATIVES:** Deploy MCTN directly on an L2 as a non-transferable token; do nothing.
+**DECISION:** Launch rewards as **MC Points**: a non-transferable, non-redeemable-for-cash, off-chain ledger inside the platform. Design the points ledger so earned points can later be settled 1:1 into MCC if Gate #2 approves a token.
+**WHY:** It delivers all the member-facing value in §10 with no custody, gas, audit or securities exposure. It also produces real usage data (how many points are earned, what members do with them) to size MCC properly (D-13).
+**ALTERNATIVES:** Deploy MCC directly on an L2 as a non-transferable token; do nothing.
 **BENEFITS:** Fast and reversible; no irreversible contract deployment before the legal review.
-**RISKS:** Members may perceive points as "not real crypto". The mitigation is to message it as MC Points from the start and make any later MCTN settlement an upgrade, not a promise.
+**RISKS:** Members may perceive points as "not real crypto". The mitigation is to message it as MC Points from the start and make any later MCC settlement an upgrade, not a promise.
 **REVERSIBILITY:** easy
 **REQUIRES LEGAL REVIEW:** yes (tax treatment of rewards; consumer-protection wording)
 **REQUIRES FOUNDER APPROVAL:** yes
@@ -103,7 +103,7 @@ Qualitative comparison as of this writing. Fees, rollup maturity and ecosystem s
 <a id="d-11"></a>
 ### D-11 — Preliminary shortlist, not a selection
 
-**DECISION:** If MCTN is approved, shortlist **EVM rollups: Base, Arbitrum One and OP Mainnet**. Choose among them after a testnet prototype, using the wallet provider chosen in §6 and the then-current rollup maturity. Exclude Ethereum L1 (fees for small, frequent rewards) and Polygon PoS (weaker security inheritance). Keep Solana as the alternative if a native non-transferable token becomes decisive, accepting the cost of a second tech stack.
+**DECISION:** If MCC is approved, shortlist **EVM rollups: Base, Arbitrum One and OP Mainnet**. Choose among them after a testnet prototype, using the wallet provider chosen in §6 and the then-current rollup maturity. Exclude Ethereum L1 (fees for small, frequent rewards) and Polygon PoS (weaker security inheritance). Keep Solana as the alternative if a native non-transferable token becomes decisive, accepting the cost of a second tech stack.
 **WHY:** Low fees suit small rewards. Rollups inherit Ethereum security, and the EVM gives the OpenZeppelin, Foundry and Safe toolchain. Contracts stay portable between EVM chains.
 **ALTERNATIVES:** Solana; Ethereum L1; an app-specific chain (far too much operational burden).
 **BENEFITS:** Lowest operational risk for a small team; no lock-in within the EVM family.
@@ -119,8 +119,8 @@ If an EVM chain is chosen: OpenZeppelin Contracts ERC-20, with only the features
 | Feature | Include? | Reason |
 |---|---|---|
 | `ERC20` | yes | base |
-| Transfer restriction (override `_update` to allow only mint and burn) | **yes, if non-transferable** (recommended at launch) | Keeps MCTN a reward, not a tradable asset, until secondary trading is deliberately decided |
-| `ERC20Burnable` | yes | Spending points or MCTN on benefits burns them (the utility sink) |
+| Transfer restriction (override `_update` to allow only mint and burn) | **yes, if non-transferable** (recommended at launch) | Keeps MCC a reward, not a tradable asset, until secondary trading is deliberately decided |
+| `ERC20Burnable` | yes | Spending points or MCC on benefits burns them (the utility sink) |
 | `ERC20Capped` | only for Model B | Model C enforces its ceiling in the minter instead |
 | `ERC20Permit` | no | No approvals are needed for a non-transferable token |
 | `ERC20Votes` | no | No governance is planned; adding votes early signals an investment-like instrument |
@@ -131,7 +131,7 @@ If an EVM chain is chosen: OpenZeppelin Contracts ERC-20, with only the features
 <a id="d-12"></a>
 ### D-12 — Minimal, non-upgradeable token; minting only through a rate-limited minter
 
-**DECISION:** If deployed, `MCTNToken` is a non-upgradeable OpenZeppelin ERC-20 whose only minter is `MCTNRewardsMinter`. The minter enforces a hard per-period issuance ceiling on-chain and is administered by the Treasury Safe.
+**DECISION:** If deployed, `MCCToken` is a non-upgradeable OpenZeppelin ERC-20 whose only minter is `MCCRewardsMinter`. The minter enforces a hard per-period issuance ceiling on-chain and is administered by the Treasury Safe.
 **WHY:** It limits the damage from any single key compromise. On-chain issuance rules are the main transparency benefit of a token.
 **ALTERNATIVES:** Upgradeable proxy (flexible, but any key holder can change the rules); multiple minters; transferable from day one.
 **BENEFITS:** Small audit surface; rules members can verify.
@@ -144,13 +144,13 @@ If an EVM chain is chosen: OpenZeppelin Contracts ERC-20, with only the features
 
 Three models, generated by [`scripts/models/tokenomics.mjs`](../../scripts/models/tokenomics.mjs). All numbers are illustrative. The reward rate (1,200 per active member per year) is a unit of account chosen for comparability; the absolute size means nothing until a point is tied to a real benefit. What matters is the **shape**: who holds the circulating supply, and how supply grows.
 
-Assumptions: 114 active members today; reward rate 1,200 MCTN per active member per year;
+Assumptions: 114 active members today; reward rate 1,200 MCC per active member per year;
 adoption reaches 200 (conservative), 1,000 (base), 10,000 (aggressive) active members by year 10 at a constant growth rate.
 Initial circulating supply is 0 in every model: nothing is released until a member earns it or a vesting schedule unlocks it.
 
 #### Model A — Fixed supply, pre-minted at genesis
 
-| Allocation | % | MCTN | Release |
+| Allocation | % | MCC | Release |
 |---|---:|---:|---|
 | Member rewards | 35.0% | 35,000,000 | Released only as members earn rewards |
 | Community programs | 10.0% | 10,000,000 | Assumed 1,000,000/yr program spend |
@@ -169,7 +169,7 @@ Initial circulating supply is 0 in every model: nothing is released until a memb
 
 #### Model B — Capped supply, minted on demand
 
-| Allocation | % | MCTN | Release |
+| Allocation | % | MCC | Release |
 |---|---:|---:|---|
 | Member rewards | 60.0% | 60,000,000 | Minted only when earned; on-chain ceiling 5,000,000/yr |
 | Community programs | 10.0% | 10,000,000 | Minted as spent; assumed 500,000/yr |
@@ -188,7 +188,7 @@ Initial circulating supply is 0 in every model: nothing is released until a memb
 
 #### Model C — Controlled emissions, no fixed cap (hard annual ceiling)
 
-| Allocation | % | MCTN | Release |
+| Allocation | % | MCC | Release |
 |---|---:|---:|---|
 | Member rewards | — | per emissions | Emitted per active member; hard ceiling 10,000,000/yr |
 | Community programs | — | per emissions | Funded from treasury, not a separate allocation |
@@ -247,7 +247,7 @@ flowchart LR
     APPR -- auto rule, under cap --> LEDG[MC Points ledger<br/>append-only]
     APPR -- manual award --> MC[Maker / checker] --> LEDG
     LEDG --> UI[Member dashboard<br/>visually separate from $]
-    LEDG -. Gate #2 .-> SETTLE[Batch settlement<br/>rewards minter → MCTN]
+    LEDG -. Gate #2 .-> SETTLE[Batch settlement<br/>rewards minter → MCC]
 ```
 
 ### Earning (proposal; founder decision)
@@ -290,9 +290,9 @@ Requirements for Phase 2: gas sponsored by a paymaster (budgeted in USD, funded 
 
 | Contract | Needed? | Why on-chain? | Controls | Admin | Can mint? | Moves funds? | Pausable? | Upgradeable? | If admin keys are compromised | If it fails |
 |---|---|---|---|---|---|---|---|---|---|---|
-| `MCTNToken` | only after Gate #2 | verifiable balances and supply | MCTN balances | Treasury Safe through a **timelock** (e.g. 7 days); its only power is to change which contract holds the minter role | only via the minter | no | no | no | the attacker needs 3 of 5 Safe keys **and** must wait out the timelock, while the pending change is public and the honest signers can cancel it | migrate to a new token from a snapshot |
-| `MCTNRewardsMinter` | only after Gate #2 | issuance limits members can verify | mint rights up to the ceiling | Treasury Safe (3-of-5) | yes, ≤ ceiling per period | no | yes (minting only) | no | the attacker can mint at most the remaining period ceiling; Safe pauses and rotates | pause; deploy a new minter; assign it through the timelocked token admin |
-| Treasury | use **Safe**, not custom code | multi-party control of any token reserve | treasury MCTN | 5 signers | no | yes, with 3 of 5 | n/a | Safe modules only | needs 3 keys; signer rotation procedure in [treasury](08-treasury.md) | Safe is battle-tested; the risk is signer operations |
-| `MCTNVesting` | **no** under Model C | — | — | — | — | — | — | — | — | use OpenZeppelin `VestingWallet` if any vesting is ever approved |
+| `MCCToken` | only after Gate #2 | verifiable balances and supply | MCC balances | Treasury Safe through a **timelock** (e.g. 7 days); its only power is to change which contract holds the minter role | only via the minter | no | no | no | the attacker needs 3 of 5 Safe keys **and** must wait out the timelock, while the pending change is public and the honest signers can cancel it | migrate to a new token from a snapshot |
+| `MCCRewardsMinter` | only after Gate #2 | issuance limits members can verify | mint rights up to the ceiling | Treasury Safe (3-of-5) | yes, ≤ ceiling per period | no | yes (minting only) | no | the attacker can mint at most the remaining period ceiling; Safe pauses and rotates | pause; deploy a new minter; assign it through the timelocked token admin |
+| Treasury | use **Safe**, not custom code | multi-party control of any token reserve | treasury MCC | 5 signers | no | yes, with 3 of 5 | n/a | Safe modules only | needs 3 keys; signer rotation procedure in [treasury](08-treasury.md) | Safe is battle-tested; the risk is signer operations |
+| `MCCVesting` | **no** under Model C | — | — | — | — | — | — | — | — | use OpenZeppelin `VestingWallet` if any vesting is ever approved |
 | `MCMembership` | **no** | nothing identified; privacy risk | — | — | — | — | — | — | — | — |
 | `UMIDistributor` | **no** | UMI is not approved or funded | — | — | — | — | — | — | — | — |

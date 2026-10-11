@@ -24,7 +24,7 @@ and open the address it prints. *Member sign in* only works when Caddy serves th
 
 1. **Write the draft sections.** Each yellow *Draft* box (`class="draft"`) says what goes there: the club's story, how to join, members' rights, and the contact address. The site does not go live while any are left.
 2. **Counsel reviews the wording**, especially Membership (rights and leaving the club) and the name "mcfinancial" itself (product map, branding note; compliance row 17).
-3. **No financial services or MCTN pages.** Describing lending publicly may count as advertising credit (compliance rows 2 and 3), and MCTN is not published before Gate #2. `tests/public-site.test.ts` fails if a page mentions loans, lending, interest, investment, returns or the token; change that list only with counsel's approval.
+3. **No financial services or MCC pages.** Describing lending publicly may count as advertising credit (compliance rows 2 and 3), and MCC is not published before Gate #2. `tests/public-site.test.ts` fails if a page mentions loans, lending, interest, investment, returns or the token; change that list only with counsel's approval.
 4. **Publish.** Point DNS for `mcfinancial.us` (and `www.`, if wanted) at the server, set `WWW_DOMAIN` in the server's `.env` (`WWW_DOMAIN="mcfinancial.us www.mcfinancial.us"`), and run `docker compose -f docker-compose.hetzner.yml up -d`. Caddy gets the certificate. `APP_DOMAIN` must be set too, for *Member sign in*.
 
 ## Checks

@@ -11,7 +11,7 @@
 | Money-moving authority (bank access, Stripe, disbursement approval) | Direct theft |
 | Staff accounts | They are the path to both of the above |
 | Signed agreements | Enforceability of loans |
-| *(future)* MCTN mint authority and treasury signer keys | Unlimited token issuance; treasury drain |
+| *(future)* MCC mint authority and treasury signer keys | Unlimited token issuance; treasury drain |
 
 ### Actors
 
@@ -118,7 +118,7 @@ No role can approve its own proposal. The Administrator manages accounts but has
 | **Restricted** | government ID images, bank account numbers, passwords/hashes, MFA secrets, future private keys | Never in logs, emails or git. Stored encrypted (files: encrypted object storage; secrets: KMS or `age`). Access by named role only, and every access is logged |
 | **Confidential** | names, contacts, beneficiaries, loan and contribution records, balances, wallet ↔ member links | Encrypted at rest (disk) and in transit; role-based access; only in member-scoped emails |
 | **Internal** | aggregate stats, policy config, audit metadata | Staff-visible |
-| **Public** | club name, published policies, *(future)* MCTN contract address, total supply | May be published |
+| **Public** | club name, published policies, *(future)* MCC contract address, total supply | May be published |
 
 ### Where personal data lives today
 

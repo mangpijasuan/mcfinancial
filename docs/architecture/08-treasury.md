@@ -2,9 +2,9 @@
 
 Two treasuries, strictly separated:
 
-| | **Fiat treasury** | **MCTN treasury** (only after Gate #2) |
+| | **Fiat treasury** | **MCC treasury** (only after Gate #2) |
 |---|---|---|
-| Holds | the club's real money: member capital, loan repayments, fees | MCTN not yet distributed |
+| Holds | the club's real money: member capital, loan repayments, fees | MCC not yet distributed |
 | Where | bank account(s); Stripe balance; cash in transit with collectors | Safe multisig wallets on the chosen chain |
 | Record | the fiat ledger (D-04) | the chain (authoritative), mirrored read-only into the platform |
 | Risk today | **High**: exists now, no dual control recorded in the system | none (does not exist) |
@@ -43,12 +43,12 @@ Members can withdraw their capital (`Partial` / `Full Exit` withdrawals exist), 
 | Disbursements | Treasurer proposes, a board member approves (D-06); paid only to the borrower's verified account |
 | Reconciliation | Monthly bank, daily Stripe; the period cannot close with unreconciled items above a tolerance. *Built:* monthly bank reconciliation and month-end close with a zero tolerance (*Money → Reconciliation*); Stripe is reconciled by recording each payout until its balance transactions are imported |
 
-## 2. MCTN treasury (design for Phase 12+)
+## 2. MCC treasury (design for Phase 12+)
 
 <a id="d-14"></a>
 ### D-14 — Safe multisigs, 3-of-5 hardware signers, one Safe per purpose
 
-**DECISION:** All MCTN held by the club sits in Safe multisig wallets. Each Safe has 5 signers and requires 3 approvals. Signers use hardware wallets. There is one Safe per purpose (below).
+**DECISION:** All MCC held by the club sits in Safe multisig wallets. Each Safe has 5 signers and requires 3 approvals. Signers use hardware wallets. There is one Safe per purpose (below).
 **WHY:** §16: never one ordinary wallet. 3-of-5 tolerates two lost keys and two compromised keys.
 **ALTERNATIVES:** 2-of-3 (fewer people needed, less resilient); MPC custody provider (vendor dependency, possible custody implications); a single hardware wallet (rejected).
 **BENEFITS:** No single person can move tokens; every movement is public and attributable.
@@ -61,7 +61,7 @@ Members can withdraw their capital (`Partial` / `Full Exit` withdrawals exist), 
 
 | Safe | Purpose | Threshold | Notes |
 |---|---|---|---|
-| Treasury (admin) | Admin of the token timelock and rewards minter; holds treasury MCTN | 3 of 5 | Highest security; used rarely |
+| Treasury (admin) | Admin of the token timelock and rewards minter; holds treasury MCC | 3 of 5 | Highest security; used rarely |
 | Community / rewards ops | Community programme budget, released per approved programme | 3 of 5 (or 2 of 3 with a spending limit) | Funded in tranches from the Treasury Safe |
 | Liquidity | **Not created** unless secondary trading is approved | — | — |
 | Reserve | Only if a model with a reserve is chosen | 4 of 5 | Timelocked |
@@ -81,7 +81,7 @@ Members can withdraw their capital (`Partial` / `Full Exit` withdrawals exist), 
 | One signer key compromised | Remaining signers swap the owner immediately; review recent proposals |
 | Minter misbehaving | Pause the minter (Safe); investigate; replace through the timelock |
 | Suspicious timelocked role change | Signers cancel within the delay window; board notified |
-| Chain outage / sequencer down | No action required: MCTN is a rewards token and nothing time-critical depends on it |
+| Chain outage / sequencer down | No action required: MCC is a rewards token and nothing time-critical depends on it |
 
 ### Monitoring and reporting
 

@@ -5,7 +5,7 @@
 **How to use:** for each item, tick one box and add notes where needed. A recommendation is given for every item; approving the recommendation is one tick. Items are split in two:
 
 - **Part A** unblocks the financial-core work (Stages 2–3). It is needed now.
-- **Part B** sets the *principles* for MCTN, rewards and UMI. Details come back for approval at Gate #2, after the legal scoping review.
+- **Part B** sets the *principles* for MCC, rewards and UMI. Details come back for approval at Gate #2, after the legal scoping review.
 
 Each recommendation links to its full rationale.
 
@@ -36,27 +36,27 @@ Each recommendation links to its full rationale.
 
 ---
 
-## Part B — Principles for MCTN, rewards and UMI
+## Part B — Principles for MCC, rewards and UMI
 
 Approving these commits to **principles only**. No token is created, and no contract is written or deployed. Specific parameters return at Gate #2.
 
 | # | Decision | Recommendation | Approve | Amend | Reject |
 |---|---|---|:-:|:-:|:-:|
-| B1 | **MCTN's purpose**: a member reward and recognition instrument, not an investment, not a currency, not a claim on club assets | Approve ([06 §2](06-web3-and-mctn.md#2-mctn-feasibility)) | ☐ | ☐ | ☐ |
-| B2 | **Start as MC Points** (off-chain, non-transferable) and decide on an on-chain MCTN at Gate #2 using real usage data and legal advice | Approve ([D-10](06-web3-and-mctn.md#d-10)) | ☐ | ☐ | ☐ |
+| B1 | **MCC's purpose**: a member reward and recognition instrument, not an investment, not a currency, not a claim on club assets | Approve ([06 §2](06-web3-and-mcc.md#2-mcc-feasibility)) | ☐ | ☐ | ☐ |
+| B2 | **Start as MC Points** (off-chain, non-transferable) and decide on an on-chain MCC at Gate #2 using real usage data and legal advice | Approve ([D-10](06-web3-and-mcc.md#d-10)) | ☐ | ☐ | ☐ |
 | B3 | **Transferability**: non-transferable at launch; any change requires a new decision and legal review | Approve | ☐ | ☐ | ☐ |
-| B4 | **Purchase**: members cannot buy MCTN or points | Approve | ☐ | ☐ | ☐ |
-| B5 | **Redemption**: points and MCTN are never redeemable for cash or at a fixed dollar value; they may be spent on defined member benefits | Approve (§9) | ☐ | ☐ | ☐ |
+| B4 | **Purchase**: members cannot buy MCC or points | Approve | ☐ | ☐ | ☐ |
+| B5 | **Redemption**: points and MCC are never redeemable for cash or at a fixed dollar value; they may be spent on defined member benefits | Approve (§9) | ☐ | ☐ | ☐ |
 | B6 | **Secondary trading**: not intended; no liquidity allocation, no listing, no staking | Approve | ☐ | ☐ | ☐ |
-| B7 | **Blockchain**: no selection now; shortlist EVM rollups (Base, Arbitrum One, OP Mainnet) for Gate #2 | Approve shortlist ([D-11](06-web3-and-mctn.md#d-11)) | ☐ | ☐ | ☐ |
-| B8 | **Custody**: members hold their own keys (embedded non-custodial or external wallets); MC never custodies member tokens | Approve ([06 §6](06-web3-and-mctn.md#6-wallet-architecture-mc-wallet-18--needed-only-after-gate-2)) | ☐ | ☐ | ☐ |
-| B9 | **Supply philosophy**: size supply from the reward policy; prefer emissions tied to active members with an immutable annual ceiling (Model C); no large pre-mint; no team token allocation (team paid in fiat) | Approve ([D-13](06-web3-and-mctn.md#d-13)) | ☐ | ☐ | ☐ |
-| B10 | **Token contract principles**: minimal, non-upgradeable, minting only via a rate-limited minter, admin via Safe + timelock | Approve ([D-12](06-web3-and-mctn.md#d-12)) | ☐ | ☐ | ☐ |
+| B7 | **Blockchain**: no selection now; shortlist EVM rollups (Base, Arbitrum One, OP Mainnet) for Gate #2 | Approve shortlist ([D-11](06-web3-and-mcc.md#d-11)) | ☐ | ☐ | ☐ |
+| B8 | **Custody**: members hold their own keys (embedded non-custodial or external wallets); MC never custodies member tokens | Approve ([06 §6](06-web3-and-mcc.md#6-wallet-architecture-mc-wallet-18--needed-only-after-gate-2)) | ☐ | ☐ | ☐ |
+| B9 | **Supply philosophy**: size supply from the reward policy; prefer emissions tied to active members with an immutable annual ceiling (Model C); no large pre-mint; no team token allocation (team paid in fiat) | Approve ([D-13](06-web3-and-mcc.md#d-13)) | ☐ | ☐ | ☐ |
+| B10 | **Token contract principles**: minimal, non-upgradeable, minting only via a rate-limited minter, admin via Safe + timelock | Approve ([D-12](06-web3-and-mcc.md#d-12)) | ☐ | ☐ | ☐ |
 | B11 | **Treasury governance**: Safe multisig, 3-of-5 hardware signers, one Safe per purpose. **Name candidate signers** | Approve; candidates: ______________ ([D-14](08-treasury.md#d-14)) | ☐ | ☐ | ☐ |
-| B12 | **Contributions ↔ MCTN**: separate assets and separate accounting events; no automatic conversion; rewards never proportional to the amount contributed | Approve (§9, [06 §5](06-web3-and-mctn.md#5-rewards-architecture)) | ☐ | ☐ | ☐ |
-| B13 | **Loans ↔ MCTN**: none. Tokens are never collateral, never affect loan eligibility, and are never earned for borrowing | Approve | ☐ | ☐ | ☐ |
+| B12 | **Contributions ↔ MCC**: separate assets and separate accounting events; no automatic conversion; rewards never proportional to the amount contributed | Approve (§9, [06 §5](06-web3-and-mcc.md#5-rewards-architecture)) | ☐ | ☐ | ☐ |
+| B13 | **Loans ↔ MCC**: none. Tokens are never collateral, never affect loan eligibility, and are never earned for borrowing | Approve | ☐ | ☐ | ☐ |
 | B14 | **Rewards philosophy**: reward tenure, participation, education and service, not money; anti-abuse controls as designed; decide on contribution streaks (Q-19) | Approve; streaks: yes ☐ / no ☐ | ☐ | ☐ | ☐ |
-| B15 | **PII and financial data never on-chain**, including hashes and public wallet-to-member mappings | Approve ([D-09](06-web3-and-mctn.md#d-09)) | ☐ | ☐ | ☐ |
+| B15 | **PII and financial data never on-chain**, including hashes and public wallet-to-member mappings | Approve ([D-09](06-web3-and-mcc.md#d-09)) | ☐ | ☐ | ☐ |
 | B16 | **UMI definition**: an equal benefit to eligible members funded only by identified external surplus; not a return on contributions; not token issuance | Approve ([07 §1](07-umi.md#1-feasibility-framework)) | ☐ | ☐ | ☐ |
 | B17 | **UMI funding model**: none available today; UMI remains research until a funding source meets the go/no-go criteria | Approve ([D-15](07-umi.md#d-15)) | ☐ | ☐ | ☐ |
 | B18 | **Membership eligibility principles** (for any benefit): based on active status, tenure, verified identity and good standing; never on wealth, contribution size or token holdings; no membership tiers for now | Approve ([03 §2](03-domain-and-membership.md#2-member-management-architecture)) | ☐ | ☐ | ☐ |
@@ -87,4 +87,4 @@ Approving these commits to **principles only**. No token is created, and no cont
 | A15 | *Done in code:* real data removed from the repository; synthetic data for development. Owed: keep the original data files encrypted outside git (README "Real club data") | — |
 | Q-1, Q-2, Q-4, Q-6, Q-7, Q-10, Q-12, Q-23 | Blocking facts ([open questions](12-open-questions.md)) | Stage 3 |
 
-**Part B** (MCTN, rewards and UMI principles) is not yet decided. Until it is, no token, contract or UMI work starts.
+**Part B** (MCC, rewards and UMI principles) is not yet decided. Until it is, no token, contract or UMI work starts.

@@ -138,7 +138,7 @@ At the club's volume (hundreds of entries a year, not millions), balances can be
 | `/api/v1/reports` | member statement, portfolio, cash flow — as of any date | `/api/dashboard` |
 | `/api/v1/admin` | users, roles, audit log | `/api/admins` |
 | `/api/v1/me` | member-scoped: profile, statements, loans, payments, points | `/api/portal/*` |
-| `/api/v1/rewards`, `/api/v1/wallets`, `/api/v1/mctn`, `/api/v1/treasury` | Phase 10+ | — |
+| `/api/v1/rewards`, `/api/v1/wallets`, `/api/v1/mcc`, `/api/v1/treasury` | Phase 10+ | — |
 | `/api/v1/umi` | **not created** (D-15) | — |
 
 ## 3. Repository architecture
@@ -194,9 +194,9 @@ The founder's proposed layout, adopted as the destination with five adjustments:
 
 1. **One home for each concern.** `packages/` holds all business logic. `apps/` only receive requests and render. `services/` only run background work and call `packages/`. So loans live in `packages/loans` (not also in `apps/api/loans` and `services/loan-engine`), and the same applies to compliance, reporting, notifications and treasury.
 2. **Missing packages added:** `approvals` (maker/checker), `audit`, and `identity` split from `auth`.
-3. **Contracts trimmed to what the gate decisions need:** `MCTNToken.sol` and `MCTNRewardsMinter.sol`. The treasury is a **Safe** multisig, not custom code (D-14). Vesting, if ever needed, is OpenZeppelin's `VestingWallet` (D-13). `MemberBenefits.sol` is dropped: benefits stay off-chain (D-09, D-15).
+3. **Contracts trimmed to what the gate decisions need:** `MCCToken.sol` and `MCCRewardsMinter.sol`. The treasury is a **Safe** multisig, not custom code (D-14). Vesting, if ever needed, is OpenZeppelin's `VestingWallet` (D-13). `MemberBenefits.sol` is dropped: benefits stay off-chain (D-09, D-15).
 4. **Services start as scheduled jobs** inside the app. Premature ones (`benefit-engine`, `fraud-monitoring`, `analytics`) are not created until volume or a real requirement exists.
-5. **No MCTN pages** in `apps/web`, `apps/member-portal` or `apps/admin` until Gate #2 ([product map](13-product-map.md)).
+5. **No MCC pages** in `apps/web`, `apps/member-portal` or `apps/admin` until Gate #2 ([product map](13-product-map.md)).
 
 ```
 mcfinancial/
@@ -216,7 +216,7 @@ mcfinancial/
 │   ├── compliance/  notifications/  reporting/  documents/  rewards/
 │   └── ui/  config/
 ├── web3/                       # created at Gate #2
-│   ├── contracts/              # MCTNToken.sol, MCTNRewardsMinter.sol
+│   ├── contracts/              # MCCToken.sol, MCCRewardsMinter.sol
 │   ├── scripts/                # deploy/, verify/, administration/ (via Safe)
 │   ├── test/                   # unit/, integration/, fuzz/, invariant/
 │   └── deployments/            # local/, testnet/, mainnet/
@@ -238,5 +238,5 @@ mcfinancial/
 | 3 | Monorepo tooling (npm/pnpm workspaces + Turborepo or Nx); the existing app moves to `apps/member-portal`; modules move to `packages/*` | step 2 creates a second deployable | Workspaces pay off once there are two apps |
 | 4 | `apps/admin` split from the member portal | RBAC and MFA are stable (Stage 2 exit) | Real security boundary: separate deployment behind an access gateway |
 | 5 | `services/*` (one at a time) | a job outgrows the app process (runtime, schedule, or failure isolation) | Until then, scheduled jobs inside the app are simpler and safer |
-| 6 | `web3/` with the two contracts; later `services/blockchain-indexer` | Gate #2 approves an on-chain MCTN | Nothing on-chain exists before then |
+| 6 | `web3/` with the two contracts; later `services/blockchain-indexer` | Gate #2 approves an on-chain MCC | Nothing on-chain exists before then |
 | 7 | `apps/api` as its own service | a second client (e.g. a mobile app) needs the API | Until then, Next.js route handlers serve the web apps directly |

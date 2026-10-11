@@ -1,7 +1,7 @@
 // The public site (apps/web): static pages served by Caddy, never the app.
 // Every link and image resolves, nothing runs or collects anything, and no
 // page describes lending, investment or the token before counsel clears the
-// wording (product map §5; compliance rows 2, 3 and 17; MCTN after Gate #2).
+// wording (product map §5; compliance rows 2, 3 and 17; MCC after Gate #2).
 import { readFileSync, readdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -47,7 +47,7 @@ describe('the public site', () => {
   })
 
   it.each(PAGES)('%s: nothing about lending, investment or the token until counsel clears it', (file) => {
-    const forbidden = /\b(loans?|lend\w*|borrow\w*|credit|interest|invest\w*|returns?|profits?|dividends?|yields?|earn\w*|guarantee\w*|tokens?|mctn|crypto\w*|blockchain|financial services)\b/i
+    const forbidden = /\b(loans?|lend\w*|borrow\w*|credit|interest|invest\w*|returns?|profits?|dividends?|yields?|earn\w*|guarantee\w*|tokens?|mcc|crypto\w*|blockchain|financial services)\b/i
     expect(text(file).match(forbidden)?.[0] ?? null).toBeNull()
   })
 

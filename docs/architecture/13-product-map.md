@@ -21,13 +21,13 @@ How the platform is presented to people: three **surfaces** on separate hosts, a
        Profile        Contributions Gate #2)┆          ├─ Approvals (maker/checker)
        Membership     Loans           ┆                ├─ Treasury
        Documents      Payments        Wallet           ├─ Rewards rules
-       Rewards        Withdrawals     MCTN             ├─ Reports
+       Rewards        Withdrawals     MCC             ├─ Reports
        (MC Points)    Statements ◄─ Ledger             ├─ Audit log
        Benefits                                         ├─ Users & Roles
                                                         └─ Compliance
 ```
 
-Dashed lines (`┆`) mark what does not exist until Founder Decision Gate #2 approves an on-chain MCTN. Until then the member app has two pillars, and the Web3 section is not shown at all, not even as "coming soon".
+Dashed lines (`┆`) mark what does not exist until Founder Decision Gate #2 approves an on-chain MCC. Until then the member app has two pillars, and the Web3 section is not shown at all, not even as "coming soon".
 
 <a id="d-17"></a>
 ### D-17 — Three surfaces on separate hosts, with isolated sessions
@@ -51,7 +51,7 @@ Dashed lines (`┆`) mark what does not exist until Founder Decision Gate #2 app
 | Data | **no member data, no database access** | the signed-in member's own data only | per-role access (RBAC matrix in [05](05-security-and-privacy.md#rbac-and-makerchecker)) |
 | Rendering | static site | Next.js app | Next.js app |
 | Extra perimeter | CDN | rate limiting | IP allow-list or access gateway in front; admin routes refused on any other host |
-| Must never contain | account creation for money products, rates or returns, MCTN promotion | admin functions, other members' data | public or member entry points |
+| Must never contain | account creation for money products, rates or returns, MCC promotion | admin functions, other members' data | public or member entry points |
 
 ### Session isolation (non-negotiable)
 
@@ -76,7 +76,7 @@ The Finance and Web3 columns are styled differently: dollar amounts and point/to
 | | Withdrawals | request a partial withdrawal or exit; status | Payments + Approvals | Stage 3 |
 | | Statements | monthly and annual statements, regenerable for any past date | **Ledger** | ✅ **built:** *Statements* (`/portal/statements`, staff: *Statements* on the member page): each month and year from the cutover, the balance at each end and every movement on the member's capital, loans, fees and held money; final once its months are closed, provisional until then (`src/modules/accounting/statements.ts`) |
 | Web3 | Wallet | linked wallet (embedded or external), recovery | Web3 (wallet links) | after Gate #2 |
-| | MCTN | on-chain balance, settled rewards, contract address | the chain (mirrored) | after Gate #2 |
+| | MCC | on-chain balance, settled rewards, contract address | the chain (mirrored) | after Gate #2 |
 
 ## 4. Admin (ADMIN)
 
@@ -85,7 +85,7 @@ The Finance and Web3 columns are styled differently: dollar amounts and point/to
 | Members & Status | member records, status transitions (proposal → approval), notes | `members.*` | now; status workflow in Stage 2 |
 | Finance ops | ledger, journal entries, contributions, loans (application → disbursement → delinquency), payments, reconciliation, period close | `accounting.*`, `loans.*`, `payments.*` | now (legacy screens); ledger in Stage 3 |
 | Approvals | the maker/checker queue for everything in D-06 | `approvals.decide` | Stage 2–3 (Zelle confirmations today) |
-| Treasury | fiat: cash position, reserve, lending capacity; MCTN Safes mirror after Gate #2 | `treasury.view` | Stage 3 |
+| Treasury | fiat: cash position, reserve, lending capacity; MCC Safes mirror after Gate #2 | `treasury.view` | Stage 3 |
 | Rewards rules | MC Points rules, budgets, manual awards | `rewards.manage` | Stage 4 |
 | Reports | trial balance, portfolio, aging, cash flow, member statements, as of any date | `ledger.read` | ✅ **built:** *Reports* (`/reports`): balance sheet and loan portfolio with aging (current, 1–30, 31–60, 61–90, over 90 days late) as of any date; income statement and cash flow for any range; print and CSV (`src/modules/accounting/reports.ts`). The trial balance is on *Ledger*, member statements on each member |
 | Audit log | who did what, before and after | `audit.read` | now (`/settings/audit`) |
@@ -99,7 +99,7 @@ The Finance and Web3 columns are styled differently: dollar amounts and point/to
 | Home, About | who the club is, history, community | — |
 | Membership | how to join, obligations of members | wording on rights and withdrawals reviewed by counsel |
 | Financial services | *what* the club offers members | **LEGAL REVIEW REQUIRED** before publishing: publicly describing lending may count as advertising credit (compliance rows 2, 3 and 17) |
-| MCTN | — | **Not published** until counsel approves the copy after Gate #2. No price, return, income or listing language, ever (§51) |
+| MCC | — | **Not published** until counsel approves the copy after Gate #2. No price, return, income or listing language, ever (§51) |
 | Contact | form → email; no member data collected beyond the enquiry | spam protection |
 
 **Branding note:** "mcfinancial" and "financial services" present the club to the public as a finance provider. Confirm with counsel (compliance row 17) before the public site goes live.

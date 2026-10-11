@@ -1,6 +1,6 @@
 # MC Financial Platform - Architecture Assessment v1
 
-**Status:** First Assignment deliverable (Master Prompt v2.0, §48). [Founder Decision Gate #1](FOUNDER_DECISION_GATE_1.md) **Part A approved 2026-09-26**; Part B (MCT, rewards, UMI principles) not yet decided.
+**Status:** First Assignment deliverable (Master Prompt v2.0, §48). [Founder Decision Gate #1](FOUNDER_DECISION_GATE_1.md) **Part A approved 2026-09-26**; Part B (MCC, rewards, UMI principles) not yet decided.
 **Progress:** Stage 2 (foundation) is built: PostgreSQL everywhere with migrations, test harness, append-only audit log, role-based access with database-backed sessions, staff MFA, encrypted off-site backups with a restore check, Content-Security-Policy, persistent rate limits, and real data out of the repository. What remains for Stage 2 is operational: switch the backups on in production and run the first restore check.
 **Stage 3 (financial core) under way:** Money in integer cents, the loan calculation engine, and the double-entry ledger with database-enforced invariants are built (migration step M3). The chart of accounts waits for the accountant (A13); maker/checker approvals are built (switched on once officers are named, A4); new loans run on the engine (stored schedule, payout with the fee netted, daily delinquency, late fees switched off until counsel confirms, waivers and write-offs with checkers, postings once the chart is approved). Contributions are monthly dues obligations: payments cover the oldest month first, with numbered receipts, reversal with a checker, and arrears reporting. Opening balances (M4) are built: report, rehearsal, and posting with a second person's approval; they run once the chart is approved (A13) and the production snapshot has been rehearsed (A14). The liquidity policy (A10) is built: a minimum cash reserve, and loans approved only within the lending capacity (*Money → Treasury*). Dual-write and the nightly comparison (M5) are built: the 30-day count of clean days starts once opening balances are posted. Reconciliation and the month-end close (F-11) are built: transfers to the bank, collector cash aging, monthly bank reconciliation, and months closed in order. Next: reading from the ledger (M6), after the M5 count is met.
 
@@ -21,11 +21,11 @@ Start with the [executive assessment](01-executive-assessment.md) (one page), th
 | 7 | Financial ledger / accounting architecture | [04-contributions-loans-ledger.md](04-contributions-loans-ledger.md#4-financial-ledger) |
 | 8 | Security threat model | [05-security-and-privacy.md](05-security-and-privacy.md#1-threat-model) |
 | 9 | Privacy architecture | [05-security-and-privacy.md](05-security-and-privacy.md#2-privacy-architecture) |
-| 10 | Web2 / Web3 boundary | [06-web3-and-MCT.md](06-web3-and-MCT.md#1-web2--web3-boundary) |
-| 11 | MCT feasibility analysis | [06-web3-and-MCT.md](06-web3-and-MCT.md#2-MCT-feasibility) |
-| 12 | Blockchain comparison | [06-web3-and-MCT.md](06-web3-and-MCT.md#3-blockchain-comparison) |
-| 13 | Three preliminary tokenomics models | [06-web3-and-MCT.md](06-web3-and-MCT.md#4-preliminary-tokenomics) |
-| 14 | MCT rewards architecture | [06-web3-and-MCT.md](06-web3-and-MCT.md#5-rewards-architecture) |
+| 10 | Web2 / Web3 boundary | [06-web3-and-mcc.md](06-web3-and-mcc.md#1-web2--web3-boundary) |
+| 11 | MCC feasibility analysis | [06-web3-and-mcc.md](06-web3-and-mcc.md#2-mcc-feasibility) |
+| 12 | Blockchain comparison | [06-web3-and-mcc.md](06-web3-and-mcc.md#3-blockchain-comparison) |
+| 13 | Three preliminary tokenomics models | [06-web3-and-mcc.md](06-web3-and-mcc.md#4-preliminary-tokenomics) |
+| 14 | MCC rewards architecture | [06-web3-and-mcc.md](06-web3-and-mcc.md#5-rewards-architecture) |
 | 15 | UMI feasibility framework | [07-umi.md](07-umi.md#1-feasibility-framework) |
 | 16 | UMI funding-source analysis | [07-umi.md](07-umi.md#2-funding-source-analysis) |
 | 17 | UMI sustainability simulation requirements | [07-umi.md](07-umi.md#3-sustainability-simulation) |
@@ -55,11 +55,11 @@ Each decision is written out in full, in the §49 format, in the linked document
 | D-06 | Maker/checker approval for manual postings, loans, withdrawals and Zelle confirmations | easy | no | yes | [04](04-contributions-loans-ledger.md#d-06) |
 | D-07 | Permission-based RBAC with database-backed checks and staff MFA | moderate | no | yes | [05](05-security-and-privacy.md#d-07) |
 | D-08 | Loan engine: zero-interest amortisation by default; fees as explicit transactions | easy | yes | yes | [04](04-contributions-loans-ledger.md#d-08) |
-| D-09 | All PII and fiat financial records stay off-chain, permanently | difficult | no | yes | [06](06-web3-and-MCT.md#d-09) |
-| D-10 | MCT starts as an off-chain, non-transferable points ledger that can be settled on-chain later | easy | yes | yes | [06](06-web3-and-MCT.md#d-10) |
-| D-11 | If on-chain: shortlist EVM L2s (Base, Arbitrum One, OP Mainnet); final pick after testnet | moderate | no | yes | [06](06-web3-and-MCT.md#d-11) |
-| D-12 | Minimal, non-upgradeable OpenZeppelin token; minting only through a rate-limited rewards minter | difficult | yes | yes | [06](06-web3-and-MCT.md#d-12) |
-| D-13 | Supply sized from the reward policy (Model C or B); reject a large fixed pre-mint (Model A) | difficult | yes | yes | [06](06-web3-and-MCT.md#d-13) |
+| D-09 | All PII and fiat financial records stay off-chain, permanently | difficult | no | yes | [06](06-web3-and-mcc.md#d-09) |
+| D-10 | MCC starts as an off-chain, non-transferable points ledger that can be settled on-chain later | easy | yes | yes | [06](06-web3-and-mcc.md#d-10) |
+| D-11 | If on-chain: shortlist EVM L2s (Base, Arbitrum One, OP Mainnet); final pick after testnet | moderate | no | yes | [06](06-web3-and-mcc.md#d-11) |
+| D-12 | Minimal, non-upgradeable OpenZeppelin token; minting only through a rate-limited rewards minter | difficult | yes | yes | [06](06-web3-and-mcc.md#d-12) |
+| D-13 | Supply sized from the reward policy (Model C or B); reject a large fixed pre-mint (Model A) | difficult | yes | yes | [06](06-web3-and-mcc.md#d-13) |
 | D-14 | Treasury under Safe multisigs, 3-of-5 hardware-wallet signers, one Safe per purpose | moderate | yes | yes | [08](08-treasury.md#d-14) |
 | D-15 | UMI remains research only; any future UMI is funded solely by identified external revenue | easy | yes | yes | [07](07-umi.md#d-15) |
 | D-16 | Engage counsel for a legal scoping review before tokenomics or UMI work proceeds | easy | yes | yes | [09](09-compliance-matrix.md#d-16) |
