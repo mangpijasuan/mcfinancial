@@ -204,6 +204,10 @@ npm run loans:audit             # compare historical loan data against the sourc
 
 ---
 
+## Spreadsheets
+
+**Administration → Data Export** downloads any table (members, contributions, loans, repayments, older loans, withdrawals, ledger) as a CSV file, and keeps an optional read-only copy in a Google Sheet, refreshed nightly. The database stays the official record; nothing typed into a spreadsheet reaches the app. Setup: [docs/operations/data-export.md](docs/operations/data-export.md).
+
 ## Online payments (Stripe + Zelle + ACH)
 
 **Bank transfers (ACH)** go through the club's QuickBooks Online: members pay a QuickBooks invoice on QuickBooks' own page, and paid invoices are recorded automatically. Setup and how it works: [docs/operations/quickbooks.md](docs/operations/quickbooks.md).

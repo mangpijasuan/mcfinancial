@@ -100,6 +100,8 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'quickbooks/connect': { GET: perm('payments.manage_quickbooks') },
   'quickbooks/callback': { GET: perm('payments.manage_quickbooks') },
   'quickbooks/sync': { POST: perm('payments.manage_quickbooks') },
+  'data/export/[table]': { GET: perm('data.export') },
+  'data/sheets': { GET: perm('data.export'), POST: perm('data.export') },
   'portal/payments/checkout': { POST: { member: true } },
   'staff': { GET: perm('staff.read'), POST: perm('staff.manage') },
   'staff/[id]': { PATCH: perm('staff.manage') }, // no DELETE: accounts are disabled, not deleted
