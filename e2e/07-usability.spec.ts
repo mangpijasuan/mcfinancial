@@ -141,3 +141,27 @@ test('member: plain-language loan eligibility, figures to the cent, no sideways 
   expect(errors).toEqual([])
   await close()
 })
+
+test('phones: tapping a field does not zoom the page (16px text in fields)', async ({ browser }) => {
+  // iPhone Safari zooms in on fields with smaller text, and the zoom stays on
+  // the dashboard after signing in, cutting off the right edge.
+  const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const page = await context.newPage()
+  const fieldSizes = () => page.locator('input:visible, select:visible, textarea:visible')
+    .evaluateAll((els) => els.map((e) => `${e.getAttribute('name') ?? e.id}: ${getComputedStyle(e).fontSize}`))
+  for (const path of ['/portal/login', '/login']) {
+    await page.goto(path)
+    for (const size of await fieldSizes()) expect(parseFloat(size.split(': ')[1]), size).toBeGreaterThanOrEqual(16)
+  }
+  await context.close()
+
+  const phone = await browser.newContext({ storageState: 'e2e/.auth/member.json', viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true })
+  const pay = await phone.newPage()
+  await pay.goto('/portal/pay')
+  await expect(pay.getByLabel('Amount').first()).toBeVisible()
+  const sizes = await pay.locator('input:visible, select:visible').evaluateAll((els) => els.map((e) => getComputedStyle(e).fontSize))
+  expect(sizes.length).toBeGreaterThan(0)
+  // At least 16px; the amount fields are larger on purpose.
+  for (const size of sizes) expect(parseFloat(size)).toBeGreaterThanOrEqual(16)
+  await phone.close()
+})

@@ -107,3 +107,18 @@
 @media (min-width: 64rem) {
   html:not([data-sidebar='compact']) .role-in-topbar { display: none }
 }
+
+/*
+ * iPhone Safari zooms in on any form field with text under 16px when it is
+ * tapped, and the zoom stays after the next page opens (for example the
+ * dashboard after signing in), cutting off the right edge. On touch screens,
+ * fields use 16px text. Unlayered, so it wins over the text-sm utility;
+ * fields with larger text keep theirs.
+ */
+@media (pointer: coarse) {
+  input:not([class*='text-lg'], [class*='text-xl'], [class*='text-2xl']),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}

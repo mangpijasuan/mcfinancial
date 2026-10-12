@@ -4,7 +4,7 @@ import { statusLabel } from '@/components/ui'
 import { useSearchParams } from 'next/navigation'
 import { cn, fmt$, fmtDate } from '@/lib/utils'
 import { Building2, Check, CreditCard, Copy, Download, ExternalLink, Landmark, ShieldCheck, Clock, CheckCircle, XCircle, Info, Receipt, Wallet } from 'lucide-react'
-import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, surface, type Tone } from '@/components/portal/kit'
+import { Empty, PageHeader, PageSkeleton, Pill, Row, Rows, button, field, fieldBox, surface, type Tone } from '@/components/portal/kit'
 import { BANKS, BANK_STORAGE_KEY, findBank } from '@/components/portal/banks'
 
 async function readJsonSafe(res: Response) {
@@ -161,7 +161,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, ach, onDon
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-400" aria-hidden>$</span>
           <input
             id={amountId} type="number" inputMode="decimal" min="0.01" step="0.01" value={amount} onChange={e => setAmount(e.target.value)}
-            className={cn(field, 'py-3 pl-8 text-lg font-semibold tabular-nums')}
+            className={cn(fieldBox, 'py-3 pl-8 pr-3.5 text-lg font-semibold tabular-nums')}
           />
         </div>
         {maxAmount !== undefined && <p className="mt-1.5 text-xs text-gray-500">Remaining balance: <span className="font-medium tabular-nums text-gray-700">{fmt$(maxAmount)}</span></p>}
