@@ -49,5 +49,8 @@ coverage
 /test-results/
 /playwright-report/
 
+# Local visual QA captures
+/screenshots/
+
 # Club files kept only on the server (the Zelle QR code)
 /club/
