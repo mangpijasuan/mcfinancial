@@ -223,7 +223,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ac
                         <div className="divide-y divide-gray-100 rounded-xl bg-white ring-1 ring-inset ring-gray-900/10">
                           {zelleName && <CopyLine label="Send to" value={zelleName} copyLabel="Copy name" />}
                           {zelleEmail && <CopyLine label="Zelle email or phone" value={zelleEmail} copyLabel="Copy email" />}
-                          {Number(amount) > 0 && <CopyLine label="Amount" value={Number(amount).toFixed(2)} display={fmt$(Number(amount))} copyLabel="Copy amount" />}
+                          {Number(amount) > 0 && <CopyLine label="Amount" value={Number(amount).toFixed(2)} display={fmt$(Number(amount))} copyLabel="Copy payment total" />}
                         </div>
                       </>
                     )}
