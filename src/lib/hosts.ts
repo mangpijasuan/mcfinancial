@@ -23,7 +23,17 @@ export function hostConfig(env: Record<string, string | undefined> = process.env
 
 // Routes both addresses serve: sign-in itself, the health check, payment
 // webhooks, and loan agreements (staff prepare them, members sign them).
-const SHARED = [/^\/api\/auth(\/|$)/, /^\/api\/health$/, /^\/api\/webhooks(\/|$)/, /^\/api\/agreements(\/|$)/]
+const SHARED = [
+  /^\/api\/auth(\/|$)/,
+  /^\/api\/health$/,
+  /^\/api\/webhooks(\/|$)/,
+  /^\/api\/agreements(\/|$)/,
+  // Browser install metadata must stay on the host being installed. Sending
+  // these to the other surface breaks PWA installation and iOS home icons.
+  /^\/manifest\.webmanifest$/,
+  /^\/apple-icon\.png$/,
+  /^\/apple-touch-icon\.png$/,
+]
 
 /** Which address a path belongs to. */
 export function routeSurface(pathname: string): Surface | 'both' {
