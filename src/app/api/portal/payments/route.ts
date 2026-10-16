@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
 import { readZelleQr, zelleRecipient } from '@/lib/zelle'
+import { stripePaymentsReady } from '@/lib/stripe'
 import { quickBooksStatus, syncAchPayments } from '@/modules/payments/quickbooks'
 
 export async function GET() {
@@ -19,5 +20,11 @@ export async function GET() {
     take: 25,
   })
 
-  return NextResponse.json({ payments, zelle: zelleRecipient(), zelleQr: readZelleQr() !== null, ach: (await quickBooksStatus()).ready })
+  return NextResponse.json({
+    payments,
+    zelle: zelleRecipient(),
+    zelleQr: readZelleQr() !== null,
+    stripe: stripePaymentsReady(),
+    ach: (await quickBooksStatus()).ready,
+  })
 }

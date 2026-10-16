@@ -84,18 +84,19 @@ function CopyLine({ label, value, display, copyLabel }: { label: string; value: 
   )
 }
 
-function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, ach, onDone }: {
+function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ach, onDone }: {
   type: 'contribution' | 'loan_payment'
   loanId?: string
   defaultAmount: number
   maxAmount?: number
   zelle: Zelle
   qr: boolean
+  stripe: boolean
   ach: boolean
   onDone: () => void
 }) {
   const [amount, setAmount] = useState(String(defaultAmount))
-  const [method, setMethod] = useState<'stripe' | 'ach' | 'zelle'>('stripe')
+  const [method, setMethod] = useState<'stripe' | 'ach' | 'zelle'>(() => stripe ? 'stripe' : ach ? 'ach' : 'zelle')
   const [zelleReference, setZelleReference] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -148,7 +149,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, ach, onDon
   }
 
   const methods = [
-    { id: 'stripe' as const, label: 'Card', icon: CreditCard, hint: 'Debit or credit card' },
+    ...(stripe ? [{ id: 'stripe' as const, label: 'Card', icon: CreditCard, hint: 'Debit or credit card' }] : []),
     ...(ach ? [{ id: 'ach' as const, label: 'Bank (ACH)', icon: Building2, hint: 'From your bank account' }] : []),
     { id: 'zelle' as const, label: 'Zelle', icon: Landmark, hint: 'From your bank’s app' },
   ]
@@ -270,6 +271,7 @@ export default function PortalPayPage() {
   const [payments, setPayments] = useState<any[]>([])
   const [zelle, setZelle] = useState<Zelle>(null)
   const [zelleQr, setZelleQr] = useState(false)
+  const [stripe, setStripe] = useState(false)
   const [ach, setAch] = useState(false)
   const [loading, setLoading] = useState(true)
 
@@ -287,6 +289,7 @@ export default function PortalPayPage() {
       setPayments(paymentsData.payments || [])
       setZelle(paymentsData.zelle ?? null)
       setZelleQr(paymentsData.zelleQr === true)
+      setStripe(paymentsData.stripe === true)
       setAch(paymentsData.ach === true)
     }
     setLoading(false)
@@ -301,7 +304,7 @@ export default function PortalPayPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Make a Payment" sub="Pay your monthly contribution or your loan by card or Zelle." />
+      <PageHeader title="Make a Payment" sub="Pay your monthly contribution or make a payment toward your loan." />
 
       {status === 'success' && (
         <div role="status" className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-600/20">
@@ -321,7 +324,7 @@ export default function PortalPayPage() {
             <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Wallet size={18} aria-hidden /></span>
             Pay monthly contribution
           </h2>
-          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} ach={ach} onDone={load} />
+          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} stripe={stripe} ach={ach} onDone={load} />
         </section>
 
         <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
@@ -337,6 +340,7 @@ export default function PortalPayPage() {
               maxAmount={activeLoan.balanceRemaining}
               zelle={zelle}
               qr={zelleQr}
+              stripe={stripe}
               ach={ach}
               onDone={load}
             />

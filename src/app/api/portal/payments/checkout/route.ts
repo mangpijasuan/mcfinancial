@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
 import { parseDollars, toLegacyDollars, cents } from '@/lib/money'
 import { nextPublicId } from '@/lib/publicIds'
-import { getStripe } from '@/lib/stripe'
+import { getStripe, stripePaymentsReady } from '@/lib/stripe'
 import { memberAppOrigin } from '@/lib/hosts'
 import { badRequest, readJsonObject } from '@/lib/http'
 import { auditContext, recordAudit } from '@/modules/audit'
@@ -29,6 +29,9 @@ export async function POST(req: NextRequest) {
   if (!method) return NextResponse.json({ error: 'Invalid payment method.' }, { status: 400 })
   if (!Number.isFinite(amount) || amount <= 0) {
     return NextResponse.json({ error: 'Amount must be greater than 0.' }, { status: 400 })
+  }
+  if (method === 'stripe' && !stripePaymentsReady()) {
+    return NextResponse.json({ error: 'Card payments are not available yet. Please use Zelle.' }, { status: 409 })
   }
 
   let loanId: string | null = null
