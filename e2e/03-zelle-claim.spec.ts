@@ -10,8 +10,8 @@ test('a member Zelle claim is confirmed by the treasurer', async ({ browser }) =
   const member = await signedIn(browser, 'member')
   await member.page.goto('/portal/pay')
   const form = member.page.getByRole('heading', { name: 'Pay monthly contribution' }).locator('..')
-  await form.getByLabel('Amount').fill('20')
-  await form.getByRole('button', { name: 'Zelle' }).click()
+  await form.getByLabel('Amount', { exact: true }).fill('20')
+  await form.getByRole('button', { name: 'Zelle', exact: true }).click()
   // The club's Zelle details copy with one tap, to paste into the bank's app.
   await member.page.context().grantPermissions(['clipboard-read', 'clipboard-write'])
   await expect(form.getByText('payments@e2e.test')).toBeVisible()
