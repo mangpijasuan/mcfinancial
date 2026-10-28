@@ -140,7 +140,11 @@ export async function submitOrExecute<A extends ApprovalAction>(opts: SubmitOpti
   return { queued: request }
 }
 
-async function requestApproval<A extends ApprovalAction>(tx: Tx, opts: SubmitOptions<A>, ctx: AuditContext): Promise<ApprovalView> {
+/**
+ * Queue a request for a checker, inside the caller's transaction (a bulk
+ * upload queues all its rows or none).
+ */
+export async function requestApproval<A extends ApprovalAction>(tx: Tx, opts: Omit<SubmitOptions<A>, 'req'>, ctx: AuditContext): Promise<ApprovalView> {
   const policy = APPROVAL_POLICIES[opts.action]
   if (!opts.principal.permissions.has(policy.makerPermission)) throw new OperationError(403, 'Forbidden')
   const open = await tx.approvalRequest.findFirst({

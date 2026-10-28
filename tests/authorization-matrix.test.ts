@@ -106,6 +106,10 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'data/import/members/preview': { POST: perm('members.create') },
   'data/import/contributions': { POST: perm('contributions.record') },
   'data/import/contributions/preview': { POST: perm('contributions.record') },
+  'data/import/loan-payments': { POST: perm('loan_payments.record') },
+  'data/import/loan-payments/preview': { POST: perm('loan_payments.record') },
+  'data/import/contribution-reversals': { POST: perm('contributions.reverse') },
+  'data/import/contribution-reversals/preview': { POST: perm('contributions.reverse') },
   'portal/payments/checkout': { POST: { member: true } },
   'staff': { GET: perm('staff.read'), POST: perm('staff.manage') },
   'staff/[id]': { PATCH: perm('staff.manage') }, // no DELETE: accounts are disabled, not deleted

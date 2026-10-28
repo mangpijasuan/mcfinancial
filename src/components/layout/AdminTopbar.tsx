@@ -24,6 +24,7 @@ const pageTitles: Record<string, string> = {
   '/settings/staff': 'Staff & Roles',
   '/settings/audit': 'Audit Log',
   '/settings/data': 'Data Export',
+  '/bulk-upload': 'Bulk Upload',
   '/members/import': 'Import members',
   '/contributions/import': 'Import contributions',
   '/security': 'My Security',
