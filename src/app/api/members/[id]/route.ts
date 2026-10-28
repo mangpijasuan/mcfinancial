@@ -9,6 +9,7 @@ import { badRequest, notFound, parseDate, readJsonObject } from '@/lib/http'
 import { HISTORY_FIELDS } from '@/modules/loans/history'
 import { portalAccess } from '@/modules/auth/memberLogins'
 import { withLoanBalances, withMemberFigures } from '@/modules/accounting/reads'
+import { loadYearByYear } from '@/modules/membership/yearByYear'
 
 export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requirePermission('members.read')
@@ -51,6 +52,7 @@ export async function GET(_: NextRequest, { params }: { params: Promise<{ id: st
   return NextResponse.json({
     ...sanitizeMember({ ...figures, loansAsBorrower }),
     portalEnabled: await portalAccess(prisma, id),
+    yearByYear: await loadYearByYear(prisma, id),
     linkedAdmin: linkedAdmin
       ? {
           id: linkedAdmin.id,
