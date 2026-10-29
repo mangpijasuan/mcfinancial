@@ -1,12 +1,13 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { Plus, Upload } from 'lucide-react'
+import { FileText, Plus, Upload } from 'lucide-react'
 import Link from 'next/link'
 import { Card, Table, EmptyState, Button, Modal, Input, Select, PageHeader,
          FilterBar, SearchInput, Badge, Textarea } from '@/components/ui'
 import { fmt$, fmtDate, monthYearOptions } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
+import MonthlyReportCard from '@/components/contributions/MonthlyReportCard'
 
 const MONTHS = monthYearOptions()
 const METHODS = ['Cash', 'Online', 'Zelle', 'Venmo', 'Check', 'Auto-pay', 'Other']
@@ -17,12 +18,6 @@ async function readJsonSafe<T>(res: Response): Promise<T | null> {
   } catch {
     return null
   }
-}
-
-function currentMonthYear() {
-  const d = new Date()
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  return `${months[d.getMonth()]}-${d.getFullYear()}`
 }
 
 export default function ContributionsPage() {
@@ -41,12 +36,6 @@ export default function ContributionsPage() {
   const [showAdd, setShowAdd] = useState(false)
   const [notice, setNotice]   = useState('')
   const [reversing, setReversing] = useState<any>(null)
-
-  const [reportMonth, setReportMonth] = useState(currentMonthYear())
-  const [reportMembers, setReportMembers] = useState<any[]>([])
-  const [reportContribs, setReportContribs] = useState<any[]>([])
-  const [reportLoading, setReportLoading] = useState(false)
-  const [reportError, setReportError] = useState('')
 
   const load = useCallback(async () => {
     try {
@@ -78,65 +67,6 @@ export default function ContributionsPage() {
     router.replace('/contributions', { scroll: false })
   }, [router, searchParams])
 
-  useEffect(() => {
-    if (month) setReportMonth(month)
-  }, [month])
-
-  const loadMonthlyReport = useCallback(async () => {
-    if (!reportMonth) return
-    try {
-      setReportLoading(true)
-      setReportError('')
-
-      const [membersRes, contribRes] = await Promise.all([
-        fetch('/api/members?status=Active&limit=1000'),
-        fetch(`/api/contributions?month=${encodeURIComponent(reportMonth)}&limit=2000&page=1`),
-      ])
-
-      const membersData = await readJsonSafe<any>(membersRes)
-      const contribData = await readJsonSafe<any>(contribRes)
-
-      if (!membersRes.ok || !contribRes.ok || !membersData || !contribData) {
-        throw new Error('Failed to load monthly report data.')
-      }
-
-      setReportMembers(Array.isArray(membersData.members) ? membersData.members : [])
-      setReportContribs(Array.isArray(contribData.contributions) ? contribData.contributions : [])
-    } catch (err: any) {
-      setReportError(err?.message || 'Failed to load monthly report data.')
-      setReportMembers([])
-      setReportContribs([])
-    } finally {
-      setReportLoading(false)
-    }
-  }, [reportMonth])
-
-  useEffect(() => { loadMonthlyReport() }, [loadMonthlyReport])
-
-  const contribByMember = new Map<string, any>()
-  for (const c of reportContribs) {
-    if (!c.reversedAt && !contribByMember.has(c.memberId)) contribByMember.set(c.memberId, c)
-  }
-
-  const reportRows = [...reportMembers]
-    .sort((a, b) => String(a.id).localeCompare(String(b.id)))
-    .map((m) => {
-      const c = contribByMember.get(m.id)
-      return {
-        memberId: m.id,
-        legalName: m.legalName,
-        nickname: m.nickname,
-        joinDate: m.joinDate,
-        month: reportMonth,
-        amount: c?.amount ?? null,
-        comments: c?.comments ?? null,
-        paid: !!c,
-      }
-    })
-
-  const reportPaidCount = reportRows.filter(r => r.paid).length
-  const reportTotalAmount = reportRows.reduce((sum, r) => sum + (r.amount ?? 0), 0)
-
   return (
     <div className="p-4 sm:p-8">
       <div className="print:hidden">
@@ -145,7 +75,7 @@ export default function ContributionsPage() {
           sub={`${total} records · ${fmt$(totalAmt)} total`}
           action={
             <div className="flex gap-2">
-              <Button variant="secondary" onClick={() => window.print()}>Print monthly report</Button>
+              <a href="#monthly-report" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50"><FileText size={15} aria-hidden /> Monthly report</a>
               {can('contributions.record') && <Link href="/contributions/import" className="inline-flex min-h-9 items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 text-sm font-medium text-gray-800 hover:bg-gray-50"><Upload size={15} aria-hidden /> Import</Link>}
               {can('contributions.record') && <Button onClick={() => setShowAdd(true)}><Plus size={15} /> Record payment</Button>}
             </div>
@@ -215,45 +145,7 @@ export default function ContributionsPage() {
         </Card>
       </div>
 
-      <Card className="mt-6 print:mt-0 print:border-none print:shadow-none">
-        <div className="px-5 py-4 border-b border-gray-200 print:px-0">
-          <div className="flex items-center justify-between gap-3 print:block">
-            <div>
-              <h2 className="text-base font-bold text-gray-900">Monthly Contributions Report</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Full member list for {reportMonth}</p>
-            </div>
-            <div className="flex items-center gap-2 print:hidden">
-              <Select aria-label="Report month" value={reportMonth} onChange={e => setReportMonth(e.target.value)}>
-                {MONTHS.map(m => <option key={m} value={m}>{m}</option>)}
-              </Select>
-              <Button variant="secondary" onClick={() => window.print()}>Print</Button>
-            </div>
-          </div>
-          <p className="text-xs text-gray-600 mt-2">
-            {reportRows.length} members · {reportPaidCount} paid · {reportRows.length - reportPaidCount} not paid · {fmt$(reportTotalAmount)} collected
-          </p>
-          {reportError && <p className="text-xs text-red-600 mt-1">{reportError}</p>}
-        </div>
-
-        <Table loading={reportLoading} headers={['Member ID','Name','Nickname','Joined','Month','Amount','Comment']}>
-          {reportRows.length === 0 && !reportLoading
-            ? <EmptyState message="No members found for report." />
-            : reportRows.map((r) => (
-              <tr key={r.memberId} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 font-mono text-xs text-indigo-600">{r.memberId}</td>
-                <td className="px-4 py-3 font-medium text-gray-900">{r.legalName}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{r.nickname || '—'}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs whitespace-nowrap">{fmtDate(r.joinDate)}</td>
-                <td className="px-4 py-3 text-gray-500 text-xs">{r.month}</td>
-                <td className="px-4 py-3 font-semibold text-green-700">{r.amount != null ? fmt$(r.amount) : '—'}</td>
-                <td className="px-4 py-3 text-xs">
-                  {r.paid ? (r.comments || '—') : 'Not paid'}
-                </td>
-              </tr>
-            ))
-          }
-        </Table>
-      </Card>
+      <MonthlyReportCard />
 
       <RecordContributionModal open={showAdd} onClose={() => setShowAdd(false)} onSaved={(created: any) => {
         setShowAdd(false)
