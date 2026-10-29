@@ -64,6 +64,7 @@ const MATRIX: Record<string, Partial<Record<Method, Requirement>>> = {
   'reports/income-statement': { GET: perm('ledger.read') },
   'reports/cash-flow': { GET: perm('ledger.read') },
   'reports/loan-portfolio': { GET: perm('ledger.read') },
+  'reports/monthly': { GET: perm('contributions.read') },
   'treasury': { GET: perm('treasury.read') },
   'reconciliation': { GET: perm('ledger.read') },
   'reconciliation/transfers': { POST: perm('treasury.record_transfer') },
