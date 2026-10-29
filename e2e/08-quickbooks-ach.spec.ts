@@ -17,7 +17,7 @@ test('the Treasurer connects QuickBooks and a member pays by bank', async ({ bro
   await treasurer.page.getByLabel('QuickBooks product for monthly dues').selectOption({ label: 'Monthly dues' })
   await treasurer.page.getByLabel('QuickBooks product for loan repayments').selectOption({ label: 'Loan repayment' })
   await treasurer.page.getByRole('button', { name: 'Save products' }).click()
-  await expect(treasurer.page.getByText('Members can pay by bank')).toBeVisible()
+  await expect(treasurer.page.getByText('Members can pay by bank', { exact: true })).toBeVisible()
   expect(treasurer.errors).toEqual([])
 
   const member = await signedIn(browser, 'member')

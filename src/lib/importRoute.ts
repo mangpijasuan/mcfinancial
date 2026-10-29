@@ -32,7 +32,7 @@ export async function importResponse(req: NextRequest, kind: ImportKind, princip
   try {
     const result = await applyImport(kind, body.csv, {
       fileHash: body.fileHash, fileName: typeof body.fileName === 'string' ? body.fileName : undefined,
-      canUpdateMembers: can(principal, 'members.update'),
+      canUpdateMembers: can(principal, 'members.update'), principal,
     }, auditContext(req, principal))
     return NextResponse.json(result, { status: 201 })
   } catch (err) {
