@@ -8,7 +8,9 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # Every job is pinned: Playwright 1.56 has no browser build for ubuntu-26.04, which
+    # ubuntu-latest became in October 2026.
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -85,7 +87,7 @@ jobs:
   # token committed anywhere (even later removed) fails the build. Accepted
   # test-only values are listed, with the reason, in .gitleaksignore.
   secrets:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
         with:
@@ -106,7 +108,7 @@ jobs:
   # against a production build, each role signed in with password and
   # two-factor, on a database of its own.
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
@@ -159,7 +161,7 @@ jobs:
   # The production image (docs/operations/deploy-hetzner-postgres.md): it
   # builds, Prisma's engine loads, and the scripts run from inside it.
   docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     services:
       postgres:
         image: postgres:16
