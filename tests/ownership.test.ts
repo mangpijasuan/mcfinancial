@@ -83,6 +83,17 @@ describe('settings read at request time', () => {
     expect((await callRoute('portal/payments', 'GET')).json.zelle).toEqual({ name: 'Millionaires Club', email: 'pay@club.example' })
   })
 
+  it('offers card payments only when checkout and webhook credentials are both configured', async () => {
+    signInAs('member')
+    vi.stubEnv('STRIPE_SECRET_KEY', '')
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', '')
+    expect((await callRoute('portal/payments', 'GET')).json.stripe).toBe(false)
+    vi.stubEnv('STRIPE_SECRET_KEY', 'sk_live_example')
+    expect((await callRoute('portal/payments', 'GET')).json.stripe).toBe(false)
+    vi.stubEnv('STRIPE_WEBHOOK_SECRET', 'whsec_example')
+    expect((await callRoute('portal/payments', 'GET')).json.stripe).toBe(true)
+  })
+
   it('the notifications page gets the admin summary address', async () => {
     signInAs('treasurer')
     vi.stubEnv('ADMIN_EMAIL', '')

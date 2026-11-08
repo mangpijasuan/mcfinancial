@@ -98,9 +98,9 @@ describe('Stripe checkout', () => {
   it('fails clearly when Stripe is not configured', async () => {
     signInAs('member')
     const res = await callRoute('portal/payments/checkout', 'POST', { body: { type: 'contribution', method: 'stripe', amount: 25 } })
-    expect(res.status).toBe(502)
-    const [payment] = await prisma.portalPayment.findMany()
-    expect(payment.status).toBe('failed')
+    expect(res.status).toBe(409)
+    expect(res.json.error).toMatch(/not available/)
+    expect(await prisma.portalPayment.count()).toBe(0)
   })
 
   it('rejects webhook calls without a valid signature', async () => {

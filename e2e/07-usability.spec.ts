@@ -135,7 +135,7 @@ test('member: plain-language loan eligibility, figures to the cent, no sideways 
   }
   // The loan payment the form suggests matches the monthly figure shown, to the cent.
   await page.goto('/portal/pay')
-  const suggested = await page.getByLabel('Amount').nth(1).inputValue()
+  const suggested = await page.getByLabel('Amount', { exact: true }).nth(1).inputValue()
   await page.goto('/portal/dashboard')
   await expect(page.getByText(`$${suggested}`).first()).toBeVisible()
   expect(errors).toEqual([])

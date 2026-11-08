@@ -41,7 +41,7 @@ describe('routes', () => {
   it('belong to the member app, the staff console, or both', () => {
     for (const p of ['/portal', '/portal/login', '/portal/receipts/RC-1', '/api/portal/me']) expect(routeSurface(p)).toBe('app')
     for (const p of ['/', '/login', '/dashboard', '/members/MC-0001', '/security/mfa', '/api/members', '/api/me/password', '/portalish']) expect(routeSurface(p)).toBe('admin')
-    for (const p of ['/api/auth/session', '/api/auth', '/api/health', '/api/webhooks/stripe', '/api/agreements', '/api/agreements/AG-1/sign']) expect(routeSurface(p)).toBe('both')
+    for (const p of ['/api/auth/session', '/api/auth', '/api/health', '/api/webhooks/stripe', '/api/agreements', '/api/agreements/AG-1/sign', '/manifest.webmanifest', '/apple-icon.png', '/apple-touch-icon.png']) expect(routeSurface(p)).toBe('both')
   })
 })
 
@@ -55,6 +55,9 @@ describe('requests', () => {
     expect(hostDecision(cfg, 'ADMIN.mcfinancial.us:443', '/dashboard')).toEqual({ kind: 'pass' })
     expect(hostDecision(cfg, 'app.mcfinancial.us', '/api/auth/callback/member')).toEqual({ kind: 'pass' })
     expect(hostDecision(cfg, 'admin.mcfinancial.us', '/api/agreements')).toEqual({ kind: 'pass' })
+    expect(hostDecision(cfg, 'app.mcfinancial.us', '/manifest.webmanifest')).toEqual({ kind: 'pass' })
+    expect(hostDecision(cfg, 'app.mcfinancial.us', '/apple-icon.png')).toEqual({ kind: 'pass' })
+    expect(hostDecision(cfg, 'app.mcfinancial.us', '/apple-touch-icon.png')).toEqual({ kind: 'pass' })
   })
 
   it('move a page to the right address, keeping the path and query', () => {

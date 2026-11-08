@@ -7,6 +7,16 @@ import { APP_DESCRIPTION, APP_NAME } from '@/lib/brand'
 export const metadata: Metadata = {
   title: `${APP_NAME} - Administration`,
   description: APP_DESCRIPTION,
+  applicationName: APP_NAME,
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    title: APP_NAME,
+    statusBarStyle: 'black-translucent',
+  },
+  formatDetection: {
+    telephone: false,
+  },
 }
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
