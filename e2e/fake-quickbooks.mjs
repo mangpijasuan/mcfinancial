@@ -27,6 +27,8 @@ http.createServer(async (req, res) => {
   const body = await readBody(req)
 
   if (url.pathname === '/health') return send(res, 200, { ok: true })
+  // Browsers ask every site for its icon; the stand-in has none, and says so without an error.
+  if (url.pathname === '/favicon.ico') { res.writeHead(204); return res.end() }
 
   // Intuit's sign-in: the Treasurer approves, and is sent back with a code.
   if (url.pathname === '/connect') {
