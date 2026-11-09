@@ -4,7 +4,8 @@ import Link from 'next/link'
 import { CalendarRange, CircleCheck, Handshake, Landmark, PiggyBank, Undo2 } from 'lucide-react'
 import { cn, fmt$, fmtDate } from '@/lib/utils'
 import { plural } from '@/components/ui'
-import { Empty, PageHeader, PageSkeleton, Panel, Pill, Row, Rows, Stat } from '@/components/portal/kit'
+import { PageHeader, PageSkeleton, Panel, Pill, Row, Rows, Stat } from '@/components/portal/kit'
+import YearByYear from '@/components/history/YearByYear'
 
 function OlderLoan({ l, who }: { l: any; who: string }) {
   return (
@@ -43,7 +44,6 @@ export default function PortalHistory() {
 
   const totalLifetime = allYears.reduce((s, y) => s + y.amount, 0)
   const paidYears     = allYears.filter(y => y.amount > 0).length
-  const max = Math.max(...allYears.map(a => a.amount), 1)
 
   return (
     <div className="space-y-6">
@@ -57,26 +57,8 @@ export default function PortalHistory() {
         </div>
       </div>
 
-      <Panel title="Contributions by year" icon={CalendarRange}>
-        {allYears.length === 0 ? (
-          <Empty icon={PiggyBank} title="No contributions recorded yet" />
-        ) : (
-          <ul className="space-y-2.5">
-            {[...allYears].reverse().map((y) => (
-              <li key={y.year} className="grid grid-cols-[3rem_1fr_auto] items-center gap-3">
-                <span className={cn('text-sm font-medium tabular-nums', y.live ? 'text-navy' : 'text-gray-600')}>{y.year}</span>
-                <span className="h-2.5 overflow-hidden rounded-full bg-gray-100" aria-hidden>
-                  <span className={cn('block h-full rounded-full', y.live ? 'bg-gold' : 'bg-navy/70')} style={{ width: `${Math.max((y.amount / max) * 100, y.amount > 0 ? 3 : 0)}%` }} />
-                </span>
-                <span className="min-w-20 text-right text-sm font-semibold text-gray-900 tabular-nums">{y.amount > 0 ? fmt$(y.amount) : '—'}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-xs text-gray-500">
-          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-navy/70" aria-hidden /> Club records (2014–2025)</span>
-          <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-gold" aria-hidden /> This year, payment by payment</span>
-        </p>
+      <Panel title="Year by year" icon={CalendarRange} sub={data.yearByYear.hasLoans ? 'Contributions, loan payments and borrowing. Open a year for its months.' : 'Open a year for its months.'} flush>
+        <YearByYear data={data.yearByYear} className="border-t border-gray-100" />
       </Panel>
 
       {contributions2026.length > 0 && (

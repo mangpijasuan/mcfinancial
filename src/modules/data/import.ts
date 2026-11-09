@@ -1,5 +1,6 @@
-// Importing members and contributions from a spreadsheet saved as CSV
-// (docs/operations/data-import.md).
+// Importing from a spreadsheet saved as CSV (docs/operations/data-import.md):
+// members, contributions and loan repayments, and reversals of mistaken
+// contributions, which are queued for a checker as when proposed one by one.
 //
 // Always two steps: a preview that saves nothing and says, row by row, what
 // would be added, changed or refused; then the import, which checks the
@@ -8,15 +9,20 @@
 // imported: contributions go through the same recording path as one typed
 // in by hand (receipt, dues, ledger), and a member's totals follow from them.
 import { createHash } from 'node:crypto'
-import { MoneyError, cents, parseDollars, toLegacyDollars } from '@/lib/money'
+import { MoneyError, cents, formatUSD, fromBigInt, parseDollars, toLegacyDollars } from '@/lib/money'
+import { legacyCents } from '@/modules/accounting/legacyActivity'
+import { todayIso } from '@/lib/dates'
 import { prisma } from '@/lib/prisma'
 import { nextPublicId } from '@/lib/publicIds'
-import { recordContribution } from '@/lib/paymentActions'
+import { recordContribution, recordLoanPayment, repaymentBlocker } from '@/lib/paymentActions'
 import { recordAudit, type AuditContext } from '@/modules/audit'
+import type { StaffPrincipal } from '@/modules/auth'
+import { requestApproval } from '@/modules/approvals'
+import { isEngineLoan, loadLoan, loanState } from '@/modules/loans/state'
 import { allocateMemberId } from '@/modules/membership/numbers'
 import { CsvError, cellText, headerKey, parseCsv } from './csv'
 
-export type ImportKind = 'members' | 'contributions'
+export type ImportKind = 'members' | 'contributions' | 'loan_payments' | 'contribution_reversals'
 export const MAX_IMPORT_BYTES = 1024 * 1024
 export const MAX_IMPORT_ROWS = 2000
 
@@ -62,7 +68,29 @@ const COLUMNS = {
     receivedBy: ['receivedby'],
     comments: ['note', 'notes', 'comments', 'reference'],
   },
+  loan_payments: {
+    loanId: ['loanid', 'loan'],
+    paymentDate: ['paidon', 'paymentdate', 'date'],
+    amount: ['amount'],
+    paymentMethod: ['method', 'paymentmethod'],
+    receivedBy: ['receivedby'],
+    comments: ['note', 'notes', 'comments', 'reference'],
+  },
+  contribution_reversals: {
+    receipt: ['receipt', 'receiptnumber', 'receiptno', 'transactionid', 'contribution'],
+    reason: ['reason'],
+  },
 } as const
+
+const REQUIRED: Record<ImportKind, string[]> = {
+  members: ['legalName'],
+  contributions: ['memberId', 'paymentDate', 'amount'],
+  loan_payments: ['loanId', 'paymentDate', 'amount'],
+  contribution_reversals: ['receipt', 'reason'],
+}
+const REQUIRED_NAMES: Record<string, string> = {
+  legalName: 'Legal name', memberId: 'Member ID', paymentDate: 'Paid on', amount: 'Amount', loanId: 'Loan ID', receipt: 'Receipt', reason: 'Reason',
+}
 
 /** The columns a member update may change. Name, join date and status are changed in the app, one member at a time. */
 const MEMBER_CONTACT_FIELDS = ['nickname', 'phoneNo', 'email', 'beneficiary'] as const
@@ -105,11 +133,9 @@ function readFile(kind: ImportKind, csv: string): Parsed {
     if (field && columns[field] === undefined) columns[field] = i
     else if (h.trim()) ignored.push(h.trim())
   })
-  const required = kind === 'members' ? ['legalName'] : ['memberId', 'paymentDate', 'amount']
-  const missing = required.filter((f) => columns[f] === undefined)
+  const missing = REQUIRED[kind].filter((f) => columns[f] === undefined)
   if (missing.length) {
-    const names: Record<string, string> = { legalName: 'Legal name', memberId: 'Member ID', paymentDate: 'Paid on', amount: 'Amount' }
-    throw new ImportError(`The file needs ${missing.length === 1 ? 'a column' : 'columns'} named ${missing.map((f) => `"${names[f]}"`).join(' and ')} in its first row.`)
+    throw new ImportError(`The file needs ${missing.length === 1 ? 'a column' : 'columns'} named ${missing.map((f) => `"${REQUIRED_NAMES[f]}"`).join(' and ')} in its first row.`)
   }
   // Data rows are counted from line 2: the header is line 1 (blank lines are not counted).
   return { header, columns, ignored, records: data.map((cells, i) => ({ line: i + 2, cells })) }
@@ -194,7 +220,6 @@ async function planContributions(p: Parsed) {
   const existing = await prisma.contribution.findMany({ where: { reversedAt: null }, select: { memberId: true, paymentDate: true, amountCents: true, transactionId: true } })
   const recorded = new Map(existing.map((c) => [`${c.memberId}|${c.paymentDate.toISOString().slice(0, 10)}|${c.amountCents}`, c.transactionId]))
   const inFile = new Map<string, number>()
-  const today = new Date()
   const rows: RowResult[] = []
   const plans: ContributionPlan[] = []
 
@@ -210,18 +235,7 @@ async function planContributions(p: Parsed) {
     if (!id) r.errors.push('Member ID is empty.')
     else if (!member) r.errors.push(`There is no member ${id}.`)
     else if (member.status !== 'Active') r.warnings.push(`${member.legalName} is ${member.status.toLowerCase()}.`)
-    const paymentDate = parseImportDate(dateText)
-    if (!dateText) r.errors.push('Paid on is empty.')
-    else if (!paymentDate) r.errors.push(`"${dateText}" is not a date: use YYYY-MM-DD or M/D/YYYY.`)
-    else if (paymentDate.getTime() > today.getTime()) r.errors.push('The payment date is in the future.')
-    let amountCents = 0
-    try {
-      amountCents = parseDollars(amountText)
-      if (amountCents <= 0) r.errors.push('The amount must be more than $0.')
-    } catch (err) {
-      if (!(err instanceof MoneyError)) throw err
-      r.errors.push(amountText ? `"${amountText}" is not an amount in dollars and cents.` : 'Amount is empty.')
-    }
+    const { paymentDate, amountCents } = dateAndAmount(dateText, amountText, r.errors)
     const category = !kindText || kindText === 'dues' ? 'dues' : kindText === 'voluntary' ? 'voluntary' : null
     if (!category) r.errors.push(`Kind must be "dues" or "voluntary", not "${kindText}".`)
 
@@ -241,10 +255,138 @@ async function planContributions(p: Parsed) {
   return { rows, plans }
 }
 
+/** A payment date and amount as typed, with what is wrong with them. */
+function dateAndAmount(dateText: string, amountText: string, errors: string[]) {
+  const paymentDate = parseImportDate(dateText)
+  if (!dateText) errors.push('Paid on is empty.')
+  else if (!paymentDate) errors.push(`"${dateText}" is not a date: use YYYY-MM-DD or M/D/YYYY.`)
+  else if (paymentDate.getTime() > Date.now()) errors.push('The payment date is in the future.')
+  let amountCents = 0
+  try {
+    amountCents = parseDollars(amountText)
+    if (amountCents <= 0) errors.push('The amount must be more than $0.')
+  } catch (err) {
+    if (!(err instanceof MoneyError)) throw err
+    errors.push(amountText ? `"${amountText}" is not an amount in dollars and cents.` : 'Amount is empty.')
+  }
+  return { paymentDate, amountCents }
+}
+
+type LoanPaymentPlan = { line: number; loanId: string; paymentDate: Date; amountCents: number; paymentMethod: string | null; receivedBy: string | null; comments: string | null }
+
+/**
+ * Loan repayments, as recorded one by one on the Repayments page. On the
+ * loan engine a loan cannot take more than pays it off, counting the
+ * file's earlier rows for the same loan.
+ */
+async function planLoanPayments(p: Parsed) {
+  const loans = new Map((await prisma.loan.findMany({
+    select: { loanId: true, borrowerName: true, lifecycle: true, principalCents: true, balanceRemaining: true },
+  })).map((l) => [l.loanId.toUpperCase(), l]))
+  const existing = await prisma.loanPayment.findMany({ select: { loanId: true, paymentDate: true, amount: true, paymentId: true } })
+  const recorded = new Map(existing.map((x) => [`${x.loanId}|${x.paymentDate.toISOString().slice(0, 10)}|${legacyCents(x.amount).amount}`, x.paymentId]))
+  const payoffs = new Map<string, number>()
+  const inFile = new Map<string, number>()
+  const owedInFile = new Map<string, number>()
+  const rows: RowResult[] = []
+  const plans: LoanPaymentPlan[] = []
+
+  for (const { line, cells } of p.records) {
+    const r: RowResult = { line, action: 'error', summary: '', errors: [], warnings: [] }
+    const id = get(p, cells, 'loanId').toUpperCase()
+    const dateText = get(p, cells, 'paymentDate')
+    const amountText = get(p, cells, 'amount')
+    const loan = loans.get(id)
+    r.summary = `${id || '(no loan)'}${loan ? ` · ${loan.borrowerName}` : ''} · ${amountText || '(no amount)'} · ${dateText || '(no date)'}`
+    if (!id) r.errors.push('Loan ID is empty.')
+    else if (!loan) r.errors.push(`There is no loan ${id}.`)
+    else {
+      const blocked = repaymentBlocker(loan)
+      if (blocked) r.errors.push(blocked)
+    }
+    const { paymentDate, amountCents } = dateAndAmount(dateText, amountText, r.errors)
+
+    if (!r.errors.length) {
+      const owed = (owedInFile.get(loan!.loanId) ?? 0) + amountCents
+      owedInFile.set(loan!.loanId, owed)
+      if (isEngineLoan(loan!) && loan!.lifecycle === 'disbursed') {
+        if (!payoffs.has(loan!.loanId)) payoffs.set(loan!.loanId, loanState((await loadLoan(prisma, loan!.loanId))!, todayIso()).payoff)
+        const payoff = payoffs.get(loan!.loanId)!
+        if (owed > payoff) r.errors.push(`That is more than the ${formatUSD(cents(payoff))} needed to pay ${loan!.loanId} off${owed > amountCents ? ', with the earlier rows for it in this file' : ''}.`)
+      } else if (owed > legacyCents(loan!.balanceRemaining).amount) {
+        r.warnings.push(`More than the ${formatUSD(legacyCents(loan!.balanceRemaining).amount)} still owed on ${loan!.loanId}${owed > amountCents ? ', with the earlier rows for it in this file' : ''}.`)
+      }
+    }
+    if (!r.errors.length) {
+      const key = `${loan!.loanId}|${paymentDate!.toISOString().slice(0, 10)}|${amountCents}`
+      if (recorded.has(key)) r.warnings.push(`Looks already recorded: ${recorded.get(key)} has the same loan, date and amount.`)
+      if (inFile.has(key)) r.warnings.push(`Same loan, date and amount as line ${inFile.get(key)}.`)
+      inFile.set(key, line)
+      r.action = 'add'
+      plans.push({
+        line, loanId: loan!.loanId, paymentDate: paymentDate!, amountCents,
+        paymentMethod: get(p, cells, 'paymentMethod') || null, receivedBy: get(p, cells, 'receivedBy') || null, comments: get(p, cells, 'comments') || null,
+      })
+    }
+    rows.push(r)
+  }
+  return { rows, plans }
+}
+
+type ReversalPlan = { line: number; transactionId: string; reason: string; amountCents: number; summary: string }
+
+/**
+ * Reversals of mistaken contributions, by receipt number (or CON- number).
+ * Nothing is reversed by the import: each one is sent for approval, as when
+ * proposed from the contribution (D-06).
+ */
+async function planReversals(p: Parsed) {
+  const refs = p.records.map(({ cells }) => get(p, cells, 'receipt').toUpperCase()).filter(Boolean)
+  const found = await prisma.contribution.findMany({ where: { OR: [{ receiptNumber: { in: refs } }, { transactionId: { in: refs } }] } })
+  const byRef = new Map(found.flatMap((c) => [[c.transactionId.toUpperCase(), c], ...(c.receiptNumber ? [[c.receiptNumber.toUpperCase(), c] as const] : [])]))
+  const pending = new Map((await prisma.approvalRequest.findMany({
+    where: { action: 'contribution.reverse', status: 'pending' }, select: { entityId: true, publicId: true },
+  })).map((a) => [a.entityId, a.publicId]))
+  const seen = new Map<string, number>()
+  const rows: RowResult[] = []
+  const plans: ReversalPlan[] = []
+
+  for (const { line, cells } of p.records) {
+    const r: RowResult = { line, action: 'error', summary: '', errors: [], warnings: [] }
+    const ref = get(p, cells, 'receipt').toUpperCase()
+    const reason = get(p, cells, 'reason')
+    const c = byRef.get(ref)
+    r.summary = c
+      ? `${c.receiptNumber ?? c.transactionId} · ${c.memberName} (${c.memberId}) · ${formatUSD(fromBigInt(c.amountCents))} paid ${c.paymentDate.toISOString().slice(0, 10)}`
+      : ref || '(no receipt)'
+    if (!ref) r.errors.push('Receipt is empty.')
+    else if (!c) r.errors.push(`There is no contribution with the receipt or number ${ref}.`)
+    else if (c.reversedAt) r.errors.push('This contribution has already been reversed.')
+    else if (pending.has(c.transactionId)) r.errors.push(`Its reversal is already waiting for approval (${pending.get(c.transactionId)}).`)
+    else if (seen.has(c.transactionId)) r.errors.push(`The same contribution is on line ${seen.get(c.transactionId)}.`)
+    if (!reason) r.errors.push('Give a reason for the reversal.')
+    else if (reason.length > 500) r.errors.push('The reason is longer than 500 characters.')
+    if (c) seen.set(c.transactionId, line)
+    if (!r.errors.length) {
+      r.action = 'add'
+      plans.push({ line, transactionId: c!.transactionId, reason, amountCents: fromBigInt(c!.amountCents), summary: r.summary })
+    }
+    rows.push(r)
+  }
+  return { rows, plans }
+}
+
+const PLANNERS: Record<ImportKind, (p: Parsed, opts: { canUpdateMembers: boolean }) => Promise<{ rows: RowResult[]; plans: unknown[] }>> = {
+  members: (p, opts) => planMembers(p, opts.canUpdateMembers),
+  contributions: (p) => planContributions(p),
+  loan_payments: (p) => planLoanPayments(p),
+  contribution_reversals: (p) => planReversals(p),
+}
+
 async function analyse(kind: ImportKind, csv: string, opts: { canUpdateMembers: boolean }) {
   const hash = fileHash(csv)
   const parsed = readFile(kind, csv)
-  const planned = kind === 'members' ? await planMembers(parsed, opts.canUpdateMembers) : await planContributions(parsed)
+  const planned = await PLANNERS[kind](parsed, opts)
   const prior = await prisma.dataImport.findUnique({ where: { kind_fileHash: { kind, fileHash: hash } }, select: { publicId: true, createdAt: true } })
   const preview = summarize(kind, hash, planned.rows, parsed.ignored, prior ? { publicId: prior.publicId, at: prior.createdAt } : null)
   return { preview, plans: planned.plans }
@@ -263,7 +405,10 @@ export type ImportResult = { publicId: string; added: number; updated: number; p
  * before. All rows are saved in one transaction, each audited as if typed
  * in, plus one entry for the import itself.
  */
-export async function applyImport(kind: ImportKind, csv: string, input: { fileHash: string; fileName?: string; canUpdateMembers: boolean }, ctx: AuditContext): Promise<ImportResult> {
+export async function applyImport(
+  kind: ImportKind, csv: string,
+  input: { fileHash: string; fileName?: string; canUpdateMembers: boolean; principal?: StaffPrincipal }, ctx: AuditContext,
+): Promise<ImportResult> {
   const { preview, plans } = await analyse(kind, csv, input)
   if (preview.fileHash !== input.fileHash) throw new ImportError('The file is not the one previewed. Preview it again.')
   if (preview.alreadyImported) throw new ImportError(`This file was already imported (${preview.alreadyImported.publicId}).`)
@@ -288,6 +433,26 @@ export async function applyImport(kind: ImportKind, csv: string, input: { fileHa
           await recordAudit(tx, ctx, { action: 'member.update', entityType: 'member', entityId: plan.id!, before, after, metadata })
           updated++
         }
+      }
+    } else if (kind === 'loan_payments') {
+      for (const plan of plans as LoanPaymentPlan[]) {
+        const created = await recordLoanPayment(tx, {
+          loanId: plan.loanId, amount: toLegacyDollars(cents(plan.amountCents)), paymentDate: plan.paymentDate,
+          paymentMethod: plan.paymentMethod, receivedBy: plan.receivedBy, comments: plan.comments, source: 'Import',
+        })
+        await recordAudit(tx, ctx, { action: 'loan_payment.create', entityType: 'loan_payment', entityId: created.paymentId, after: created, metadata })
+        added++
+      }
+    } else if (kind === 'contribution_reversals') {
+      // Each reversal waits for a checker; the import itself reverses nothing.
+      for (const plan of plans as ReversalPlan[]) {
+        await requestApproval(tx, {
+          action: 'contribution.reverse', principal: input.principal!, amountCents: plan.amountCents,
+          entityType: 'contribution', entityId: plan.transactionId,
+          summary: `Reverse ${plan.summary}. Reason: ${plan.reason} (bulk upload ${publicId})`,
+          payload: { transactionId: plan.transactionId, reason: plan.reason },
+        }, ctx)
+        added++
       }
     } else {
       for (const plan of plans as ContributionPlan[]) {

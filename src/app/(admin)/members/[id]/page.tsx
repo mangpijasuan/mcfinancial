@@ -7,6 +7,7 @@ import { Card, Table, Badge, StatusBadge, EligibleBadge, RiskBadge, LoanStatusBa
 import { fmt$, fmtDate } from '@/lib/utils'
 import { useStaff } from '@/components/staff/StaffContext'
 import DuesPanel from '@/components/contributions/DuesPanel'
+import YearByYear from '@/components/history/YearByYear'
 
 export default function MemberDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter()
@@ -35,8 +36,6 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
   if (error) return <div className="p-8"><div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div></div>
 
   if (!member) return <div className="p-8"><Spinner /></div>
-
-  const years = member.yearlyTotals || []
 
   return (
     <div className="p-4 sm:p-8 max-w-5xl">
@@ -85,20 +84,14 @@ export default function MemberDetailPage({ params }: { params: Promise<{ id: str
 
       {can('contributions.read') && <DuesPanel memberId={member.id} canChangePlan={can('dues.manage_plans')} />}
 
-      {/* Payment history by year */}
-      {years.length > 0 && (
-        <Card className="mb-6 p-5">
-          <h2 className="text-sm font-semibold text-gray-700 mb-4">Payment history by year</h2>
-          <div className="flex flex-wrap gap-3">
-            {years.map((y: any) => (
-              <div key={y.year} className="flex flex-col items-center bg-gray-50 border border-gray-200 rounded-lg px-4 py-2 min-w-[70px]">
-                <span className="text-xs text-gray-500 font-medium">{y.year}</span>
-                <span className="text-sm font-bold text-gray-800">{fmt$(y.amount)}</span>
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
+      {/* Year by year: contributions, loan payments and borrowing */}
+      <Card className="mb-6">
+        <div className="px-5 py-4 border-b border-gray-100">
+          <h2 className="text-sm font-semibold text-gray-700">Year by year</h2>
+          <p className="text-xs text-gray-500">Open a year for its months. Before 2026 the club&apos;s records keep yearly totals.</p>
+        </div>
+        <YearByYear data={member.yearByYear} />
+      </Card>
 
       {/* Recent contributions */}
       <Card className="mb-6">
