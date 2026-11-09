@@ -8,7 +8,7 @@ const API_DIR = path.resolve(__dirname, '../src/app/api')
 
 // Handlers that accept POST but change nothing.
 // POST routes that change nothing: a policy check, sign-in, and import previews.
-const READ_ONLY = new Set(['loans/check-policy', 'auth/[...nextauth]', 'data/import/members/preview', 'data/import/contributions/preview'])
+const READ_ONLY = new Set(['loans/check-policy', 'auth/[...nextauth]', 'data/import/members/preview', 'data/import/contributions/preview', 'data/import/loan-payments/preview', 'data/import/contribution-reversals/preview'])
 
 function routeFiles(dir = API_DIR): string[] {
   return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
