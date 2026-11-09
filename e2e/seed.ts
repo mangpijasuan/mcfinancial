@@ -28,6 +28,8 @@ async function main() {
       monthsActive: 24, archiveLifetime: 2000, contributions2026: 180, overallContributions: 2000,
     },
   })
+  // The club's yearly total for an older year (kept by year only).
+  await prisma.yearlyTotal.create({ data: { memberId: MEMBER.id, year: 2025, amount: 240 } })
   await prisma.member.create({ data: { id: COSIGNER.id, legalName: COSIGNER.name, joinDate: new Date('2024-01-01'), status: 'Active', monthsActive: 24 } })
   await prisma.user.create({ data: { kind: 'member', memberId: COSIGNER.id, name: COSIGNER.name, passwordHash: await bcrypt.hash(COSIGNER.password, 4) } })
   // Ada's portal login (M8: a member user).

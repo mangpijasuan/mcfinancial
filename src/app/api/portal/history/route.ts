@@ -2,13 +2,14 @@ import { NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
 import { HISTORY_FIELDS } from '@/modules/loans/history'
+import { loadYearByYear } from '@/modules/membership/yearByYear'
 
 export async function GET() {
   const auth = await requireMember()
   if (auth.error) return auth.error
   const memberId = auth.principal.memberId
 
-  const [member, yearlyTotals, contributions2026, historical] = await Promise.all([
+  const [member, yearlyTotals, contributions2026, historical, yearByYear] = await Promise.all([
     prisma.member.findUnique({ where: { id: memberId }, select: { id: true } }),
     prisma.yearlyTotal.findMany({
       where: { memberId },
@@ -25,6 +26,7 @@ export async function GET() {
       select: HISTORY_FIELDS,
       orderBy: [{ year: 'desc' }, { loanDate: 'desc' }],
     }),
+    loadYearByYear(prisma, memberId, { olderLoansFrom: 2024 }),
   ])
 
   if (!member) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -37,5 +39,6 @@ export async function GET() {
     contributions2026,
     historicalLoansAsBorrower,
     historicalLoansAsCosigner,
+    yearByYear,
   })
 }
