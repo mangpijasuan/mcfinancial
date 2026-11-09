@@ -162,4 +162,6 @@ export const button = {
 }
 
 /** Inputs share one look. */
-export const field = 'w-full rounded-xl border-0 bg-white px-3.5 py-2.5 text-sm text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-navy focus:outline-hidden'
+/** A field's look without its size, for fields with their own padding and text size. */
+export const fieldBox = 'w-full rounded-xl border-0 bg-white text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-navy focus:outline-hidden'
+export const field = `${fieldBox} px-3.5 py-2.5 text-sm`
