@@ -29,5 +29,5 @@ export async function callRoute(route: string, method: string, opts: CallOptions
   const text = await res.text()
   let json: any = null
   try { json = text ? JSON.parse(text) : null } catch { json = text }
-  return { status: res.status, json }
+  return { status: res.status, json, text, headers: res.headers }
 }
