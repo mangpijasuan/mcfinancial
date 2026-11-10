@@ -2,10 +2,11 @@
 // nothing logs an error (hydration mismatches included) and phone layouts do
 // not scroll sideways. The list comes from the production navigation and
 // role definitions, so a new screen is covered as soon as it is added.
+import { readFile } from 'node:fs/promises'
 import { expect, test } from '@playwright/test'
 import { visibleNav } from '@/components/staff/nav'
 import { permissionsForRoles } from '@/modules/permissions'
-import { STAFF, type StaffRole } from './fixtures'
+import { MEMBER, STAFF, type StaffRole } from './fixtures'
 import { expectNoOverflow, signedIn } from './helpers'
 
 // Screens reached from another page rather than the navigation.
@@ -55,4 +56,37 @@ test('the member portal loads cleanly', async ({ browser }) => {
   }
   expect(errors).toEqual([])
   await close()
+})
+
+test('an active member downloads their personalized membership card', async ({ browser }) => {
+  const { page, close } = await signedIn(browser, 'member')
+  try {
+    await page.goto('/portal/dashboard')
+    const cardText = await page.evaluateHandle(() => {
+      const entries: { text: string; font: string }[] = []
+      const fillText = CanvasRenderingContext2D.prototype.fillText
+      CanvasRenderingContext2D.prototype.fillText = function (text, x, y, maxWidth) {
+        entries.push({ text, font: this.font })
+        fillText.call(this, text, x, y, maxWidth)
+      }
+      return entries
+    })
+    const [download] = await Promise.all([
+      page.waitForEvent('download'),
+      page.getByRole('button', { name: 'Download membership card' }).click(),
+    ])
+    expect(download.suggestedFilename()).toBe(`Millionaires-Club-${MEMBER.id}.png`)
+    const path = await download.path()
+    if (!path) throw new Error('Membership card download is missing')
+    const png = await readFile(path)
+    expect(png.subarray(0, 8)).toEqual(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))
+    expect(await cardText.jsonValue()).toEqual([
+      { text: MEMBER.name, font: expect.stringContaining('Georgia') },
+      { text: MEMBER.id, font: expect.stringContaining('Georgia') },
+      { text: '2024', font: expect.stringContaining('Georgia') },
+      { text: MEMBER.name, font: expect.stringContaining('Allura') },
+    ])
+  } finally {
+    await close()
+  }
 })
