@@ -5,6 +5,7 @@ import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, Ha
 import { eligibilityText, fmt$, fmtDate } from '@/lib/utils'
 import { formatUSD } from '@/lib/money'
 import { periodLabel } from '@/modules/contributions/dues'
+import MembershipCardDownload from '@/components/portal/MembershipCardDownload'
 import type { DuesData } from '@/components/contributions/DuesPanel'
 import { Empty, PageSkeleton, Panel, Pill, Progress, Row, Rows, Stat, button, surface, type Tone } from '@/components/portal/kit'
 import { cn } from '@/lib/utils'
@@ -76,6 +77,9 @@ export default function PortalDashboard() {
             <div className="mt-4 flex flex-wrap gap-2 md:justify-end">
               <Link href="/portal/pay" className={button.gold}><CreditCard size={16} aria-hidden /> Make a payment</Link>
               <Link href="/portal/statements" className={button.ghostDark}><FileText size={16} aria-hidden /> Statements</Link>
+              {member.status === 'Active' && member.legalName?.trim() && Number.isFinite(joinYear) && (
+                <MembershipCardDownload fullName={member.legalName.trim()} memberId={member.id} joinYear={joinYear} />
+              )}
             </div>
           </div>
         </div>
