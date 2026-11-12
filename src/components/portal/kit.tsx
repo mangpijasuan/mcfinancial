@@ -4,7 +4,7 @@ import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 /** The surface every portal card shares. */
-export const surface = 'rounded-2xl bg-white ring-1 ring-gray-900/[0.06] shadow-[0_1px_2px_rgba(16,24,40,0.04),0_2px_8px_-2px_rgba(16,24,40,0.06)]'
+export const surface = 'rounded-lg border border-workspace-border bg-white shadow-xs print:border-gray-200'
 
 export function PageHeader({ title, sub, action }: { title: string; sub?: React.ReactNode; action?: React.ReactNode }) {
   return (
@@ -30,7 +30,7 @@ export function Panel({ title, icon: Icon, sub, action, flush, className, childr
 }) {
   return (
     <section className={cn(surface, 'overflow-hidden', className)} aria-label={title}>
-      <div className="flex items-start justify-between gap-3 px-5 pt-5 pb-3">
+      <div className="flex items-start justify-between gap-3 border-b border-workspace-border bg-workspace-header px-4 py-3 print:bg-white">
         <div className="flex min-w-0 items-center gap-3">
           {Icon && (
             <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-navy/[0.06] text-navy">
@@ -44,19 +44,19 @@ export function Panel({ title, icon: Icon, sub, action, flush, className, childr
         </div>
         {action}
       </div>
-      <div className={flush ? '' : 'px-5 pb-5'}>{children}</div>
+      <div className={flush ? '' : 'p-4'}>{children}</div>
     </section>
   )
 }
 
 export function Stat({ label, value, hint, icon: Icon }: { label: string; value: React.ReactNode; hint?: React.ReactNode; icon?: LucideIcon }) {
   return (
-    <div className={cn(surface, 'p-4 sm:p-5')}>
+    <div className={cn(surface, 'p-3 sm:p-4')}>
       <div className="flex items-center gap-2 text-gray-500">
         {Icon && <Icon size={15} aria-hidden />}
         <p className="text-xs font-medium">{label}</p>
       </div>
-      <p className="mt-2 text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 tabular-nums">{value}</p>
+      <p className="mt-1 text-xl sm:text-2xl font-semibold tracking-tight text-gray-900 tabular-nums">{value}</p>
       {hint && <p className="mt-1 text-xs text-gray-500">{hint}</p>}
     </div>
   )
@@ -100,7 +100,7 @@ export function Row({ icon: Icon, tone = 'gray', title, meta, end }: {
   end?: React.ReactNode
 }) {
   return (
-    <div className="flex items-center gap-3 px-5 py-3.5">
+    <div className="flex items-center gap-3 px-4 py-2.5">
       {Icon && (
         <span className={cn('flex size-9 shrink-0 items-center justify-center rounded-full', ICON_TONES[tone])}>
           <Icon size={16} aria-hidden />
@@ -116,7 +116,7 @@ export function Row({ icon: Icon, tone = 'gray', title, meta, end }: {
 }
 
 export function Rows({ children }: { children: React.ReactNode }) {
-  return <div className="divide-y divide-gray-100 border-t border-gray-100">{children}</div>
+  return <div className="divide-y divide-slate-100">{children}</div>
 }
 
 export function Empty({ icon: Icon, title, children }: { icon: LucideIcon; title: string; children?: React.ReactNode }) {
@@ -154,10 +154,10 @@ export function PageSkeleton() {
 
 /** Primary and secondary actions, as links or buttons. */
 export const button = {
-  primary: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-navy px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy disabled:opacity-60',
-  gold: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-gold px-4 text-sm font-semibold text-navy-900 shadow-sm transition-colors hover:bg-[#ffc727] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-60',
-  secondary: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white px-4 text-sm font-semibold text-gray-800 ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy',
-  ghostDark: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-white/10 px-4 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white',
+  primary: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-navy px-4 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-navy-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy disabled:opacity-60',
+  gold: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-gold px-4 text-sm font-semibold text-navy-900 shadow-sm transition-colors hover:bg-[#ffc727] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white disabled:opacity-60',
+  secondary: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-white px-4 text-sm font-semibold text-gray-800 ring-1 ring-inset ring-gray-300 transition-colors hover:bg-gray-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy',
+  ghostDark: 'inline-flex min-h-10 items-center justify-center gap-2 rounded-md bg-white/10 px-4 text-sm font-semibold text-white ring-1 ring-inset ring-white/20 transition-colors hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white',
   link: 'inline-flex min-h-6 items-center gap-1 text-sm font-medium text-navy underline-offset-4 hover:underline',
 }
 

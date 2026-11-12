@@ -84,7 +84,7 @@ function MoreTab({ path }: { path: string }) {
     <div ref={ref} className="relative flex">
       <button
         type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} aria-controls="portal-more"
-        className={cn('flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium', active || open ? 'text-navy' : 'text-gray-600')}
+        className={cn('flex flex-1 flex-col items-center justify-center gap-1 text-[11px] font-medium', active || open ? 'bg-workspace-tab text-gold' : 'text-white/85')}
       >
         <MoreHorizontal size={22} aria-hidden />
         More
@@ -111,19 +111,20 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
 
   return (
     <>
-      <header className="sticky top-0 z-40 bg-navy/95 backdrop-blur supports-[backdrop-filter]:bg-navy/90">
-        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4 sm:px-6">
-          <Link href="/portal/dashboard" className="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-2 focus-visible:outline-white">
+      <header className="sticky top-0 z-40 border-b-2 border-gold bg-workspace-chrome">
+        <div className="mx-auto grid max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 px-4 sm:px-6">
+          <Link href="/portal/dashboard" className="flex h-14 min-w-0 items-center gap-3 rounded-md focus-visible:outline-2 focus-visible:outline-white">
             <img src="/brand/mc-logo-on-dark.svg" alt="" className="h-7 w-11 shrink-0 object-contain" />
-            {/* Beside the full menu there is room for the name only on wide screens. */}
-            <span className="min-w-0 leading-tight lg:sr-only 2xl:not-sr-only">
+            <span className="min-w-0 leading-tight">
               <span className="block truncate text-sm font-semibold text-white">{APP_NAME}</span>
               <span className="block text-[11px] text-white/80">Member portal</span>
             </span>
           </Link>
 
-          <nav aria-label="Member portal" className="hidden lg:block">
-            <ul className="flex items-center gap-1 rounded-2xl bg-white/[0.06] p-1">
+          <AccountMenu user={user} />
+
+          <nav aria-label="Member portal" className="col-span-2 hidden lg:block">
+            <ul className="flex items-center gap-1.5 pb-2">
               {NAV.map((item) => {
                 const active = isActive(path, item.href)
                 return (
@@ -131,8 +132,8 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
                     <Link
                       href={item.href} aria-current={active ? 'page' : undefined}
                       className={cn(
-                        'flex items-center gap-2 whitespace-nowrap rounded-xl px-3 py-2 text-sm font-medium transition-colors',
-                        active ? 'bg-white text-navy shadow-sm' : 'text-white/85 hover:bg-white/10 hover:text-white',
+                        'flex items-center gap-2 whitespace-nowrap rounded-md px-3 py-2 text-sm font-medium transition-colors focus-visible:outline-2 focus-visible:outline-white',
+                        active ? 'bg-gold font-semibold text-navy-900' : 'bg-workspace-tab text-white/90 hover:bg-white/15 hover:text-white',
                       )}
                     >
                       <item.icon size={16} aria-hidden /> {item.label}
@@ -142,21 +143,18 @@ export default function PortalNav({ user }: { user: { name?: string; memberId?: 
               })}
             </ul>
           </nav>
-
-          <AccountMenu user={user} />
         </div>
       </header>
 
-      <nav aria-label="Member portal tabs" className="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden">
+      <nav aria-label="Member portal tabs" className="fixed inset-x-0 bottom-0 z-40 border-t-2 border-gold bg-workspace-chrome pb-[env(safe-area-inset-bottom)] lg:hidden print:hidden">
         <div className="mx-auto grid h-16 max-w-lg grid-cols-5">
           {TABS.map((item) => {
             const active = isActive(path, item.href)
             return (
               <Link
                 key={item.href} href={item.href} aria-current={active ? 'page' : undefined}
-                className={cn('relative flex flex-col items-center justify-center gap-1 text-[11px] font-medium', active ? 'text-navy' : 'text-gray-600')}
+                className={cn('relative flex flex-col items-center justify-center gap-1 text-[11px] font-medium', active ? 'bg-workspace-tab text-gold' : 'text-white/85')}
               >
-                {active && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-gold" aria-hidden />}
                 <item.icon size={22} strokeWidth={active ? 2.25 : 1.75} aria-hidden />
                 {item.short}
               </Link>

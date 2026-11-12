@@ -48,7 +48,7 @@ export default function DashboardPage() {
 
   if (error) {
     return (
-      <div className="p-4 sm:p-8">
+      <div className="p-4 sm:p-6">
         <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
           {error}
         </div>
@@ -57,9 +57,9 @@ export default function DashboardPage() {
   }
 
   if (!data) return (
-    <div className="p-4 sm:p-8">
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[...Array(8)].map((_, i) => <div key={i} className="h-28 bg-gray-200 rounded-xl animate-pulse" />)}
+    <div className="p-4 sm:p-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+        {[...Array(8)].map((_, i) => <div key={i} className="h-24 bg-slate-200 rounded-lg animate-pulse" />)}
       </div>
     </div>
   )
@@ -67,15 +67,15 @@ export default function DashboardPage() {
   const { stats, recentContribs, monthlyBreakdown, activeLoansDetail } = data
 
   return (
-    <div className="p-4 sm:p-8">
-      <div className="mb-7">
+    <div className="p-4 sm:p-6">
+      <div className="mb-4">
         <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           Club overview{data.balanceSource === 'ledger' ? ' · balances from the ledger' : ''}
         </p>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         {/* Grouped by area. Red only where something needs attention now. */}
         <StatCard tone="plain" label="Active members"       value={stats.activeMembers}            icon={<Users size={18}/>} sub={`of ${stats.totalMembers} · ${stats.inactiveMembers} inactive`} />
         <StatCard tone="plain" label="Eligible for a loan"  value={stats.eligibleMembers}          icon={<ShieldCheck size={18}/>} />
@@ -87,8 +87,8 @@ export default function DashboardPage() {
         <StatCard tone="plain" label="Total withdrawn"      value={fmt$(stats.totalWithdrawn ?? 0)}    icon={<ArrowDownLeft size={18}/>} sub={plural(stats.withdrawalCount ?? 0, 'withdrawal')} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-2 p-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+        <Card className="min-w-0 p-4 xl:col-span-2">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Monthly contributions ({currentYear})</h2>
           {monthlyBreakdown.length === 0 ? (
             <p className="text-sm text-gray-400 py-8 text-center">No monthly data yet.</p>
@@ -99,18 +99,18 @@ export default function DashboardPage() {
                 <XAxis dataKey="monthYear" tick={{ fontSize: 11 }} />
                 <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtCompact$} />
                 <Tooltip formatter={(v: number) => fmt$(v)} />
-                <Bar dataKey="_sum.amount" name="Contributions" fill="#1B2A4A" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="_sum.amount" name="Contributions" fill="var(--color-workspace-tab)" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}
         </Card>
 
-        <Card className="p-5">
+        <Card className="min-w-0 p-4">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Recent contributions</h2>
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-100">
             {recentContribs.length === 0 && <p className="text-sm text-gray-400">None yet.</p>}
             {recentContribs.map((c: any) => (
-              <div key={c.transactionId} className="flex items-center justify-between">
+              <div key={c.transactionId} className="flex items-center justify-between gap-2 border-l-2 border-emerald-600 py-2 pl-3">
                 <div className="min-w-0">
                   <p className="text-sm font-medium text-gray-900 truncate">{c.memberName}</p>
                   <p className="text-xs text-gray-400">{c.monthYear} · {c.paymentMethod || "—"}</p>
@@ -122,8 +122,8 @@ export default function DashboardPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-        <Card className="lg:col-span-2 p-5">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 mb-4">
+        <Card className="min-w-0 p-4 xl:col-span-2">
           <h2 className="text-sm font-semibold text-gray-700 mb-4">Loans issued by year ({startYear}–{currentYear})</h2>
           {history?.byYear ? (
             <>
@@ -133,7 +133,7 @@ export default function DashboardPage() {
                   <XAxis dataKey="year" tick={{ fontSize: 12 }} />
                   <YAxis tick={{ fontSize: 11 }} tickFormatter={fmtCompact$} />
                   <Tooltip formatter={(v: number) => [fmt$(v), "Total lent"]} labelFormatter={(l: any) => "Year " + l} />
-                  <Bar dataKey="_sum.loanAmount" name="Total lent" fill="#C9A84C" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="_sum.loanAmount" name="Total lent" fill="var(--color-gold-600)" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
               <div className="flex flex-wrap gap-2 mt-3">
@@ -149,7 +149,7 @@ export default function DashboardPage() {
           ) : <div className="h-32 flex items-center justify-center text-sm text-gray-400">Loading history…</div>}
         </Card>
 
-        <Card className="p-5">
+        <Card className="min-w-0 p-4">
           <h2 className="text-sm font-semibold text-gray-700 mb-4 flex items-center gap-2">
             <Trophy size={14} className="text-amber-500" /> Top borrowers (all time)
           </h2>

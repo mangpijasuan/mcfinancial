@@ -49,12 +49,12 @@ export default function PortalDashboard() {
   const repaid = hasLoan && activeLoan.loanAmount > 0 ? (activeLoan.totalPaid / activeLoan.loanAmount) * 100 : 0
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Who, where they stand, and what to do next. */}
-      <section className="relative overflow-hidden rounded-3xl bg-navy bg-[radial-gradient(130%_140%_at_100%_0%,#2f4778_0%,#1b2a4a_55%,#15213b_100%)] p-6 text-white shadow-lg shadow-navy/20 sm:p-8">
+      <section className="relative overflow-hidden rounded-lg bg-workspace-chrome p-4 text-white shadow-xs sm:p-5">
         {/* A thin gold line along the top: the club's colours, decoration only. */}
-        <div aria-hidden className="absolute inset-x-0 top-0 h-1 bg-linear-to-r from-gold via-gold/60 to-transparent" />
-        <div className="relative flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-0.5 bg-gold" />
+        <div className="relative flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
           <div className="min-w-0 space-y-3">
             <div>
               <p className="text-sm text-white/80">Welcome back</p>
@@ -73,8 +73,8 @@ export default function PortalDashboard() {
           </div>
           <div className="md:text-right">
             <p className="text-sm text-white/80">Total contributed</p>
-            <p className="text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl">{fmt$(lifetime)}</p>
-            <div className="mt-4 flex flex-wrap gap-2 md:justify-end">
+            <p className="text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">{fmt$(lifetime)}</p>
+            <div className="mt-3 flex flex-wrap gap-2 md:justify-end">
               <Link href="/portal/pay" className={button.gold}><CreditCard size={16} aria-hidden /> Make a payment</Link>
               <Link href="/portal/statements" className={button.ghostDark}><FileText size={16} aria-hidden /> Statements</Link>
               {member.status === 'Active' && member.legalName?.trim() && Number.isFinite(joinYear) && (
@@ -147,7 +147,7 @@ export default function PortalDashboard() {
       </Panel>
 
       <section className={cn(surface, 'overflow-hidden')} aria-labelledby="recent">
-        <div className="px-5 pt-5 pb-3">
+        <div className="border-b border-workspace-border bg-workspace-header px-4 py-3 print:bg-white">
           <h2 id="recent" className="text-[15px] font-semibold text-gray-900">Recent contributions</h2>
         </div>
         {member.contributions?.length === 0 ? (

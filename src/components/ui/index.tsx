@@ -89,7 +89,7 @@ export function Button({
 
 /* ── Card ───────────────────────────────────────────────── */
 export function Card({ children, className }: { children: React.ReactNode; className?: string }) {
-  return <div className={cn('bg-white rounded-xl border border-gray-200 shadow-xs', className)}>{children}</div>
+  return <div className={cn('bg-white rounded-lg border border-workspace-border shadow-xs print:border-gray-200', className)}>{children}</div>
 }
 
 /* ── Input ──────────────────────────────────────────────── */
@@ -172,10 +172,10 @@ export function Table({ headers, children, loading, label = 'Table' }: { headers
     <ScrollArea label={label} className="scroll-shadow-x">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-gray-200 bg-gray-50/80">
+          <tr className="border-b border-workspace-border bg-workspace-header print:bg-white">
             {headers.map(h => {
               const { label, className } = typeof h === 'string' ? { label: h, className: undefined } : h
-              return <th key={label} scope="col" className={cn('text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wider whitespace-nowrap', className)}>{label}</th>
+              return <th key={label} scope="col" className={cn('text-left px-4 py-2.5 text-xs font-semibold text-slate-700 uppercase tracking-wider whitespace-nowrap', className)}>{label}</th>
             })}
           </tr>
         </thead>
@@ -276,12 +276,12 @@ export function StatCard({ label, value, sub, color = 'navy', icon, tone }: {
   if (tone) {
     const alert = tone === 'alert'
     return (
-      <div className={cn('rounded-xl border p-5 shadow-xs', alert ? 'border-red-200 bg-red-50' : 'border-gray-200 bg-white')}>
+      <div className={cn('rounded-lg border p-3 shadow-xs sm:p-4', alert ? 'border-red-200 bg-red-50' : 'border-workspace-border bg-white')}>
         <div className="flex items-start justify-between gap-2">
           <p className={cn('text-sm font-medium', alert ? 'text-red-800' : 'text-gray-600')}>{label}</p>
           {icon && <span aria-hidden className={cn('text-lg', alert ? 'text-red-500' : 'text-gray-400')}>{icon}</span>}
         </div>
-        <p className={cn('mt-2 text-3xl font-bold tracking-tight tabular-nums', alert ? 'text-red-700' : 'text-gray-900')}>{value}</p>
+        <p className={cn('mt-1 break-words text-lg font-bold tracking-tight tabular-nums sm:text-2xl', alert ? 'text-red-700' : 'text-gray-900')}>{value}</p>
         {sub && <p className={cn('mt-1 text-xs', alert ? 'text-red-700' : 'text-gray-500')}>{sub}</p>}
       </div>
     )
