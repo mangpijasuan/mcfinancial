@@ -1,10 +1,12 @@
 @import 'tailwindcss';
 
-/* Muted text must still be readable: Tailwind's gray-400 on white is about
-   2.5:1, below the 4.5:1 WCAG AA asks for. It is used for secondary text
-   on many screens, so it takes gray-500's value (about 4.8:1) here once. */
+/* Muted text must still be readable: WCAG AA asks for 4.5:1. Tailwind's
+   gray-400 on white is about 2.5:1, and its gray-500 is only 4.1:1 on the
+   workspace canvas (#e9eef3). Both muted greys take one slightly darker
+   shade: 4.8:1 on the canvas, 5.1:1 on the header grey, 5.6:1 on white. */
 @theme {
-  --color-gray-400: oklch(55.1% 0.027 264.364);
+  --color-gray-400: #5f6878;
+  --color-gray-500: #5f6878;
   /* Shared workspace palette for signed-in staff and members. */
   --font-portal: 'Inter Variable', Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --color-navy: #1b2a4a;
