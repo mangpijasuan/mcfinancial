@@ -48,18 +48,24 @@ export default function Receipt({ id, backHref }: { id: string; backHref: string
 
   return (
     <div className="mx-auto max-w-xl p-4 sm:p-8">
-      <div className="mb-4 flex justify-between gap-2 print:hidden">
-        <a href={backHref} className="inline-flex min-h-6 items-center text-sm text-indigo-700 underline">← Back</a>
-        <button type="button" onClick={() => window.print()} className="rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm">Print</button>
+      <div className="mb-4 flex items-center justify-between gap-2 print:hidden">
+        <a href={backHref} className="inline-flex min-h-9 items-center gap-1 text-sm font-medium text-gray-700 hover:text-gray-900">← Back</a>
+        <button type="button" onClick={() => window.print()}
+          className="inline-flex min-h-9 items-center rounded-lg bg-white px-3.5 text-sm font-medium text-gray-800 ring-1 ring-inset ring-gray-300 hover:bg-gray-50">Print</button>
       </div>
-      <article className="rounded-2xl border border-gray-200 bg-white p-6 shadow-xs print:border-none print:shadow-none">
-        <header className="flex items-center gap-3 border-b border-gray-100 pb-4">
-          <img src="/brand/mc-logo.svg" alt="" width={72} height={39} />
-          <div className="min-w-0">
-            <p className="font-bold text-gray-900">Millionaires Club</p>
-            <p className="text-xs text-gray-500">Contribution receipt</p>
+      <article className="rounded-2xl border border-gray-200 bg-white p-5 shadow-xs sm:p-6 print:border-none print:shadow-none">
+        <header className="flex flex-col gap-3 border-b border-gray-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/brand/mc-logo.svg" alt="" width={64} height={35} />
+            <div className="min-w-0">
+              <p className="font-bold text-gray-900">Millionaires Club</p>
+              <p className="text-xs text-gray-500">Contribution receipt</p>
+            </div>
           </div>
-          <p className="ml-auto font-mono text-sm text-gray-700">{data.receiptNumber ?? '—'}</p>
+          <p className="text-xs text-gray-500 sm:text-right">
+            <span className="sm:block">Receipt no.</span>{' '}
+            <span className="whitespace-nowrap font-mono text-sm text-gray-900">{data.receiptNumber ?? '—'}</span>
+          </p>
         </header>
         {data.reversed && (
           <p role="status" className="mt-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">

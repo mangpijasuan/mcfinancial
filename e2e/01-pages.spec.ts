@@ -49,7 +49,7 @@ test('phone layouts fit the screen', async ({ browser }) => {
 
 test('the member portal loads cleanly', async ({ browser }) => {
   const { page, errors, close } = await signedIn(browser, 'member', { width: 390, height: 844 })
-  for (const path of ['/portal/dashboard', '/portal/history', '/portal/pay', '/portal/loan', '/portal/statements', '/portal/agreements']) {
+  for (const path of ['/portal/dashboard', '/portal/history', '/portal/pay', '/portal/loan', '/portal/statements', '/portal/agreements', '/portal/card']) {
     await page.goto(path)
     await expect(page.locator('h1, h2').first(), path).toBeVisible()
     await expectNoOverflow(page)
@@ -61,7 +61,7 @@ test('the member portal loads cleanly', async ({ browser }) => {
 test('an active member downloads their personalized membership card', async ({ browser }) => {
   const { page, close } = await signedIn(browser, 'member')
   try {
-    await page.goto('/portal/dashboard')
+    await page.goto('/portal/card')
     const cardText = await page.evaluateHandle(() => {
       const entries: { text: string; font: string }[] = []
       const fillText = CanvasRenderingContext2D.prototype.fillText
