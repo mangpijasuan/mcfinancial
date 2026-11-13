@@ -80,6 +80,9 @@ export default function PortalDashboard() {
               {member.status === 'Active' && member.legalName?.trim() && Number.isFinite(joinYear) && (
                 <MembershipCardDownload fullName={member.legalName.trim()} memberId={member.id} joinYear={joinYear} />
               )}
+              {member.appleWalletAvailable && (
+                <a href="/api/portal/wallet" className={button.ghostDark}><Wallet size={16} aria-hidden /> Add to Apple Wallet</a>
+              )}
             </div>
           </div>
         </div>

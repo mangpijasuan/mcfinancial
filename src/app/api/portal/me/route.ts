@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { appleWalletConfig } from '@/lib/appleWallet'
 import { prisma } from '@/lib/prisma'
 import { requireMember } from '@/modules/auth'
 import { sanitizeMember } from '@/lib/serializers'
@@ -32,5 +33,5 @@ export async function GET() {
   const [figures] = await withMemberFigures(prisma, [member])
   const loansAsBorrower = await withLoanBalances(prisma, member.loansAsBorrower)
   // Strip sensitive fields
-  return NextResponse.json(sanitizeMember({ ...figures, loansAsBorrower } as any))
+  return NextResponse.json(sanitizeMember({ ...figures, loansAsBorrower, appleWalletAvailable: member.status === 'Active' && Boolean(appleWalletConfig()) } as any))
 }
