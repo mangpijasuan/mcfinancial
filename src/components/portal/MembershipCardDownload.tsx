@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Download } from 'lucide-react'
 import '@fontsource/allura/400.css'
 import { button } from './kit'
@@ -7,33 +7,64 @@ const CARD_ARTWORK = '/brand/membership-card.webp'
 const SERIF = 'Georgia, "Times New Roman", serif'
 const SIGNATURE = 'Allura, cursive'
 
-function drawText(
-  context: CanvasRenderingContext2D,
-  text: string,
-  x: number,
-  y: number,
-  width: number,
-  font: string,
-) {
-  context.font = font
-  context.fillText(text, x, y, width)
+/**
+ * The four lines drawn on the card artwork, in its own 1536 x 967 pixels:
+ * where each goes and the most width it may take. A line too long for its
+ * space is squeezed to fit, by the download and the preview alike.
+ */
+type Line = { key: string; x: number; y: number; width: number; size: number; bold: boolean; family: string }
+const LINES: Line[] = [
+  { key: 'name', x: 109, y: 421, width: 510, size: 68, bold: true, family: SERIF },
+  { key: 'id', x: 118, y: 554, width: 399, size: 51, bold: true, family: SERIF },
+  { key: 'since', x: 634, y: 554, width: 260, size: 53, bold: true, family: SERIF },
+  { key: 'signature', x: 94, y: 823, width: 322, size: 68, bold: false, family: SIGNATURE },
+]
+const canvasFont = (l: Line) => `${l.bold ? 'bold ' : ''}${l.size}px ${l.family}`
+const textOf = (l: Line, t: { fullName: string; memberId: string; joinYear: number }) =>
+  l.key === 'id' ? t.memberId : l.key === 'since' ? String(t.joinYear) : t.fullName
+
+/** How wide each line is when drawn, once the fonts are loaded; only lines wider than their space need squeezing. */
+function useSqueeze(t: { fullName: string; memberId: string; joinYear: number }) {
+  const [squeeze, setSqueeze] = useState<Record<string, number>>({})
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        await Promise.all(LINES.map((l) => document.fonts.load(canvasFont(l), textOf(l, t))))
+        const context = document.createElement('canvas').getContext('2d')
+        if (!context || cancelled) return
+        const next: Record<string, number> = {}
+        for (const l of LINES) {
+          context.font = canvasFont(l)
+          if (context.measureText(textOf(l, t)).width > l.width) next[l.key] = l.width
+        }
+        setSqueeze(next)
+      } catch {
+        // No font loading here: the lines show at their natural width.
+      }
+    })()
+    return () => { cancelled = true }
+  }, [t.fullName, t.memberId, t.joinYear]) // eslint-disable-line react-hooks/exhaustive-deps
+  return squeeze
 }
 
 /**
  * The member's card as it will download: the same artwork with the name, ID
- * and year drawn at the same places, scaled to fit.
+ * and year drawn at the same places, and squeezed to the same widths.
  */
 export function MembershipCardPreview({ fullName, memberId, joinYear }: { fullName: string; memberId: string; joinYear: number }) {
+  const squeeze = useSqueeze({ fullName, memberId, joinYear })
   return (
     <svg viewBox="0 0 1536 967" role="img" aria-label={`Membership card for ${fullName}, ${memberId}, member since ${joinYear}`}
       className="block h-auto w-full rounded-xl shadow-md ring-1 ring-black/10">
       <image href={CARD_ARTWORK} x="0" y="0" width="1536" height="967" />
-      <g fill="#fffaf2" fontFamily={SERIF} fontWeight="bold">
-        <text x="109" y="421" fontSize="68">{fullName}</text>
-        <text x="118" y="554" fontSize="51">{memberId}</text>
-        <text x="634" y="554" fontSize="53">{joinYear}</text>
-      </g>
-      <text x="94" y="823" fontSize="68" fill="#fffaf2" fontFamily={SIGNATURE}>{fullName}</text>
+      {LINES.map((l) => (
+        <text key={l.key} data-line={l.key} x={l.x} y={l.y} fontSize={l.size} fill="#fffaf2" fontFamily={l.family}
+          fontWeight={l.bold ? 'bold' : undefined}
+          textLength={squeeze[l.key]} lengthAdjust={squeeze[l.key] ? 'spacingAndGlyphs' : undefined}>
+          {textOf(l, { fullName, memberId, joinYear })}
+        </text>
+      ))}
     </svg>
   )
 }
@@ -69,10 +100,10 @@ export default function MembershipCardDownload({
       if (!context) throw new Error('Card rendering unavailable')
       context.drawImage(artwork, 0, 0)
       context.fillStyle = '#fffaf2'
-      drawText(context, fullName, 109, 421, 510, `bold 68px ${SERIF}`)
-      drawText(context, memberId, 118, 554, 399, `bold 51px ${SERIF}`)
-      drawText(context, String(joinYear), 634, 554, 260, `bold 53px ${SERIF}`)
-      drawText(context, fullName, 94, 823, 322, `68px ${SIGNATURE}`)
+      for (const l of LINES) {
+        context.font = canvasFont(l)
+        context.fillText(textOf(l, { fullName, memberId, joinYear }), l.x, l.y, l.width)
+      }
 
       const png = await new Promise<Blob | null>(resolve => canvas.toBlob(resolve, 'image/png'))
       if (!png) throw new Error('Card export unavailable')

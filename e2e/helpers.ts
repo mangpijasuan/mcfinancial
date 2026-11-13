@@ -10,7 +10,17 @@ export async function signedIn(browser: Browser, role: StaffRole | 'member' | 'c
   const context = await browser.newContext({ storageState: authFile(role), viewport })
   const page = await context.newPage()
   const errors: string[] = []
-  page.on('console', (m) => { if (m.type() === 'error') errors.push(m.text()) })
+  // Leaving a page while the sign-in library is still checking the session makes the browser
+  // cancel that one request, and the library logs it as an error. That is the test navigating
+  // away, not a fault: only that cancelled session check is ignored, whichever event comes first.
+  const isSessionAbort = (text: string) => text.includes('CLIENT_FETCH_ERROR') && text.includes('/api/auth/session')
+  let sessionAborted = false
+  page.on('requestfailed', (r) => {
+    if (!r.url().includes('/api/auth/session')) return
+    sessionAborted = true
+    for (let i = errors.length - 1; i >= 0; i--) if (isSessionAbort(errors[i])) errors.splice(i, 1)
+  })
+  page.on('console', (m) => { if (m.type() === 'error' && !(sessionAborted && isSessionAbort(m.text()))) errors.push(m.text()) })
   page.on('pageerror', (e) => errors.push(e.message))
   // Confirmations the flows ask for are accepted; an alert is how the app
   // reports a failed request, so it fails the test.
