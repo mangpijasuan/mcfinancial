@@ -1,5 +1,7 @@
 # Hetzner + PostgreSQL Deployment
 
+**Going live?** Start with the [go-live checklist](go-live-checklist.md), then the [pilot guide](pilot-guide.md).
+
 PostgreSQL is the database in every environment. Schema changes ship as Prisma migrations in `prisma/migrations/`. Keep Google Sheets only for import/export workflows.
 
 ## Recommended architecture
