@@ -17,11 +17,13 @@ export function appleWalletConfig() {
 export async function createMembershipPass(
   config: NonNullable<ReturnType<typeof appleWalletConfig>>,
   member: { id: string; legalName: string; joinDate: Date },
+  /** Where the signing files are; the club's read-only mount unless a test gives its own. */
+  credentials: string = credentialDirectory,
 ) {
   const [wwdr, signerCert, signerKey, icon, icon2x, icon3x] = await Promise.all([
-    readFile(join(credentialDirectory, 'wwdr.pem')),
-    readFile(join(credentialDirectory, 'signer-cert.pem')),
-    readFile(join(credentialDirectory, 'signer-key.pem')),
+    readFile(join(credentials, 'wwdr.pem')),
+    readFile(join(credentials, 'signer-cert.pem')),
+    readFile(join(credentials, 'signer-key.pem')),
     readFile(join(iconDirectory, 'icon.png')),
     readFile(join(iconDirectory, 'icon@2x.png')),
     readFile(join(iconDirectory, 'icon@3x.png')),
