@@ -60,18 +60,18 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
   }
 
   return (
-    <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 backdrop-blur-sm supports-backdrop-filter:bg-white/75">
-      <div className="flex items-center justify-between gap-4 px-4 py-3 lg:px-8">
+    <header className="sticky top-14 z-30 border-b-2 border-gold bg-workspace-chrome text-white lg:top-0">
+      <div className="flex items-center justify-between gap-4 px-4 py-2.5 lg:px-6">
         <div className="min-w-0">
           {/* The sidebar shows the logo, the club's name and your role. On a phone,
               where it is folded away, and on desktop while it is collapsed
               (globals.css, .role-in-topbar), the role shows here instead. A long
               list of roles is shortened so the page title keeps its room. */}
           <div className="flex items-center gap-2 min-w-0">
-            <p className="shrink-0 whitespace-nowrap text-base font-semibold text-slate-900">{pageTitle}</p>
+            <p className="shrink-0 whitespace-nowrap text-base font-semibold text-white">{pageTitle}</p>
             {roleSummary && (
               <span
-                className="role-in-topbar min-w-0 max-w-full items-center gap-1 rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-blue-800"
+                className="role-in-topbar min-w-0 max-w-full items-center gap-1 rounded-md bg-workspace-tab px-2 py-0.5 text-xs font-semibold text-white"
                 title={roleSummary}
               >
                 <Shield size={11} className="shrink-0" />
@@ -82,15 +82,15 @@ export default function AdminTopbar({ roleSummary, canSearchMembers }: { roleSum
         </div>
 
         {canSearchMembers && <form onSubmit={handleSubmit} className="hidden md:block w-full max-w-md">
-          <label className="group flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-3 py-2.5 transition-colors focus-within:border-indigo-300 focus-within:bg-white focus-within:ring-2 focus-within:ring-indigo-100">
-            <Search size={16} className="shrink-0 text-slate-400 group-focus-within:text-indigo-500" />
+          <label className="group flex items-center gap-3 rounded-md border border-white/25 bg-workspace-tab px-3 py-1.5 transition-colors focus-within:border-gold focus-within:ring-1 focus-within:ring-gold">
+            <Search size={16} className="shrink-0 text-slate-200 group-focus-within:text-gold" />
             <input
               type="search"
               aria-label="Quick search members by name or ID"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Quick search members by name or ID"
-              className="h-6 w-full bg-transparent text-sm text-slate-700 outline-hidden placeholder:text-slate-500"
+              className="h-6 w-full bg-transparent text-sm text-white outline-hidden placeholder:text-slate-200"
             />
           </label>
         </form>}

@@ -44,15 +44,15 @@ function NavLink({ item, compact, path, badges }: { item: GroupedStaffNavItem; c
         'relative flex min-h-10 items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors lg:min-h-8 lg:py-1.5',
         compact && 'justify-center px-2',
         active
-          ? 'bg-white/15 font-medium text-white'
-          : 'text-white/60 hover:bg-white/10 hover:text-white'
+          ? 'bg-gold font-semibold text-navy-900'
+          : 'bg-workspace-tab text-white/85 hover:bg-white/15 hover:text-white'
       )}
     >
       <Icon size={17} className="shrink-0" />
       {!compact && <span className="min-w-0 flex-1 truncate">{item.label}</span>}
       {count > 0 && (
         <span className={cn(
-          'inline-flex min-w-5 items-center justify-center rounded-full bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold leading-none text-amber-950',
+          'inline-flex min-w-5 items-center justify-center rounded-full bg-navy-900 px-1.5 py-0.5 text-[10px] font-bold leading-none text-white',
           compact && 'absolute right-0.5 top-0.5 min-w-4 px-1'
         )} aria-label={count === 1 ? '1 item needs attention' : `${count} items need attention`}>
           {badgeLabel(count)}
@@ -83,7 +83,7 @@ function ScrollingMenu({ path, children }: { path: string; children: React.React
   return (
     <div className="relative min-h-0 flex-1">
       <div ref={ref} className="h-full overflow-y-auto overscroll-contain px-2 py-3">{children}</div>
-      {moreBelow && <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-[#1B2A4A] to-transparent" />}
+      {moreBelow && <div aria-hidden className="pointer-events-none absolute inset-x-0 bottom-0 h-10 bg-linear-to-t from-workspace-chrome to-transparent" />}
     </div>
   )
 }
@@ -101,7 +101,7 @@ type NavProps = {
 function NavContent({ compact = false, desktop = false, path, badges, roleSummary, quickAction, mainItems, accountItems, onToggleCollapsed }: NavProps & { compact?: boolean; desktop?: boolean }) {
   return (
     <>
-      <div className="shrink-0 border-b border-white/10 px-3 py-4 lg:py-3">
+      <div className="shrink-0 border-b border-gold/75 px-3 py-4 lg:py-3">
         <div className={cn('flex min-w-0 items-center', compact ? 'justify-center' : 'gap-3')}>
           {desktop && (
             <button
@@ -135,7 +135,7 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
             title={compact ? quickAction.label : undefined}
             aria-label={compact ? quickAction.label : undefined}
             className={cn(
-              'mb-4 flex min-h-10 items-center justify-center gap-2 rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-[#1B2A4A] transition-colors hover:bg-amber-300 lg:mb-3 lg:min-h-9',
+              'mb-4 flex min-h-10 items-center justify-center gap-2 rounded-lg bg-gold px-3 py-2 text-sm font-semibold text-navy-900 transition-colors hover:bg-amber-300 lg:mb-3 lg:min-h-9',
               compact && 'px-2'
             )}
           >
@@ -165,7 +165,7 @@ function NavContent({ compact = false, desktop = false, path, badges, roleSummar
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}
           className={cn(
-            'flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-white/60 transition-colors hover:bg-white/10 hover:text-white lg:min-h-8 lg:py-1.5',
+            'flex min-h-10 w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10 hover:text-white lg:min-h-8 lg:py-1.5',
             compact && 'justify-center px-2'
           )}
           aria-label={compact ? 'Sign out' : undefined}
@@ -305,7 +305,7 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
 
   return (
     <>
-      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b border-white/10 bg-[#1B2A4A] px-4 lg:hidden">
+      <div className="fixed inset-x-0 top-0 z-40 flex h-14 items-center justify-between border-b-2 border-gold bg-workspace-chrome px-4 lg:hidden">
         <div className="flex min-w-0 items-center gap-2.5">
           <button
             onClick={() => setOpen((current) => !current)}
@@ -330,7 +330,7 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
             role="dialog"
             aria-modal="true"
             aria-label="Staff menu"
-            className="relative flex h-dvh w-72 max-w-[88vw] flex-col bg-[#1B2A4A] shadow-2xl"
+            className="relative flex h-dvh w-72 max-w-[88vw] flex-col bg-workspace-chrome shadow-2xl"
           >
             <button
               onClick={() => setOpen(false)}
@@ -345,7 +345,7 @@ export default function Sidebar({ permissions, roleSummary }: { permissions: str
       )}
 
       <aside className={cn(
-        'sticky top-0 hidden h-screen shrink-0 flex-col bg-[#1B2A4A] transition-[width] duration-200 lg:flex',
+        'sticky top-0 hidden h-screen shrink-0 flex-col bg-workspace-chrome transition-[width] duration-200 lg:flex',
         collapsed ? 'w-[72px]' : 'w-64'
       )}>
         <NavContent {...navProps} compact={collapsed} desktop />
