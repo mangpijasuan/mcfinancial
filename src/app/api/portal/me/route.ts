@@ -33,5 +33,5 @@ export async function GET() {
   const [figures] = await withMemberFigures(prisma, [member])
   const loansAsBorrower = await withLoanBalances(prisma, member.loansAsBorrower)
   // Strip sensitive fields
-  return NextResponse.json(sanitizeMember({ ...figures, loansAsBorrower, appleWalletAvailable: member.status === 'Active' && Boolean(appleWalletConfig()) } as any))
+  return NextResponse.json(sanitizeMember({ ...figures, loansAsBorrower, appleWalletAvailable: member.status === 'Active' && member.legalName.trim() !== '' && Boolean(appleWalletConfig()) } as any))
 }
