@@ -1,11 +1,10 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, HandCoins, Contact, Landmark, Receipt, Undo2, Wallet } from 'lucide-react'
+import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, HandCoins, Landmark, Receipt, Undo2, Wallet } from 'lucide-react'
 import { eligibilityText, fmt$, fmtDate } from '@/lib/utils'
 import { cents, formatUSD } from '@/lib/money'
 import { periodLabel } from '@/modules/contributions/dues'
-import MembershipCardDownload, { MembershipCardPreview } from '@/components/portal/MembershipCardDownload'
 import type { DuesData } from '@/components/contributions/DuesPanel'
 import { Empty, PageSkeleton, Panel, Pill, Progress, Row, Rows, Stat, button, surface, type Tone } from '@/components/portal/kit'
 import { cn } from '@/lib/utils'
@@ -55,8 +54,6 @@ export default function PortalDashboard() {
   // What is owed in dues up to this month: one tap pays it, the amount already filled in.
   const owedCents = cents(dues ? dues.obligations.filter((o) => o.period <= dues.currentPeriod).reduce((sum, o) => sum + o.remainingCents, 0) : 0)
   const payDuesHref = owedCents > 0 ? `/portal/pay?for=dues&amount=${(owedCents / 100).toFixed(2)}` : '/portal/pay'
-  const cardName = member.legalName?.trim()
-  const hasCard = member.status === 'Active' && !!cardName && Number.isFinite(joinYear)
 
   return (
     <div className="space-y-4">
@@ -130,11 +127,10 @@ export default function PortalDashboard() {
         </Panel>
       )}
 
-      <div className={cn('grid items-start gap-4', hasCard && 'lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]')}>
       <Panel title="Your loan" icon={Landmark}
         action={hasLoan && activeLoan.overdue ? <Pill tone="red" dot>Overdue</Pill> : hasLoan ? <Pill tone="blue" dot>Being repaid</Pill> : undefined}>
         {hasLoan ? (
-          <div className={cn('grid gap-6', hasCard ? 'md:grid-cols-[1.1fr_1fr] lg:grid-cols-1 xl:grid-cols-[1.1fr_1fr]' : 'md:grid-cols-[1.1fr_1fr]')}>
+          <div className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
             <div className="space-y-3">
               <p className="font-mono text-xs text-gray-500">{activeLoan.loanId}</p>
               <div>
@@ -147,8 +143,7 @@ export default function PortalDashboard() {
                 <Link href="/portal/loan" className={button.link}>See the schedule and payoff →</Link>
               </div>
             </div>
-            <dl className={cn('grid grid-cols-2 content-center gap-x-4 gap-y-4 border-t border-gray-100 pt-5 text-sm md:border-l md:border-t-0 md:pl-6 md:pt-0',
-              hasCard && 'lg:border-l-0 lg:border-t lg:pl-0 lg:pt-5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0')}>
+            <dl className="grid grid-cols-2 content-center gap-x-4 gap-y-4 border-t border-gray-100 pt-5 text-sm md:border-l md:border-t-0 md:pl-6 md:pt-0">
               <div><dt className="text-xs text-gray-500">Monthly payment</dt><dd className="font-semibold text-gray-900 tabular-nums">{fmt$(activeLoan.monthlyDue)}</dd></div>
               <div><dt className="text-xs text-gray-500">Next payment</dt><dd className="font-semibold text-gray-900">{fmtDate(activeLoan.nextDueDate)}</dd></div>
               <div><dt className="text-xs text-gray-500">Paid so far</dt><dd className="font-semibold text-emerald-700 tabular-nums">{fmt$(activeLoan.totalPaid)}</dd></div>
@@ -161,21 +156,6 @@ export default function PortalDashboard() {
           </Empty>
         )}
       </Panel>
-
-      {hasCard && (
-        <Panel title="Membership card" icon={Contact}>
-          <div className="space-y-4">
-            <div className="mx-auto max-w-sm"><MembershipCardPreview fullName={cardName} memberId={member.id} joinYear={joinYear} /></div>
-            <div className="flex flex-wrap justify-center gap-2">
-              <MembershipCardDownload fullName={cardName} memberId={member.id} joinYear={joinYear} tone="light" />
-              {member.appleWalletAvailable && (
-                <a href="/api/portal/wallet" className={button.secondary}><Wallet size={16} aria-hidden /> Add to Apple Wallet</a>
-              )}
-            </div>
-          </div>
-        </Panel>
-      )}
-      </div>
 
       <section className={cn(surface, 'overflow-hidden')} aria-labelledby="recent">
         <div className="border-b border-workspace-border bg-workspace-header px-4 py-3 print:bg-white">

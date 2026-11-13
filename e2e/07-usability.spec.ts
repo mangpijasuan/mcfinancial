@@ -168,7 +168,7 @@ test('phones: tapping a field does not zoom the page (16px text in fields)', asy
   await phone.close()
 })
 
-test('member: one tap from Home pays what is owed, and the loan schedule fits a phone', async ({ browser }) => {
+test('member: one tap from Home pays what is owed, the card is under the account, and the loan schedule fits a phone', async ({ browser }) => {
   const { page, errors, close } = await signedIn(browser, 'member', { width: 390, height: 844 })
   await page.goto('/portal/dashboard')
   // The welcome card offers to pay exactly what is owed, already filled in.
@@ -183,9 +183,13 @@ test('member: one tap from Home pays what is owed, and the loan schedule fits a 
   await page.getByRole('button', { name: /^This month/ }).click()
   await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('20.00')
   await expect(page.getByRole('button', { name: /^This month/ })).toHaveAttribute('aria-pressed', 'true')
-  // The membership card shows on Home, as it will download.
+  // The membership card is in the account menu, shown as it will download.
   await page.goto('/portal/dashboard')
+  await page.getByRole('button', { name: 'Your account' }).click()
+  await page.getByRole('link', { name: 'Membership card' }).click()
+  await expect(page).toHaveURL(/\/portal\/card$/)
   await expect(page.getByRole('img', { name: /^Membership card for / })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Download membership card' })).toBeVisible()
   // On a phone the schedule is a list: every status visible, nothing off to the side.
   await page.goto('/portal/loan')
   const schedule = page.getByRole('list', { name: 'Repayment schedule' })

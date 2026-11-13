@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { signOut } from 'next-auth/react'
 import { useEffect, useRef, useState } from 'react'
-import { CreditCard, FileSignature, FileText, History, Home, Landmark, LogOut, MoreHorizontal, type LucideIcon } from 'lucide-react'
+import { Contact, CreditCard, FileSignature, FileText, History, Home, Landmark, LogOut, MoreHorizontal, type LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { APP_NAME } from '@/lib/brand'
 
@@ -64,6 +64,10 @@ function AccountMenu({ user }: { user: { name?: string; memberId?: string } }) {
             <p className="text-sm font-semibold text-gray-900">{user.name}</p>
             <p className="text-xs text-gray-500">Member ID {user.memberId}</p>
           </div>
+          <Link href="/portal/card" onClick={() => setOpen(false)}
+            className="flex w-full items-center gap-2.5 border-b border-gray-100 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50">
+            <Contact size={16} aria-hidden /> Membership card
+          </Link>
           <button
             type="button" onClick={() => signOut({ callbackUrl: '/portal/login' })}
             className="flex w-full items-center gap-2.5 px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50"
