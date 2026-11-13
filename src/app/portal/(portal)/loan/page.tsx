@@ -101,6 +101,23 @@ function LoanCard({ loan }: { loan: MemberLoan }) {
 
       {loan.schedule ? (
         <Panel title="Repayment schedule" icon={ListOrdered} sub="Each payment pays the oldest unpaid month first; the last month absorbs any rounding." flush>
+          {/* Phones: one line per month, nothing hidden off to the side. */}
+          <ol className="divide-y divide-gray-100 sm:hidden" aria-label="Repayment schedule">
+            {loan.schedule.map((it) => (
+              <li key={it.number} className={cn('flex items-center gap-3 px-4 py-3', it.status === 'overdue' && 'bg-red-50/40')}>
+                <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-gray-100 text-xs font-semibold text-gray-600 tabular-nums">{it.number}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-gray-900">{fmtDate(it.dueDate)}</p>
+                  <p className="text-xs text-gray-500 tabular-nums">Paid {usd(it.paid)} of {usd(it.amount)}</p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="text-sm font-semibold text-gray-900 tabular-nums">{usd(it.amount)}</span>
+                  <Pill tone={INSTALLMENT[it.status].tone}>{INSTALLMENT[it.status].label}</Pill>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="hidden sm:block">
           <ScrollArea label="Repayment schedule">
             <table className="w-full text-sm tabular-nums">
               <thead>
@@ -125,6 +142,7 @@ function LoanCard({ loan }: { loan: MemberLoan }) {
               </tbody>
             </table>
           </ScrollArea>
+          </div>
         </Panel>
       ) : loan.stage !== 'awaiting_payout' && (
         <p className="text-xs text-gray-500">This loan was made before the club kept month-by-month schedules, so only its totals are shown.</p>

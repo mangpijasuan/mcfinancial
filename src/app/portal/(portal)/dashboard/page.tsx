@@ -1,11 +1,11 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, HandCoins, Landmark, Receipt, Undo2, Wallet } from 'lucide-react'
+import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, HandCoins, Contact, Landmark, Receipt, Undo2, Wallet } from 'lucide-react'
 import { eligibilityText, fmt$, fmtDate } from '@/lib/utils'
-import { formatUSD } from '@/lib/money'
+import { cents, formatUSD } from '@/lib/money'
 import { periodLabel } from '@/modules/contributions/dues'
-import MembershipCardDownload from '@/components/portal/MembershipCardDownload'
+import MembershipCardDownload, { MembershipCardPreview } from '@/components/portal/MembershipCardDownload'
 import type { DuesData } from '@/components/contributions/DuesPanel'
 import { Empty, PageSkeleton, Panel, Pill, Progress, Row, Rows, Stat, button, surface, type Tone } from '@/components/portal/kit'
 import { cn } from '@/lib/utils'
@@ -18,9 +18,14 @@ const DUES_STATUS: Record<string, { tone: Tone; label: string }> = {
   upcoming: { tone: 'gray', label: 'Upcoming' },
 }
 
-function DuesLine({ d }: { d: DuesData }) {
+function DuesLine({ d, owedCents }: { d: DuesData; owedCents: number }) {
   if (d.overdueMonths > 0) {
-    return <p className="text-sm text-red-800"><strong>{formatUSD(d.arrearsCents)}</strong> unpaid for {d.overdueMonths} past {d.overdueMonths === 1 ? 'month' : 'months'}.</p>
+    return (
+      <p className="text-sm text-red-800">
+        <strong>{formatUSD(d.arrearsCents)}</strong> unpaid for {d.overdueMonths} past {d.overdueMonths === 1 ? 'month' : 'months'}
+        {owedCents > d.arrearsCents ? <>; <strong>{formatUSD(cents(owedCents))}</strong> with this month.</> : '.'}
+      </p>
+    )
   }
   if (d.coveredThrough && d.coveredThrough >= d.currentPeriod) {
     return <p className="text-sm text-emerald-800">Paid through <strong>{periodLabel(d.coveredThrough)}</strong>{d.creditCents > 0 ? ` · ${formatUSD(d.creditCents)} credit` : ''}.</p>
@@ -47,6 +52,11 @@ export default function PortalDashboard() {
   // Join dates are stored as midnight UTC: read the year in UTC, or it slips back a year west of London.
   const joinYear = new Date(member.joinDate).getUTCFullYear()
   const repaid = hasLoan && activeLoan.loanAmount > 0 ? (activeLoan.totalPaid / activeLoan.loanAmount) * 100 : 0
+  // What is owed in dues up to this month: one tap pays it, the amount already filled in.
+  const owedCents = cents(dues ? dues.obligations.filter((o) => o.period <= dues.currentPeriod).reduce((sum, o) => sum + o.remainingCents, 0) : 0)
+  const payDuesHref = owedCents > 0 ? `/portal/pay?for=dues&amount=${(owedCents / 100).toFixed(2)}` : '/portal/pay'
+  const cardName = member.legalName?.trim()
+  const hasCard = member.status === 'Active' && !!cardName && Number.isFinite(joinYear)
 
   return (
     <div className="space-y-4">
@@ -74,15 +84,11 @@ export default function PortalDashboard() {
           <div className="md:text-right">
             <p className="text-sm text-white/80">Total contributed</p>
             <p className="text-3xl font-semibold tracking-tight tabular-nums sm:text-4xl">{fmt$(lifetime)}</p>
-            <div className="mt-3 flex flex-wrap gap-2 md:justify-end">
-              <Link href="/portal/pay" className={button.gold}><CreditCard size={16} aria-hidden /> Make a payment</Link>
-              <Link href="/portal/statements" className={button.ghostDark}><FileText size={16} aria-hidden /> Statements</Link>
-              {member.status === 'Active' && member.legalName?.trim() && Number.isFinite(joinYear) && (
-                <MembershipCardDownload fullName={member.legalName.trim()} memberId={member.id} joinYear={joinYear} />
-              )}
-              {member.appleWalletAvailable && (
-                <a href="/api/portal/wallet" className={button.ghostDark}><Wallet size={16} aria-hidden /> Add to Apple Wallet</a>
-              )}
+            <div className="mt-4 flex flex-wrap gap-2 md:justify-end">
+              <Link href={payDuesHref} className={cn(button.gold, 'flex-1 sm:flex-none')}>
+                <CreditCard size={16} aria-hidden /> {owedCents > 0 ? `Pay ${formatUSD(owedCents)}` : 'Make a payment'}
+              </Link>
+              <Link href="/portal/statements" className={cn(button.ghostDark, 'flex-1 sm:flex-none')}><FileText size={16} aria-hidden /> Statements</Link>
             </div>
           </div>
         </div>
@@ -102,16 +108,18 @@ export default function PortalDashboard() {
       {dues && dues.obligations.length > 0 && (
         <Panel title="Monthly dues" icon={Wallet}
           sub={dues.monthlyCents !== null ? `${formatUSD(dues.monthlyCents)} a month` : undefined}
-          action={<Link href="/portal/history" className={button.link}>Receipts <ArrowRight size={14} aria-hidden /></Link>}>
+          action={owedCents > 0
+            ? <Link href={payDuesHref} className={button.link}>Pay now <ArrowRight size={14} aria-hidden /></Link>
+            : <Link href="/portal/history" className={button.link}>Receipts <ArrowRight size={14} aria-hidden /></Link>}>
           <div className="space-y-4">
-            <DuesLine d={dues} />
+            <DuesLine d={dues} owedCents={owedCents} />
             <ul className="grid grid-cols-3 gap-2 sm:grid-cols-6">
               {dues.obligations.slice(0, 6).map((o) => {
                 const s = DUES_STATUS[o.status] ?? DUES_STATUS.due
                 return (
-                  <li key={o.period} className="rounded-xl bg-gray-50 px-2 py-3 text-center ring-1 ring-inset ring-gray-900/5">
+                  <li key={o.period} className="flex flex-col items-center gap-1 rounded-lg bg-gray-50 px-1.5 py-2 text-center ring-1 ring-inset ring-gray-900/5">
                     <p className="text-xs font-medium text-gray-500">{periodLabel(o.period)}</p>
-                    <p className="my-1 text-sm font-semibold text-gray-900 tabular-nums">{formatUSD(o.amountCents)}</p>
+                    <p className="text-sm font-semibold text-gray-900 tabular-nums">{formatUSD(o.amountCents)}</p>
                     <Pill tone={s.tone}>{s.label}</Pill>
                   </li>
                 )
@@ -122,10 +130,11 @@ export default function PortalDashboard() {
         </Panel>
       )}
 
+      <div className={cn('grid items-start gap-4', hasCard && 'lg:grid-cols-[minmax(0,1.7fr)_minmax(0,1fr)]')}>
       <Panel title="Your loan" icon={Landmark}
         action={hasLoan && activeLoan.overdue ? <Pill tone="red" dot>Overdue</Pill> : hasLoan ? <Pill tone="blue" dot>Being repaid</Pill> : undefined}>
         {hasLoan ? (
-          <div className="grid gap-6 md:grid-cols-[1.1fr_1fr]">
+          <div className={cn('grid gap-6', hasCard ? 'md:grid-cols-[1.1fr_1fr] lg:grid-cols-1 xl:grid-cols-[1.1fr_1fr]' : 'md:grid-cols-[1.1fr_1fr]')}>
             <div className="space-y-3">
               <p className="font-mono text-xs text-gray-500">{activeLoan.loanId}</p>
               <div>
@@ -133,9 +142,13 @@ export default function PortalDashboard() {
                 <p className="text-sm text-gray-500">left to repay of {fmt$(activeLoan.loanAmount)}</p>
               </div>
               <Progress value={repaid} label="Share of the loan repaid" />
-              <Link href="/portal/loan" className={button.link}>See the schedule and payoff →</Link>
+              <div className="flex flex-wrap gap-x-5 gap-y-2">
+                <Link href="/portal/pay?for=loan" className={button.link}>Make a loan payment →</Link>
+                <Link href="/portal/loan" className={button.link}>See the schedule and payoff →</Link>
+              </div>
             </div>
-            <dl className="grid grid-cols-2 content-center gap-x-4 gap-y-4 border-t border-gray-100 pt-5 text-sm md:border-l md:border-t-0 md:pl-6 md:pt-0">
+            <dl className={cn('grid grid-cols-2 content-center gap-x-4 gap-y-4 border-t border-gray-100 pt-5 text-sm md:border-l md:border-t-0 md:pl-6 md:pt-0',
+              hasCard && 'lg:border-l-0 lg:border-t lg:pl-0 lg:pt-5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0')}>
               <div><dt className="text-xs text-gray-500">Monthly payment</dt><dd className="font-semibold text-gray-900 tabular-nums">{fmt$(activeLoan.monthlyDue)}</dd></div>
               <div><dt className="text-xs text-gray-500">Next payment</dt><dd className="font-semibold text-gray-900">{fmtDate(activeLoan.nextDueDate)}</dd></div>
               <div><dt className="text-xs text-gray-500">Paid so far</dt><dd className="font-semibold text-emerald-700 tabular-nums">{fmt$(activeLoan.totalPaid)}</dd></div>
@@ -149,6 +162,21 @@ export default function PortalDashboard() {
         )}
       </Panel>
 
+      {hasCard && (
+        <Panel title="Membership card" icon={Contact}>
+          <div className="space-y-4">
+            <div className="mx-auto max-w-sm"><MembershipCardPreview fullName={cardName} memberId={member.id} joinYear={joinYear} /></div>
+            <div className="flex flex-wrap justify-center gap-2">
+              <MembershipCardDownload fullName={cardName} memberId={member.id} joinYear={joinYear} tone="light" />
+              {member.appleWalletAvailable && (
+                <a href="/api/portal/wallet" className={button.secondary}><Wallet size={16} aria-hidden /> Add to Apple Wallet</a>
+              )}
+            </div>
+          </div>
+        </Panel>
+      )}
+      </div>
+
       <section className={cn(surface, 'overflow-hidden')} aria-labelledby="recent">
         <div className="border-b border-workspace-border bg-workspace-header px-4 py-3 print:bg-white">
           <h2 id="recent" className="text-[15px] font-semibold text-gray-900">Recent contributions</h2>
@@ -161,9 +189,16 @@ export default function PortalDashboard() {
               <Row key={c.id}
                 icon={c.reversedAt ? Undo2 : CircleCheck} tone={c.reversedAt ? 'gray' : 'green'}
                 title={c.reversedAt ? 'Reversed' : c.category === 'voluntary' ? 'Voluntary contribution' : (c.receiptCovers || c.monthYear)}
-                meta={<>Paid {fmtDate(c.paymentDate)} · {c.paymentMethod || '—'}
-                  {c.receiptNumber && <> · <Link className="font-medium text-navy underline underline-offset-2" href={`/portal/receipts/${c.transactionId}`}>Receipt</Link></>}</>}
-                end={<span className={cn('text-sm font-semibold tabular-nums', c.reversedAt ? 'text-gray-400 line-through' : 'text-gray-900')}>{fmt$(c.amount)}</span>}
+                meta={<>Paid {fmtDate(c.paymentDate)} · {c.paymentMethod || '—'}</>}
+                end={<>
+                  <span className={cn('text-sm font-semibold tabular-nums', c.reversedAt ? 'text-gray-400 line-through' : 'text-gray-900')}>{fmt$(c.amount)}</span>
+                  {c.receiptNumber && (
+                    <Link href={`/portal/receipts/${c.transactionId}`}
+                      className="inline-flex items-center gap-1 whitespace-nowrap rounded-full bg-navy/[0.05] px-2 py-0.5 text-[11px] font-medium text-navy ring-1 ring-inset ring-navy/15 hover:bg-navy/10">
+                      <Receipt size={11} aria-hidden /> Receipt<span className="sr-only"> {c.receiptNumber}</span>
+                    </Link>
+                  )}
+                </>}
               />
             ))}
           </Rows>

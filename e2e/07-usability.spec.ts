@@ -135,7 +135,9 @@ test('member: plain-language loan eligibility, figures to the cent, no sideways 
   }
   // The loan payment the form suggests matches the monthly figure shown, to the cent.
   await page.goto('/portal/pay')
-  const suggested = await page.getByLabel('Amount', { exact: true }).nth(1).inputValue()
+  await page.getByRole('button', { name: /^My loan/ }).click()
+  await expect(page.getByRole('heading', { name: 'Pay toward my loan' })).toBeVisible()
+  const suggested = await page.getByLabel('Amount', { exact: true }).inputValue()
   await page.goto('/portal/dashboard')
   await expect(page.getByText(`$${suggested}`).first()).toBeVisible()
   expect(errors).toEqual([])
@@ -164,4 +166,33 @@ test('phones: tapping a field does not zoom the page (16px text in fields)', asy
   // At least 16px; the amount fields are larger on purpose.
   for (const size of sizes) expect(parseFloat(size)).toBeGreaterThanOrEqual(16)
   await phone.close()
+})
+
+test('member: one tap from Home pays what is owed, and the loan schedule fits a phone', async ({ browser }) => {
+  const { page, errors, close } = await signedIn(browser, 'member', { width: 390, height: 844 })
+  await page.goto('/portal/dashboard')
+  // The welcome card offers to pay exactly what is owed, already filled in.
+  const pay = page.getByRole('link', { name: /^Pay \$[\d,]+\.\d{2}$/ })
+  await expect(pay).toBeVisible()
+  const owed = (await pay.textContent())!.trim().replace('Pay $', '').replace(/,/g, '')
+  await pay.click()
+  await expect(page).toHaveURL(/\/portal\/pay\?for=dues&amount=/)
+  await expect(page.getByRole('heading', { name: 'Pay monthly contribution' })).toBeVisible()
+  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue(owed)
+  // Suggested amounts fill the field in one tap.
+  await page.getByRole('button', { name: /^This month/ }).click()
+  await expect(page.getByLabel('Amount', { exact: true })).toHaveValue('20.00')
+  await expect(page.getByRole('button', { name: /^This month/ })).toHaveAttribute('aria-pressed', 'true')
+  // The membership card shows on Home, as it will download.
+  await page.goto('/portal/dashboard')
+  await expect(page.getByRole('img', { name: /^Membership card for / })).toBeVisible()
+  // On a phone the schedule is a list: every status visible, nothing off to the side.
+  await page.goto('/portal/loan')
+  const schedule = page.getByRole('list', { name: 'Repayment schedule' })
+  await expect(schedule).toBeVisible()
+  await expect(schedule.getByRole('listitem').first()).toContainText(/Paid|Due|Late|Upcoming|Part paid/)
+  await expectNoOverflow(page)
+  expect(await accessibilityViolations(page)).toEqual([])
+  expect(errors).toEqual([])
+  await close()
 })

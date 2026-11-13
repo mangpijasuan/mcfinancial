@@ -84,10 +84,14 @@ function CopyLine({ label, value, display, copyLabel }: { label: string; value: 
   )
 }
 
-function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ach, onDone }: {
+type Preset = { label: string; amount: number }
+
+function PayForm({ type, loanId, defaultAmount, presets = [], maxAmount, zelle, qr, stripe, ach, onDone }: {
   type: 'contribution' | 'loan_payment'
   loanId?: string
   defaultAmount: number
+  /** Amounts one tap away, such as this month's dues or the loan's payoff. */
+  presets?: Preset[]
   maxAmount?: number
   zelle: Zelle
   qr: boolean
@@ -95,7 +99,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ac
   ach: boolean
   onDone: () => void
 }) {
-  const [amount, setAmount] = useState(String(defaultAmount))
+  const [amount, setAmount] = useState(defaultAmount.toFixed(2))
   const [method, setMethod] = useState<'stripe' | 'ach' | 'zelle'>(() => stripe ? 'stripe' : ach ? 'ach' : 'zelle')
   const [zelleReference, setZelleReference] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -158,6 +162,20 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ac
     <div className="space-y-4">
       <div>
         <label htmlFor={amountId} className="mb-1.5 block text-sm font-medium text-gray-800">Amount</label>
+        {presets.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2" role="group" aria-label="Quick picks">
+            {presets.map((p) => {
+              const chosen = Math.abs(Number(amount) - p.amount) < 0.005
+              return (
+                <button key={p.label} type="button" onClick={() => setAmount(p.amount.toFixed(2))} aria-pressed={chosen}
+                  className={cn('inline-flex min-h-9 items-center gap-1.5 rounded-full px-3.5 text-sm ring-1 ring-inset transition-colors',
+                    chosen ? 'bg-navy text-white ring-navy' : 'bg-white text-gray-800 ring-gray-300 hover:bg-gray-50')}>
+                  {p.label} <span className={cn('font-semibold tabular-nums', chosen ? 'text-gold' : 'text-gray-900')}>{fmt$(p.amount)}</span>
+                </button>
+              )
+            })}
+          </div>
+        )}
         <div className="relative">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-lg font-medium text-gray-400" aria-hidden>$</span>
           <input
@@ -192,7 +210,7 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ac
       {method === 'ach' && (
         <p className="flex gap-2 rounded-xl bg-gray-50 p-4 text-sm text-gray-700 ring-1 ring-inset ring-gray-900/5">
           <ShieldCheck size={16} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden />
-          <span>You’ll pay on the club’s secure QuickBooks page, from your bank account. Your bank details are entered there, never here. Bank transfers take a few days: the payment shows here as pending until QuickBooks has it.</span>
+          <span>You’ll pay on the club’s secure QuickBooks page. Your bank details are entered there, never here. Bank transfers take a few days; it shows as pending until then.</span>
         </p>
       )}
 
@@ -265,26 +283,54 @@ function PayForm({ type, loanId, defaultAmount, maxAmount, zelle, qr, stripe, ac
   )
 }
 
+/** What the member chooses to pay for, as two large options. */
+function Choice({ chosen, onChoose, icon: Icon, title, sub }: { chosen: boolean; onChoose: () => void; icon: typeof Wallet; title: string; sub: string }) {
+  return (
+    <button type="button" aria-pressed={chosen} onClick={onChoose}
+      className={cn('flex min-h-16 flex-1 items-center gap-3 rounded-xl px-3.5 py-3 text-left ring-1 ring-inset transition-colors',
+        chosen ? 'bg-white ring-2 ring-navy shadow-sm' : 'bg-white/60 ring-gray-300 hover:bg-white')}>
+      <span className={cn('flex size-10 shrink-0 items-center justify-center rounded-xl', chosen ? 'bg-navy text-gold' : 'bg-navy/[0.06] text-navy')}>
+        <Icon size={19} aria-hidden />
+      </span>
+      <span className="min-w-0 leading-tight">
+        <span className="block text-sm font-semibold text-gray-900">{title}</span>
+        <span className="mt-0.5 block text-xs text-gray-600">{sub}</span>
+      </span>
+    </button>
+  )
+}
+
+/** A dollar amount from the address (?amount=105.00), or null. */
+function amountParam(value: string | null) {
+  const n = Number(value)
+  return value && Number.isFinite(n) && n > 0 ? Math.round(n * 100) / 100 : null
+}
+
 export default function PortalPayPage() {
   const searchParams = useSearchParams()
   const [member, setMember] = useState<any>(null)
+  const [dues, setDues] = useState<any>(null)
   const [payments, setPayments] = useState<any[]>([])
   const [zelle, setZelle] = useState<Zelle>(null)
   const [zelleQr, setZelleQr] = useState(false)
   const [stripe, setStripe] = useState(false)
   const [ach, setAch] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [what, setWhat] = useState<'dues' | 'loan'>(searchParams.get('for') === 'loan' ? 'loan' : 'dues')
 
   const status = searchParams.get('status')
+  const askedAmount = amountParam(searchParams.get('amount'))
 
   async function load() {
-    const [meRes, paymentsRes] = await Promise.all([
+    const [meRes, paymentsRes, duesRes] = await Promise.all([
       fetch('/api/portal/me'),
       fetch('/api/portal/payments'),
+      fetch('/api/portal/dues').catch(() => null),
     ])
     const me = await readJsonSafe(meRes)
     const paymentsData = await readJsonSafe(paymentsRes)
     if (me) setMember(me)
+    if (duesRes?.ok) setDues(await readJsonSafe(duesRes))
     if (paymentsData) {
       setPayments(paymentsData.payments || [])
       setZelle(paymentsData.zelle ?? null)
@@ -301,85 +347,107 @@ export default function PortalPayPage() {
 
   const activeLoan = member?.loansAsBorrower?.[0]
   const hasActiveLoan = activeLoan && activeLoan.status === 'Active' && activeLoan.balanceRemaining > 0
+  const paying = what === 'loan' && hasActiveLoan ? 'loan' : 'dues'
+
+  // Dues: this month's amount, and everything owed up to this month.
+  const monthly = dues?.monthlyCents != null ? dues.monthlyCents / 100 : 20
+  const owed = dues ? (dues.obligations as { period: string; remainingCents: number }[])
+    .filter((o) => o.period <= dues.currentPeriod).reduce((sum, o) => sum + o.remainingCents, 0) / 100 : 0
+  const duesPresets: Preset[] = [
+    { label: owed > 0 ? 'This month' : 'Next month', amount: monthly },
+    ...(owed > monthly ? [{ label: 'All owed', amount: owed }] : []),
+  ]
+  const loanMonthly = hasActiveLoan ? Math.min(activeLoan.monthlyDue, activeLoan.balanceRemaining) : 0
+  const loanPresets: Preset[] = hasActiveLoan ? [
+    { label: 'Monthly payment', amount: loanMonthly },
+    ...(activeLoan.balanceRemaining > loanMonthly ? [{ label: 'Pay it off', amount: activeLoan.balanceRemaining }] : []),
+  ] : []
 
   return (
-    <div className="space-y-6">
-      <PageHeader title="Make a Payment" sub="Pay your monthly contribution or make a payment toward your loan." />
+    <div className="space-y-5">
+      <PageHeader title="Make a Payment" sub="Pay your monthly dues or toward your loan, by bank, card or Zelle." />
 
       {status === 'success' && (
-        <div role="status" className="flex items-start gap-3 rounded-2xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-600/20">
+        <div role="status" className="flex items-start gap-3 rounded-xl bg-emerald-50 p-4 text-sm text-emerald-900 ring-1 ring-inset ring-emerald-600/20">
           <CheckCircle size={18} className="mt-0.5 shrink-0 text-emerald-600" aria-hidden /> Payment received! It may take a minute to show up below.
         </div>
       )}
       {status === 'cancelled' && (
-        <div role="status" className="flex items-start gap-3 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700 ring-1 ring-inset ring-gray-900/10">
+        <div role="status" className="flex items-start gap-3 rounded-xl bg-gray-50 p-4 text-sm text-gray-700 ring-1 ring-inset ring-gray-900/10">
           <XCircle size={18} className="mt-0.5 shrink-0 text-gray-500" aria-hidden /> Checkout was cancelled — no charge was made.
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-        {/* The heading and its form share a parent, so the form is found by its heading. */}
-        <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
-          <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Wallet size={18} aria-hidden /></span>
-            Pay monthly contribution
-          </h2>
-          <PayForm type="contribution" defaultAmount={20} zelle={zelle} qr={zelleQr} stripe={stripe} ach={ach} onDone={load} />
-        </section>
+      <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)]">
+        <div className="space-y-4">
+          {hasActiveLoan && (
+            <div role="group" aria-label="What are you paying?" className="flex flex-col gap-2 sm:flex-row">
+              <Choice chosen={paying === 'dues'} onChoose={() => setWhat('dues')} icon={Wallet} title="Monthly dues"
+                sub={owed > 0 ? `${fmt$(owed)} owed` : `${fmt$(monthly)} a month`} />
+              <Choice chosen={paying === 'loan'} onChoose={() => setWhat('loan')} icon={Landmark} title="My loan"
+                sub={`${fmt$(activeLoan.balanceRemaining)} left · ${fmt$(loanMonthly)} a month`} />
+            </div>
+          )}
 
-        <section className={cn(surface, 'space-y-4 p-5 sm:p-6')}>
-          <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
-            <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy"><Landmark size={18} aria-hidden /></span>
-            Pay toward my loan
-          </h2>
-          {hasActiveLoan ? (
-            <PayForm
-              type="loan_payment"
-              loanId={activeLoan.loanId}
-              defaultAmount={Math.min(activeLoan.monthlyDue, activeLoan.balanceRemaining)}
-              maxAmount={activeLoan.balanceRemaining}
-              zelle={zelle}
-              qr={zelleQr}
-              stripe={stripe}
-              ach={ach}
-              onDone={load}
-            />
+          {/* The heading and its form share a parent, so the form is found by its heading. */}
+          <section className={cn(surface, 'space-y-4 p-4 sm:p-6')}>
+            <h2 className="flex items-center gap-3 text-[15px] font-semibold text-gray-900">
+              <span className="flex size-9 items-center justify-center rounded-xl bg-navy/[0.06] text-navy">
+                {paying === 'loan' ? <Landmark size={18} aria-hidden /> : <Wallet size={18} aria-hidden />}
+              </span>
+              {paying === 'loan' ? 'Pay toward my loan' : 'Pay monthly contribution'}
+            </h2>
+            {paying === 'loan' ? (
+              <PayForm key="loan"
+                type="loan_payment"
+                loanId={activeLoan.loanId}
+                defaultAmount={askedAmount !== null && searchParams.get('for') === 'loan' ? Math.min(askedAmount, activeLoan.balanceRemaining) : loanMonthly}
+                presets={loanPresets}
+                maxAmount={activeLoan.balanceRemaining}
+                zelle={zelle} qr={zelleQr} stripe={stripe} ach={ach} onDone={load}
+              />
+            ) : (
+              <PayForm key="dues"
+                type="contribution"
+                defaultAmount={askedAmount !== null && searchParams.get('for') !== 'loan' ? askedAmount : monthly}
+                presets={duesPresets}
+                zelle={zelle} qr={zelleQr} stripe={stripe} ach={ach} onDone={load}
+              />
+            )}
+          </section>
+        </div>
+
+        <section className={cn(surface, 'overflow-hidden')} aria-labelledby="requests">
+          <div className="border-b border-workspace-border bg-workspace-header px-4 py-3">
+            <h2 id="requests" className="text-[15px] font-semibold text-gray-900">Your payment requests</h2>
+            <p className="text-xs text-gray-500">Payments started here, and whether they have been credited.</p>
+          </div>
+          {payments.length === 0 ? (
+            <Empty icon={Receipt} title="No online payments yet" />
           ) : (
-            <Empty icon={Landmark} title="No active loan to pay toward" />
+            <Rows>
+              {payments.map((p) => (
+                <Row key={p.id}
+                  icon={p.status === 'completed' ? CheckCircle : p.status === 'rejected' || p.status === 'failed' ? XCircle : Clock}
+                  tone={STATUS_TONE[p.status] ?? 'gray'}
+                  title={<>{p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}<span className="font-normal text-gray-500"> · {p.method === 'stripe' ? 'Card' : p.method === 'ach' ? 'Bank (ACH)' : 'Zelle'}</span></>}
+                  meta={<>
+                    {fmtDate(p.createdAt)}
+                    {p.status === 'rejected' && p.rejectionReason && <span className="block text-red-700">Reason: {p.rejectionReason}</span>}
+                    {p.method === 'ach' && p.status === 'pending' && p.qboInvoiceLink && (
+                      <span className="block">Not paid yet? <a href={p.qboInvoiceLink} className="font-medium text-navy underline underline-offset-2">Continue on QuickBooks</a></span>
+                    )}
+                  </>}
+                  end={<>
+                    <span className="text-sm font-semibold text-gray-900 tabular-nums">{fmt$(p.amount)}</span>
+                    <Pill tone={STATUS_TONE[p.status] ?? 'gray'}>{statusLabel(p.status)}</Pill>
+                  </>}
+                />
+              ))}
+            </Rows>
           )}
         </section>
       </div>
-
-      <section className={cn(surface, 'overflow-hidden')} aria-labelledby="requests">
-        <div className="px-5 pt-5 pb-3">
-          <h2 id="requests" className="text-[15px] font-semibold text-gray-900">Your payment requests</h2>
-          <p className="text-xs text-gray-500">Card payments and Zelle claims made here, and whether they have been credited.</p>
-        </div>
-        {payments.length === 0 ? (
-          <div className="border-t border-gray-100"><Empty icon={Receipt} title="No online payments yet" /></div>
-        ) : (
-          <Rows>
-            {payments.map((p) => (
-              <Row key={p.id}
-                icon={p.status === 'completed' ? CheckCircle : p.status === 'rejected' || p.status === 'failed' ? XCircle : Clock}
-                tone={STATUS_TONE[p.status] ?? 'gray'}
-                title={<>{p.type === 'contribution' ? 'Contribution' : `Loan payment${p.loanId ? ` · ${p.loanId}` : ''}`}<span className="font-normal text-gray-500"> · {p.method === 'stripe' ? 'Card' : p.method === 'ach' ? 'Bank (ACH)' : 'Zelle'}</span></>}
-                meta={<>
-                  {fmtDate(p.createdAt)}
-                  {p.status === 'rejected' && p.rejectionReason && <span className="block text-red-700">Reason: {p.rejectionReason}</span>}
-                  {p.method === 'ach' && p.status === 'pending' && p.qboInvoiceLink && (
-                    <span className="block">Not paid yet? <a href={p.qboInvoiceLink} className="font-medium text-navy underline underline-offset-2">Continue on QuickBooks</a></span>
-                  )}
-                </>}
-                end={<>
-                  <span className="text-sm font-semibold text-gray-900 tabular-nums">{fmt$(p.amount)}</span>
-                  <Pill tone={STATUS_TONE[p.status] ?? 'gray'}>{statusLabel(p.status)}</Pill>
-                </>}
-              />
-            ))}
-          </Rows>
-        )}
-      </section>
     </div>
   )
 }
