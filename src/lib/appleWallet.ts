@@ -5,10 +5,13 @@ import { PKPass } from 'passkit-generator'
 const credentialDirectory = join(process.cwd(), 'club', 'wallet')
 const iconDirectory = join(process.cwd(), 'public', 'brand', 'wallet')
 
+/** A Pass Type ID as Apple issues them: "pass." then a reverse-DNS name, e.g. pass.us.mcfinancial.membership. */
+const PASS_TYPE_ID = /^pass(\.[A-Za-z0-9-]+){2,}$/
+
 export function appleWalletConfig() {
   const passTypeIdentifier = process.env.APPLE_WALLET_PASS_TYPE_ID?.trim()
   const teamIdentifier = process.env.APPLE_WALLET_TEAM_ID?.trim()
-  if (!passTypeIdentifier?.startsWith('pass.') || !teamIdentifier || !/^[A-Z0-9]{10}$/.test(teamIdentifier)) {
+  if (!passTypeIdentifier || !PASS_TYPE_ID.test(passTypeIdentifier) || !teamIdentifier || !/^[A-Z0-9]{10}$/.test(teamIdentifier)) {
     return null
   }
   return { passTypeIdentifier, teamIdentifier }

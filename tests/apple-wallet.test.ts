@@ -8,6 +8,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { appleWalletConfig, createMembershipPass } from '@/lib/appleWallet'
+import { signInAsMember } from './helpers/actors'
+import { prisma, resetDatabase } from './helpers/db'
+import { createMember } from './helpers/factories'
+import { callRoute } from './helpers/routes'
 
 const openssl = (dir: string, ...args: string[]) => execFileSync('openssl', args, { cwd: dir, stdio: 'pipe' })
 let certs: string
@@ -35,6 +39,44 @@ describe('Apple Wallet settings', () => {
     expect(appleWalletConfig()).toBeNull()
     vi.stubEnv('APPLE_WALLET_TEAM_ID', 'ABCDE12345')
     expect(appleWalletConfig()).toEqual({ passTypeIdentifier: 'pass.us.mcfinancial.membership', teamIdentifier: 'ABCDE12345' })
+    // "pass." alone, or without a reverse-DNS name, is not an ID Apple issues.
+    for (const id of ['pass.', 'pass.membership', 'pass..x', 'pass.us mc.card']) {
+      vi.stubEnv('APPLE_WALLET_PASS_TYPE_ID', id)
+      expect(appleWalletConfig(), id).toBeNull()
+    }
+  })
+})
+
+describe('the Wallet download', () => {
+  const ID = 'MC-WALLET-1'
+  const get = () => callRoute('portal/wallet', 'GET')
+
+  it('is for active members with a name, once Wallet is set up, and logs why a pass failed', async () => {
+    await resetDatabase()
+    await createMember(ID)
+    signInAsMember(ID)
+    vi.stubEnv('APPLE_WALLET_PASS_TYPE_ID', '')
+    expect((await get()).status).toBe(503)
+    expect((await callRoute('portal/me', 'GET')).json.appleWalletAvailable).toBe(false)
+
+    vi.stubEnv('APPLE_WALLET_PASS_TYPE_ID', 'pass.us.mcfinancial.test')
+    vi.stubEnv('APPLE_WALLET_TEAM_ID', 'ABCDE12345')
+    expect((await callRoute('portal/me', 'GET')).json.appleWalletAvailable).toBe(true)
+
+    // The club's signing files are not in the test checkout: the failure is logged, the member gets a plain message.
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const failed = await get()
+    expect(failed.status).toBe(503)
+    expect(failed.text).toBe('The Apple Wallet pass could not be generated. Please contact MC Financial.')
+    expect(logged).toHaveBeenCalledWith('Apple Wallet pass could not be generated', expect.objectContaining({ memberId: ID, error: expect.any(String) }))
+    logged.mockRestore()
+
+    await prisma.member.update({ where: { id: ID }, data: { legalName: '  ' } })
+    expect((await callRoute('portal/me', 'GET')).json.appleWalletAvailable).toBe(false)
+    expect((await get()).status).toBe(409)
+
+    await prisma.member.update({ where: { id: ID }, data: { legalName: 'Back Again', status: 'Inactive' } })
+    expect((await get()).status).toBe(403)
   })
 })
 
