@@ -200,3 +200,22 @@ test('member: one tap from Home pays what is owed, the card is under the account
   expect(errors).toEqual([])
   await close()
 })
+
+test('member: a long name is squeezed to fit the membership card, as in the download', async ({ browser }) => {
+  const { page, errors, close } = await signedIn(browser, 'member', { width: 1280, height: 900 })
+  // The same member with a long name: the signature must not run into the verse beside it.
+  await page.route('**/api/portal/me', async (route) => {
+    const res = await route.fetch()
+    const me = await res.json()
+    await route.fulfill({ response: res, json: { ...me, legalName: 'Mangpi Dominic Jasuan-Thangnuam' } })
+  })
+  await page.goto('/portal/card')
+  const signature = page.locator('svg text[data-line="signature"]')
+  await expect(signature).toBeVisible()
+  // The card signature space is 322 units wide (the download squeezes to the same); a little slack for glyph edges.
+  await expect.poll(async () => signature.evaluate((el: SVGTextElement) => Math.round(el.getBBox().width))).toBeLessThanOrEqual(332)
+  const name = page.locator('svg text[data-line="name"]')
+  await expect.poll(async () => name.evaluate((el: SVGTextElement) => Math.round(el.getBBox().width))).toBeLessThanOrEqual(520)
+  expect(errors).toEqual([])
+  await close()
+})
