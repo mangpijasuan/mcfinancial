@@ -40,37 +40,51 @@ age-keygen -y mc-backup-identity.txt       # prints the public key: age1...
 
 In the storage provider:
 
-1. Create a bucket (for example `mc-club-backups`) in a **different region** from the server.
-2. Turn on **versioning** and, if offered, **object lock** in governance or compliance mode with 30-day retention.
-3. Add a **lifecycle rule** that deletes objects older than 90 days.
-4. Create an access key limited to that bucket, with **write (put) permission only** — no delete.
+1. Create a bucket (for example `mc-club-backups`) with a **different company or region** from the server.
+2. Turn on **versioning** and, if offered, **object lock** in governance or compliance mode with 30-day retention. (On Backblaze B2, Object Lock can only be turned on when the bucket is created.)
+3. Add a **lifecycle rule** that deletes objects older than 90 days. (B2: custom lifecycle, hide after 90 days, delete 1 day after hiding.)
+4. Create an access key limited to that bucket, with **write (put) permission only** — no delete. (B2: *Application Keys* → one bucket → **Write Only**.) Save the key ID and key in the password manager: the key is shown once.
+
+A write-only key usually cannot list the bucket either, so the backup script cannot read the size back after uploading; it says so in its log and relies on rclone's upload check. The weekly restore check (below) is what proves the backups.
 
 ### 3. Configure the server
 
-On the server, in the repository directory:
+On the server (as `root`, in `~/mcfinancial`; with another user, use its home directory in the paths):
 
 ```bash
-sudo apt-get install -y age rclone
-mkdir -p ~/.config/mc-backup
-echo 'age1...first-officer...' >  ~/.config/mc-backup/recipients.txt
-echo 'age1...second-officer...' >> ~/.config/mc-backup/recipients.txt   # optional
-rclone config   # create a remote named "mcbackup" with the write-only key
+apt-get install -y age rclone
+mkdir -p ~/.config/mc-backup && chmod 700 ~/.config/mc-backup
+read -rp 'First public key (age1...): ' K1
+read -rp 'Second public key, or empty: ' K2
+printf '%s\n' "$K1" ${K2:+"$K2"} > ~/.config/mc-backup/recipients.txt
 ```
 
-Create `.env.backup` next to `docker-compose.hetzner.yml` (it is git-ignored):
+Create `.env.backup` next to `docker-compose.hetzner.yml` (it is git-ignored). The storage key goes in the environment, so no `rclone config` file is needed; the keys are typed at hidden prompts:
 
 ```bash
-BACKUP_AGE_RECIPIENTS_FILE=/home/deploy/.config/mc-backup/recipients.txt
-BACKUP_REMOTE=mcbackup:mc-club-backups/postgres
-BACKUP_HEALTHCHECK_URL=https://hc-ping.com/your-check-id
+read -rsp 'Storage key ID: ' ID; echo
+read -rsp 'Storage application key: ' KEY; echo
+read -rp  'Bucket name: ' BUCKET
+read -rp  'Healthchecks ping URL: ' PING
+( umask 077; cat > .env.backup <<ENV
+BACKUP_AGE_RECIPIENTS_FILE=$HOME/.config/mc-backup/recipients.txt
+BACKUP_REMOTE=mcbackup:$BUCKET/postgres
+BACKUP_HEALTHCHECK_URL='$PING'
+RCLONE_CONFIG_MCBACKUP_TYPE=b2
+RCLONE_CONFIG_MCBACKUP_ACCOUNT='$ID'
+RCLONE_CONFIG_MCBACKUP_KEY='$KEY'
+ENV
+)
+unset ID KEY
 ```
+
+(For a provider other than B2, set `RCLONE_CONFIG_MCBACKUP_TYPE` and its settings as rclone documents, or use `rclone config` to create a remote named `mcbackup`.)
 
 Run it once by hand, then schedule it:
 
 ```bash
 ./scripts/ops/backup-postgres.sh
-crontab -e
-# 15 3 * * * cd /path/to/mcfinancial && ./scripts/ops/backup-postgres.sh >> /var/log/mc-backup.log 2>&1
+(crontab -l 2>/dev/null || true; echo '15 3 * * * cd '"$PWD"' && ./scripts/ops/backup-postgres.sh >> /var/log/mc-backup.log 2>&1') | crontab -
 ```
 
 The script refuses to run if a **private** key is put in the recipients file.

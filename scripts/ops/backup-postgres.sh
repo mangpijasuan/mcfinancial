@@ -82,11 +82,19 @@ log "wrote $LOCAL_DIR/$name ($size bytes)"
 
 if [ "${BACKUP_LOCAL_ONLY:-0}" != "1" ]; then
   log "copying off-site to $BACKUP_REMOTE"
-  rclone copyto "$LOCAL_DIR/$name" "$BACKUP_REMOTE/$name"
-  rclone copyto "$LOCAL_DIR/$name.sha256" "$BACKUP_REMOTE/$name.sha256"
-  remote_size=$(rclone lsjson "$BACKUP_REMOTE/$name" | grep -o '"Size":[0-9]*' | cut -d: -f2)
-  [ "$remote_size" = "$size" ] || { log "off-site copy size $remote_size != $size"; false; }
-  log "off-site copy verified ($remote_size bytes)"
+  # The file names carry the time, so none exists yet: --no-check-dest skips looking, which a
+  # write-only key may not be allowed to do. rclone still checks the upload against its checksum.
+  rclone copyto --no-check-dest "$LOCAL_DIR/$name" "$BACKUP_REMOTE/$name"
+  rclone copyto --no-check-dest "$LOCAL_DIR/$name.sha256" "$BACKUP_REMOTE/$name.sha256"
+  # Reading the size back needs permission to list; a write-only key has none, which is the
+  # safe setup (see docs/operations/backup-and-restore.md), so then the upload's own check stands.
+  remote_size=$(rclone lsjson "$BACKUP_REMOTE/$name" 2>/dev/null | grep -o '"Size":[0-9]*' | cut -d: -f2 || true)
+  if [ -z "$remote_size" ]; then
+    log "note: this key cannot list the bucket, so the off-site size was not read back; the weekly restore check proves the backups"
+  else
+    [ "$remote_size" = "$size" ] || { log "off-site copy size $remote_size != $size"; false; }
+    log "off-site copy verified ($remote_size bytes)"
+  fi
 fi
 
 # mcfinance-* are backups taken before the rename; they age out the same way.
