@@ -165,3 +165,17 @@ export const button = {
 /** A field's look without its size, for fields with their own padding and text size. */
 export const fieldBox = 'w-full rounded-xl border-0 bg-white text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-navy focus:outline-hidden'
 export const field = `${fieldBox} px-3.5 py-2.5 text-sm`
+
+/** A failed read needs an action instead of an endless loading skeleton. */
+export function LoadError({ onRetry }: { onRetry: () => void }) {
+  return (
+    <section className={cn(surface, 'space-y-3 p-5')} role="alert">
+      <h1 className="text-lg font-semibold text-gray-900">Could not load this page</h1>
+      <p className="text-sm text-gray-600">Check your connection and try again. If your session has ended, sign in again.</p>
+      <div className="flex flex-wrap gap-3">
+        <button type="button" onClick={onRetry} className={button.primary}>Try again</button>
+        <a href="/portal/login" className={button.secondary}>Sign in</a>
+      </div>
+    </section>
+  )
+}

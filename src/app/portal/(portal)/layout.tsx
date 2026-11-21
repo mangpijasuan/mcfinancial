@@ -13,6 +13,7 @@ export default async function PortalLayout({ children }: { children: React.React
 
   return (
     <div className="min-h-screen bg-workspace-canvas print:bg-white">
+      <a href="#main-content" className="skip-link">Skip to content</a>
       <div className="contents print:hidden"><PortalNav user={{ memberId: principal.memberId, name: principal.name }} /></div>
       {rewardsEnabled() && (
         <div className="mx-auto max-w-6xl px-4 pt-3 sm:px-6 print:hidden">
@@ -20,7 +21,7 @@ export default async function PortalLayout({ children }: { children: React.React
         </div>
       )}
       {/* Room at the bottom for the phone tab bar. */}
-      <main className="mx-auto max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:pb-14 print:p-0">{children}</main>
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-6xl px-4 pt-5 pb-28 sm:px-6 lg:pb-14 print:p-0">{children}</main>
     </div>
   )
 }

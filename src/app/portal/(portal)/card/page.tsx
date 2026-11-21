@@ -1,19 +1,17 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { usePortalData } from '@/hooks/usePortalData'
+
 import { Contact, Wallet } from 'lucide-react'
 import MembershipCardDownload, { MembershipCardPreview } from '@/components/portal/MembershipCardDownload'
-import { Empty, PageHeader, PageSkeleton, button, surface } from '@/components/portal/kit'
+import { Empty, PageHeader, PageSkeleton, LoadError, button, surface } from '@/components/portal/kit'
 import { cn } from '@/lib/utils'
 
 // The member's card, from the account menu: a preview drawn exactly as it
 // downloads, the PNG download, and Apple Wallet once the club has set it up.
 export default function PortalCard() {
-  const [member, setMember] = useState<any>(null)
+  const { data: member, failed, retry } = usePortalData<any>('/api/portal/me')
 
-  useEffect(() => {
-    fetch('/api/portal/me').then(r => r.json()).then(setMember)
-  }, [])
-
+  if (failed) return <LoadError onRetry={retry} />
   if (!member) return <PageSkeleton />
 
   const name = member.legalName?.trim()

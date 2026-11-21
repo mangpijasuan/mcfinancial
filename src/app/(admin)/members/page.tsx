@@ -181,10 +181,15 @@ function AddMemberModal({ open, onClose, onSaved }: { open: boolean; onClose: ()
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault(); setSaving(true); setError('')
-    const res = await fetch('/api/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-    if (res.ok) { onSaved() } else {
-      const data = await readJsonSafe(res)
-      setError(data?.error || 'Failed to save member.')
+    try {
+      const res = await fetch('/api/members', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      if (res.ok) { onSaved() } else {
+        const data = await readJsonSafe(res)
+        setError(data?.error || 'Failed to save member.')
+      }
+    } catch {
+      setError('The connection was interrupted. Check the member list before saving again.')
+    } finally {
       setSaving(false)
     }
   }

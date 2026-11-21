@@ -243,17 +243,22 @@ function NewLoanModal({ open, onClose, onSaved }: any) {
     if (!form.borrowerId) { setError('Please select a borrower.'); return }
     if (rules.cosignerRequired && !form.cosignerId) { setError('Please select an eligible co-signer.'); return }
     setSaving(true); setError(''); setViolations([])
-    const res = await fetch('/api/loans', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(form),
-    })
-    const d = await readJsonSafe(res)
-    if (res.ok) {
-      if (res.status === 202 && d?.approvalRequest) window.alert(`Sent for approval (${d.approvalRequest.publicId}). Someone else must approve it under Approvals before it takes effect.`)
-      onSaved()
-    } else {
-      setError(d?.error || 'Failed to create loan.')
-      if (Array.isArray(d?.violations)) setViolations(d.violations)
+    try {
+      const res = await fetch('/api/loans', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      })
+      const d = await readJsonSafe(res)
+      if (res.ok) {
+        if (res.status === 202 && d?.approvalRequest) window.alert(`Sent for approval (${d.approvalRequest.publicId}). Someone else must approve it under Approvals before it takes effect.`)
+        onSaved()
+      } else {
+        setError(d?.error || 'Failed to create loan.')
+        if (Array.isArray(d?.violations)) setViolations(d.violations)
+      }
+    } catch {
+      setError('The connection was interrupted. Check the loan list and approvals before submitting again.')
+    } finally {
       setSaving(false)
     }
   }

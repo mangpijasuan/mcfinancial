@@ -14,8 +14,7 @@ export default function GlobalError({
   }, [error])
 
   return (
-    <html>
-      <body className="bg-gray-50 min-h-screen flex items-center justify-center p-6">
+    <section role="alert" className="bg-gray-50 min-h-screen flex items-center justify-center p-6">
         <div className="w-full max-w-md rounded-xl border border-red-200 bg-white p-6 shadow-xs">
           <h2 className="text-lg font-semibold text-gray-900 mb-2">Something went wrong</h2>
           <p className="text-sm text-gray-600 mb-4">
@@ -28,7 +27,6 @@ export default function GlobalError({
             Try again
           </button>
         </div>
-      </body>
-    </html>
+    </section>
   )
 }

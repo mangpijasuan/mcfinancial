@@ -25,9 +25,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <StaffProvider value={staff}>
       <div className="flex min-h-screen bg-workspace-canvas font-portal print:bg-white">
+        <a href="#main-content" className="skip-link">Skip to content</a>
         {/* Pages that print (statements) print without the navigation. */}
         <div className="contents print:hidden"><Sidebar permissions={permissions} roleSummary={roleSummary} /></div>
-        <main className="min-w-0 flex-1 overflow-auto pt-14 lg:pt-0 print:pt-0">
+        <main id="main-content" tabIndex={-1} className="min-w-0 flex-1 overflow-auto pt-14 lg:pt-0 print:pt-0">
           <div className="contents print:hidden"><AdminTopbar roleSummary={roleSummary} canSearchMembers={permissions.includes('members.read')} /></div>
           {rewardsEnabled() && permissions.includes('staff.manage') && (
             <div className="border-b border-workspace-border bg-white px-4 py-2 print:hidden">

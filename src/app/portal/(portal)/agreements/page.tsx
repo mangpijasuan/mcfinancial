@@ -123,14 +123,19 @@ function SignModal({ agreement: initial, me, onClose, onSigned }: any) {
       return
     }
     setSaving(true); setError('')
-    const res = await fetch(`/api/agreements/${a.agreementId}`, {
-      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ signerType, signatureText: sig.trim(), ...address }),
-    })
-    if (res.ok) { const updated = await res.json(); setA(updated); onSigned(updated) }
-    else {
-      const data = await readJsonSafe(res)
-      setError(data?.error || 'Failed to sign. Please try again.')
+    try {
+      const res = await fetch(`/api/agreements/${a.agreementId}`, {
+        method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ signerType, signatureText: sig.trim(), ...address }),
+      })
+      if (res.ok) { const updated = await res.json(); setA(updated); onSigned(updated) }
+      else {
+        const data = await readJsonSafe(res)
+        setError(data?.error || 'Failed to sign. Please try again.')
+      }
+    } catch {
+      setError('The connection was interrupted. Reopen this agreement to check its signature before trying again.')
+    } finally {
       setSaving(false)
     }
   }

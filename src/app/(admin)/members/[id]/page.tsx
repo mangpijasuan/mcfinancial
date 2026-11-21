@@ -232,6 +232,7 @@ function InfoBox({ label, children }: { label: string; children: React.ReactNode
 function EditMemberModal({ open, onClose, member, onSaved }: any) {
   const [form, setForm] = useState<any>({})
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   useEffect(() => {
     if (member) setForm({ legalName: member.legalName, nickname: member.nickname || '', status: member.status, phoneNo: member.phoneNo || '', email: member.email || '', beneficiary: member.beneficiary || '', notes: member.notes || '', riskFlag: member.riskFlag })
@@ -240,9 +241,15 @@ function EditMemberModal({ open, onClose, member, onSaved }: any) {
   const set = (k: string) => (e: any) => setForm((f: any) => ({ ...f, [k]: e.target.value }))
 
   async function save(e: React.FormEvent) {
-    e.preventDefault(); setSaving(true)
-    const res = await fetch(`/api/members/${member.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
-    if (res.ok) { onSaved(await res.json()) } else setSaving(false)
+    e.preventDefault(); setSaving(true); setError('')
+    try {
+      const res = await fetch(`/api/members/${member.id}`, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(form) })
+      if (res.ok) { onSaved(await res.json()) } else setError((await readJsonSafe(res))?.error || 'Could not save the member.')
+    } catch {
+      setError('The connection was interrupted. Refresh the member record to check the result before trying again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -256,7 +263,7 @@ function EditMemberModal({ open, onClose, member, onSaved }: any) {
             <option value="Inactive">Inactive</option>
           </Select>
           <Input label="Phone" value={form.phoneNo || ''} onChange={set('phoneNo')} />
-          <Input label="Email" value={form.email || ''} onChange={set('email')} />
+          <Input label="Email" type="email" value={form.email || ''} onChange={set('email')} />
           <Select label="Risk flag" value={form.riskFlag || ''} onChange={set('riskFlag')}>
             <option value="LOW">LOW</option>
             <option value="HIGH">HIGH</option>
@@ -264,6 +271,7 @@ function EditMemberModal({ open, onClose, member, onSaved }: any) {
           <Input label="Beneficiary" value={form.beneficiary || ''} onChange={set('beneficiary')} />
           <div className="col-span-2"><Input label="Notes" value={form.notes || ''} onChange={set('notes')} /></div>
         </div>
+        {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
         <div className="flex justify-end gap-3 pt-2">
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
           <Button type="submit" disabled={saving}>{saving ? 'Saving…' : 'Save changes'}</Button>
@@ -294,21 +302,38 @@ function PortalModal({ open, onClose, member, onSaved }: any) {
     if (password && password !== confirm) { setError('Passwords do not match.'); return }
     if (password && password.length < 8)  { setError('Password must be at least 8 characters.'); return }
     setSaving(true); setError('')
-    const res = await fetch(`/api/members/${member.id}/set-password`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: password || undefined, enabled: true }),
-    })
-    if (res.ok) { onSaved(await res.json()) }
-    else { setError((await res.json().catch(() => null))?.error || 'Failed to save.'); setSaving(false) }
+    try {
+      const res = await fetch(`/api/members/${member.id}/set-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: password || undefined, enabled: true }),
+      })
+      if (res.ok) onSaved(await res.json())
+      else setError((await readJsonSafe(res))?.error || 'Failed to save.')
+    } catch {
+      setError('The connection was interrupted. Refresh the member record to check the result before trying again.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function disable() {
     setSaving(true)
-    await fetch(`/api/members/${member.id}/set-password`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ enabled: false }),
-    })
-    onSaved({ portalEnabled: false })
+    setError('')
+    try {
+      const res = await fetch(`/api/members/${member.id}/set-password`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: false }),
+      })
+      if (!res.ok) {
+        setError((await readJsonSafe(res))?.error || 'Could not disable portal access.')
+        return
+      }
+      onSaved({ portalEnabled: false })
+    } catch {
+      setError('The connection was interrupted. Refresh the member record to check portal access.')
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
@@ -327,13 +352,13 @@ function PortalModal({ open, onClose, member, onSaved }: any) {
         <form onSubmit={save} className="space-y-3">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{isEnabled ? 'Set new password (leave blank to keep current)' : 'Set password to enable access'}</label>
-            <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New password"
+            <input aria-label="New portal password" autoComplete="new-password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="New password"
               required={!isEnabled}
               className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Confirm password</label>
-            <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm password"
+            <input aria-label="Confirm portal password" autoComplete="new-password" type="password" value={confirm} onChange={e => setConfirm(e.target.value)} placeholder="Confirm password"
               required={!isEnabled || !!password}
               className="px-3 py-2 rounded-lg border border-gray-300 text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500" />
           </div>
@@ -384,18 +409,24 @@ function PromoteAdminModal({ open, onClose, member, onSaved }: any) {
 
     setSaving(true)
     setError('')
-    const res = await fetch(`/api/members/${member.id}/promote-admin`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password, roles }),
-    })
-    const data = await readJsonSafe(res)
-    if (res.ok && data) {
-      onSaved(data)
-      return
+    try {
+      const res = await fetch(`/api/members/${member.id}/promote-admin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, roles }),
+      })
+      const data = await readJsonSafe(res)
+      if (res.ok && data) {
+        onSaved(data)
+        return
+      }
+      setError(data?.error || 'Failed to create the staff account.')
+      setSaving(false)
+    } catch {
+      setError('The connection was interrupted. Refresh the member record to check the result before trying again.')
+    } finally {
+      setSaving(false)
     }
-    setError(data?.error || 'Failed to create the staff account.')
-    setSaving(false)
   }
 
   return (

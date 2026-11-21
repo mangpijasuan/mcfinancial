@@ -160,18 +160,27 @@ export default function ContributionsPage() {
 function ReverseModal({ contribution: c, onClose, onDone }: any) {
   const [reason, setReason] = useState('')
   const [error, setError] = useState('')
+  const [saving, setSaving] = useState(false)
   useEffect(() => { setReason(''); setError('') }, [c])
   if (!c) return null
   async function submit(e: React.FormEvent) {
     e.preventDefault()
-    const res = await fetch(`/api/contributions/${c.transactionId}/reverse`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }),
-    })
-    const data = await readJsonSafe<any>(res)
-    if (!res.ok) { setError(data?.error || 'Could not reverse.'); return }
-    onDone(res.status === 202
-      ? `Reversal sent for approval (${data.approvalRequest.publicId}). A second person approves it on the Approvals page.`
-      : 'Contribution reversed.')
+    setSaving(true)
+    setError('')
+    try {
+      const res = await fetch(`/api/contributions/${c.transactionId}/reverse`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ reason }),
+      })
+      const data = await readJsonSafe<any>(res)
+      if (!res.ok) { setError(data?.error || 'Could not reverse.'); return }
+      onDone(res.status === 202
+        ? `Reversal sent for approval (${data.approvalRequest.publicId}). A second person approves it on the Approvals page.`
+        : 'Contribution reversed.')
+    } catch {
+      setError('The connection was interrupted. Check this contribution and approvals before submitting again.')
+    } finally {
+      setSaving(false)
+    }
   }
   return (
     <Modal open onClose={onClose} title={`Reverse ${c.receiptNumber ?? c.transactionId}`}>
@@ -184,7 +193,7 @@ function ReverseModal({ contribution: c, onClose, onDone }: any) {
         {error && <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>}
         <div className="flex justify-end gap-3">
           <Button variant="secondary" type="button" onClick={onClose}>Cancel</Button>
-          <Button type="submit" variant="danger">Send for approval</Button>
+          <Button type="submit" variant="danger" disabled={saving}>{saving ? 'Submitting…' : 'Send for approval'}</Button>
         </div>
       </form>
     </Modal>
@@ -219,7 +228,7 @@ function RecordContributionModal({ open, onClose, onSaved }: any) {
     if (memberSearch.length < 2) { setMembers([]); return }
     const t = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/members?search=${memberSearch}&status=Active&limit=10`)
+        const res = await fetch(`/api/members?search=${encodeURIComponent(memberSearch)}&status=Active&limit=10`)
         const data = await readJsonSafe<any>(res)
         if (!res.ok || !data) {
           setMembers([])

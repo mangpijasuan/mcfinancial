@@ -90,3 +90,28 @@ test('an active member downloads their personalized membership card', async ({ b
     await close()
   }
 })
+
+test('member pages recover from a failed read without leaving the page', async ({ browser }) => {
+  const { page, close } = await signedIn(browser, 'member')
+  try {
+    for (const [path, endpoint] of [
+      ['/portal/dashboard', '/api/portal/me'],
+      ['/portal/card', '/api/portal/me'],
+      ['/portal/history', '/api/portal/history'],
+      ['/portal/pay', '/api/portal/payments'],
+    ]) {
+      await page.route(`**${endpoint}`, route => route.fulfill({
+        status: 503, contentType: 'application/json', body: '{"error":"Unavailable"}',
+      }))
+      await page.goto(path)
+      await expect(page.getByRole('heading', { name: 'Could not load this page' })).toBeVisible()
+      await page.unroute(`**${endpoint}`)
+      await page.getByRole('button', { name: 'Try again', exact: true }).click()
+      await expect(page.getByRole('heading', { name: 'Could not load this page' })).toHaveCount(0)
+      await expect(page.locator('[aria-busy="true"]')).toHaveCount(0)
+      await expectNoOverflow(page)
+    }
+  } finally {
+    await close()
+  }
+})

@@ -1,10 +1,11 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { usePortalData } from '@/hooks/usePortalData'
+
 import Link from 'next/link'
 import { CalendarRange, CircleCheck, Handshake, Landmark, PiggyBank, Receipt, Undo2 } from 'lucide-react'
 import { cn, fmt$, fmtDate } from '@/lib/utils'
 import { plural } from '@/components/ui'
-import { PageHeader, PageSkeleton, Panel, Pill, Row, Rows, surface } from '@/components/portal/kit'
+import { PageHeader, PageSkeleton, LoadError, Panel, Pill, Row, Rows, surface } from '@/components/portal/kit'
 import YearByYear from '@/components/history/YearByYear'
 
 function OlderLoan({ l, who }: { l: any; who: string }) {
@@ -21,12 +22,9 @@ function OlderLoan({ l, who }: { l: any; who: string }) {
 }
 
 export default function PortalHistory() {
-  const [data, setData] = useState<any>(null)
+  const { data: data, failed, retry } = usePortalData<any>('/api/portal/history')
 
-  useEffect(() => {
-    fetch('/api/portal/history').then(r => r.json()).then(setData)
-  }, [])
-
+  if (failed) return <LoadError onRetry={retry} />
   if (!data) return <PageSkeleton />
 
   const { yearlyTotals, contributions2026 } = data

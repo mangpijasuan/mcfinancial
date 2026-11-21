@@ -1,4 +1,5 @@
 'use client'
+import { usePortalData } from '@/hooks/usePortalData'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { ArrowRight, CalendarCheck, CircleCheck, Coins, CreditCard, FileText, HandCoins, Landmark, Receipt, Undo2, Wallet } from 'lucide-react'
@@ -6,7 +7,7 @@ import { eligibilityText, fmt$, fmtDate } from '@/lib/utils'
 import { cents, formatUSD } from '@/lib/money'
 import { periodLabel } from '@/modules/contributions/dues'
 import type { DuesData } from '@/components/contributions/DuesPanel'
-import { Empty, PageSkeleton, Panel, Pill, Progress, Row, Rows, Stat, button, surface, type Tone } from '@/components/portal/kit'
+import { Empty, PageSkeleton, LoadError, Panel, Pill, Progress, Row, Rows, Stat, button, surface, type Tone } from '@/components/portal/kit'
 import { cn } from '@/lib/utils'
 
 const DUES_STATUS: Record<string, { tone: Tone; label: string }> = {
@@ -33,14 +34,14 @@ function DuesLine({ d, owedCents }: { d: DuesData; owedCents: number }) {
 }
 
 export default function PortalDashboard() {
-  const [member, setMember] = useState<any>(null)
+  const { data: member, failed, retry } = usePortalData<any>('/api/portal/me')
   const [dues, setDues] = useState<DuesData | null>(null)
 
   useEffect(() => {
-    fetch('/api/portal/me').then(r => r.json()).then(setMember)
     fetch('/api/portal/dues').then(r => (r.ok ? r.json() : null)).then(setDues).catch(() => setDues(null))
   }, [])
 
+  if (failed) return <LoadError onRetry={retry} />
   if (!member) return <PageSkeleton />
 
   const activeLoan = member.loansAsBorrower?.[0]
